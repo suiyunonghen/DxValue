@@ -4,6 +4,7 @@ import (
 	"github.com/suiyunonghen/DxCommonLib"
 	"fmt"
 	"github.com/suiyunonghen/DxValue"
+	"encoding/json"
 )
 
 func main()  {
@@ -22,5 +23,6 @@ func main()  {
 	crec.SetString("Father","ParentF")
 	crec.SetString("Mother","ParentM")
 	fmt.Print(mrec.ToString())
+	json.Marshal()
 
 }

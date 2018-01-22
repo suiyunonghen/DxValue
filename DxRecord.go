@@ -1,8 +1,16 @@
+/*
+DxValue的Record记录集对象
+可以用来序列化反序列化Json,MsgPack等，并提供一系列的操作函数
+Autor: 不得闲
+QQ:75492895
+ */
 package DxValue
 
 import (
 	"unsafe"
 	"bytes"
+	"reflect"
+	"github.com/suiyunonghen/GVCL/WinApi"
 )
 
 /******************************************************
@@ -151,6 +159,10 @@ func (r *DxRecord)AsBytes(keyName string)[]byte  {
 }
 
 func (r *DxRecord)SetValue(keyName string,v interface{})  {
+	if v == nil{
+		r.fRecords[keyName] = nil
+		return
+	}
 	switch value := v.(type) {
 	case int: r.SetInt(keyName,value)
 	case int32: r.SetInt32(keyName,value)
@@ -171,6 +183,59 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 	case string: r.SetString(keyName,value)
 	case []byte: r.SetBinary(keyName,value,true)
 	case *[]byte: r.SetBinary(keyName,*value,true)
+	case bool: r.SetBool(keyName,value)
+	case *bool: r.SetBool(keyName,*value)
+	case *string: r.SetString(keyName,*value)
+	case float32: r.SetFloat(keyName,value)
+	case float64: r.SetDouble(keyName,value)
+	case *float32: r.SetFloat(keyName,*value)
+	case *float64: r.SetDouble(keyName,*value)
+	default:
+		rv := reflect.ValueOf(v)
+		if !rv.IsValid(){
+			return
+		}
+		if rv.Kind() == reflect.Ptr {
+			if rv.IsNil(){
+				r.fRecords[keyName] = nil
+				return
+			}
+			rv = rv.Elem()
+		}
+		switch rv.Kind(){
+		case reflect.Struct:
+		case reflect.Map:
+			rec := r.NewRecord(keyName)
+			mapkeys := rv.MapKeys()
+			if len(mapkeys) == 0{
+				return
+			}
+			kv := mapkeys[0]
+			if kv.Kind() == reflect.Ptr{
+				if kv.IsNil(){
+					panic("Invalidate Record Key")
+				}
+				kv = kv.Elem()
+				if kv.IsValid() && kv.Kind() != reflect.String{
+					panic("Invalidate Record Key")
+				}
+			}
+
+			for _,kv = range mapkeys{
+				rvalue := rv.MapIndex(kv)
+				if rvalue.Kind() == reflect.Ptr{
+					if !rvalue.IsNil(){
+						rvalue = rvalue.Elem()
+					}
+					return
+				}
+				switch rvalue.Kind() {
+				case reflect.Int:
+					rec.SetInt(kv.String(),int(rvalue.Int()))
+				}
+			}
+		case reflect.Array:
+		}
 	}
 }
 
