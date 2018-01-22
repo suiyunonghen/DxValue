@@ -4,8 +4,14 @@ import (
 	"github.com/suiyunonghen/DxCommonLib"
 	"fmt"
 	"github.com/suiyunonghen/DxValue"
-	"encoding/json"
+	//"encoding/json"
 )
+
+type DxPeople struct {
+	name  string
+	age   int
+	Sex   string
+}
 
 func main()  {
 	mb := "aBCA得闲"
@@ -22,7 +28,23 @@ func main()  {
 	crec := mrec.NewRecord("Home")
 	crec.SetString("Father","ParentF")
 	crec.SetString("Mother","ParentM")
-	fmt.Print(mrec.ToString())
-	json.Marshal()
+
+	mp := make(map[string]*DxPeople,6)
+	father := new(DxPeople)
+	father.name = "HuPing"
+	father.age = 30
+	mp["Father"] = father
+
+	mrec.SetValue("Sun",mp)
+
+	mrec.SetValue("testFather",father)
+
+	fmt.Println(mrec.ToString())
+	//json.Marshal()
+
+	ma := DxValue.NewArray()
+	ma.SetInt(1,20)
+	ma.SetInt(4,12)
+	fmt.Println(ma.ToString())
 
 }
