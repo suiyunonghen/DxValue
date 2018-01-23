@@ -118,12 +118,92 @@ func (arr *DxArray)ifNilInitArr2idx(idx int)  {
 	}
 }
 
+func (arr *DxArray)Length()int  {
+	if arr.fValues != nil{
+		return len(arr.fValues)
+	}
+	return 0
+}
+
+func (arr *DxArray)VaueTypeByIndex(idx int)DxValueType  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		return arr.fValues[idx].fValueType
+	}
+	return DVT_Null
+}
+
 func (arr *DxArray)SetNull(idx int)  {
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
 		arr.fValues[idx].fParent = nil
 	}
 	arr.fValues[idx] = nil
+}
+
+func (arr *DxArray)AsInt(idx int,defValue int)int  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		value := arr.fValues[idx]
+		switch value.fValueType {
+		case DVT_Int: return (*DxIntValue)(unsafe.Pointer(value)).fvalue
+		case DVT_Int32: return int((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int64: return int((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Bool:
+			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+				return 1
+			}else{
+				return 0
+			}
+		case DVT_Double:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Float:return int((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		default:
+			panic("can not convert Type to int")
+		}
+	}
+	return defValue
+}
+
+func (arr *DxArray)AsInt32(idx int,defValue int32)int32  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		value := arr.fValues[idx]
+		switch value.fValueType {
+		case DVT_Int: return int32((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int32: return (*DxInt32Value)(unsafe.Pointer(value)).fvalue
+		case DVT_Int64: return int32((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Bool:
+			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+				return 1
+			}else{
+				return 0
+			}
+		case DVT_Double:return int32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Float:return int32((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		default:
+			panic("can not convert Type to int")
+		}
+	}
+	return defValue
+}
+
+func (arr *DxArray)AsInt64(idx int,defValue int64)int64  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		value := arr.fValues[idx]
+		switch value.fValueType {
+		case DVT_Int: return int64((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int32: return int64((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int64: return (*DxInt64Value)(unsafe.Pointer(value)).fvalue
+		case DVT_Bool:
+			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+				return 1
+			}else{
+				return 0
+			}
+		case DVT_Double:return int64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Float:return int64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		default:
+			panic("can not convert Type to int")
+		}
+	}
+	return defValue
 }
 
 func (arr *DxArray)SetInt(idx,value int)  {
@@ -190,6 +270,30 @@ func (arr *DxArray)SetBool(idx int,value bool)  {
 	}
 }
 
+func (arr *DxArray)AsBool(idx int,defValue bool)bool  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		value := arr.fValues[idx]
+		switch value.fValueType {
+		case DVT_Int: return (*DxIntValue)(unsafe.Pointer(value)).fvalue != 0
+		case DVT_Int32: return (*DxInt32Value)(unsafe.Pointer(value)).fvalue != 0
+		case DVT_Int64: return (*DxInt64Value)(unsafe.Pointer(value)).fvalue != 0
+		case DVT_Bool: return bool((*DxBoolValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Double:return float64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue) != 0
+		case DVT_Float:return float32((*DxFloatValue)(unsafe.Pointer(value)).fvalue) != 0
+		default:
+			panic("can not convert Type to Bool")
+		}
+	}
+	return defValue
+}
+
+func (arr *DxArray)AsString(idx int,defValue string)string  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		return arr.fValues[idx].ToString()
+	}
+	return defValue
+}
+
 func (arr *DxArray)SetString(idx int,value string)  {
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_String{
@@ -222,6 +326,27 @@ func (arr *DxArray)SetFloat(idx int,value float32)  {
 	}
 }
 
+func (arr *DxArray)AsFloat(idx int,defValue float32)float32  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		value := arr.fValues[idx]
+		switch value.fValueType {
+		case DVT_Int: return float32((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int32: return float32((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int64: return float32((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Bool:
+			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+				return 1
+			}
+			return 0
+		case DVT_Double:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Float:return (*DxFloatValue)(unsafe.Pointer(value)).fvalue
+		default:
+			panic("can not convert Type to Float")
+		}
+	}
+	return defValue
+}
+
 func (arr *DxArray)SetDouble(idx int,value float64)  {
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Double{
@@ -236,6 +361,27 @@ func (arr *DxArray)SetDouble(idx int,value float64)  {
 		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
+}
+
+func (arr *DxArray)AsDouble(idx int,defValue float64)float64  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		value := arr.fValues[idx]
+		switch value.fValueType {
+		case DVT_Int: return float64((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int32: return float64((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int64: return float64((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Bool:
+			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+				return 1
+			}
+			return 0
+		case DVT_Double:return (*DxDoubleValue)(unsafe.Pointer(value)).fvalue
+		case DVT_Float:return float64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		default:
+			panic("can not convert Type to Float")
+		}
+	}
+	return defValue
 }
 
 func (arr *DxArray)SetArray(idx int,value *DxArray)  {
@@ -257,6 +403,16 @@ func (arr *DxArray)SetArray(idx int,value *DxArray)  {
 	arr.fValues[idx].fParent = &arr.DxBaseValue
 }
 
+func (arr *DxArray)AsArray(idx int)(*DxArray)  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		if arr.fValues[idx].fValueType == DVT_Array{
+			return (*DxArray)(unsafe.Pointer(arr.fValues[idx]))
+		}
+		panic("not Array Value")
+	}
+	return nil
+}
+
 
 func (arr *DxArray)SetRecord(idx int,value *DxRecord)  {
 	if value != nil && value.fParent != nil {
@@ -275,6 +431,16 @@ func (arr *DxArray)SetRecord(idx int,value *DxRecord)  {
 	}
 	arr.fValues[idx] = &value.DxBaseValue
 	arr.fValues[idx].fParent = &arr.DxBaseValue
+}
+
+func (arr *DxArray)AsRecord(idx int)(*DxRecord)  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		if arr.fValues[idx].fValueType == DVT_Record{
+			return (*DxRecord)(unsafe.Pointer(arr.fValues[idx]))
+		}
+		panic("not Record Value")
+	}
+	return nil
 }
 
 func (arr *DxArray)SetBinary(idx int,bt []byte)  {

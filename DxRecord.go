@@ -496,7 +496,7 @@ func (r *DxRecord)KeyValueType(KeyName string)DxValueType  {
 	return DVT_Null
 }
 
-func (r *DxRecord)AsInt32(KeyName string)int32  {
+func (r *DxRecord)AsInt32(KeyName string,defavalue int32)int32  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
 		case DVT_Int: return int32((*DxIntValue)(unsafe.Pointer(value)).fvalue)
@@ -514,29 +514,29 @@ func (r *DxRecord)AsInt32(KeyName string)int32  {
 			panic("can not convert Type to int32")
 		}
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsInt32ByPath(path string)int32  {
+func (r *DxRecord)AsInt32ByPath(path string,defavalue int32)int32  {
 	rec,keyName := r.findPathNode(path)
 	if rec != nil && keyName != ""{
-		return rec.AsInt32(keyName)
+		return rec.AsInt32(keyName,defavalue)
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsIntByPath(path string)int  {
+func (r *DxRecord)AsIntByPath(path string,defavalue int)int  {
 	rec,keyName := r.findPathNode(path)
 	if rec != nil && keyName != ""{
-		return rec.AsInt(keyName)
+		return rec.AsInt(keyName,defavalue)
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsInt(KeyName string)int  {
+func (r *DxRecord)AsInt(KeyName string,defavalue int)int  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
-		case DVT_Int: return int((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int: return (*DxIntValue)(unsafe.Pointer(value)).fvalue
 		case DVT_Int32: return int((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
 		case DVT_Int64: return int((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
 		case DVT_Bool:
@@ -551,18 +551,18 @@ func (r *DxRecord)AsInt(KeyName string)int  {
 			panic("can not convert Type to int")
 		}
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsInt64ByPath(path string)int64  {
+func (r *DxRecord)AsInt64ByPath(path string,defavalue int64)int64  {
 	rec,keyName := r.findPathNode(path)
 	if rec != nil && keyName != ""{
-		return rec.AsInt64(keyName)
+		return rec.AsInt64(keyName,defavalue)
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsInt64(KeyName string)int64  {
+func (r *DxRecord)AsInt64(KeyName string,defavalue int64)int64  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
 		case DVT_Int: return int64((*DxIntValue)(unsafe.Pointer(value)).fvalue)
@@ -580,18 +580,18 @@ func (r *DxRecord)AsInt64(KeyName string)int64  {
 			panic("can not convert Type to int64")
 		}
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsBoolByPath(path string)bool  {
+func (r *DxRecord)AsBoolByPath(path string,defavalue bool)bool  {
 	rec,keyName := r.findPathNode(path)
 	if rec != nil && keyName != ""{
-		return rec.AsBool(keyName)
+		return rec.AsBool(keyName,defavalue)
 	}
-	return false
+	return defavalue
 }
 
-func (r *DxRecord)AsBool(KeyName string)bool  {
+func (r *DxRecord)AsBool(KeyName string,defavalue bool)bool  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
 		case DVT_Int: return (*DxIntValue)(unsafe.Pointer(value)).fvalue != 0
@@ -604,19 +604,19 @@ func (r *DxRecord)AsBool(KeyName string)bool  {
 			panic("can not convert Type to Bool")
 		}
 	}
-	return false
+	return defavalue
 }
 
 
-func (r *DxRecord)AsFloatByPath(path string)float32  {
+func (r *DxRecord)AsFloatByPath(path string,defavalue float32)float32  {
 	rec,keyName := r.findPathNode(path)
 	if rec != nil && keyName != ""{
-		return rec.AsFloat(keyName)
+		return rec.AsFloat(keyName,defavalue)
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsFloat(KeyName string)float32  {
+func (r *DxRecord)AsFloat(KeyName string,defavalue float32)float32  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
 		case DVT_Int: return float32((*DxIntValue)(unsafe.Pointer(value)).fvalue)
@@ -628,24 +628,24 @@ func (r *DxRecord)AsFloat(KeyName string)float32  {
 			}
 			return 0
 		case DVT_Double:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Float:return float32((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Float:return (*DxFloatValue)(unsafe.Pointer(value)).fvalue
 		default:
 			panic("can not convert Type to Float")
 		}
 	}
-	return 0
+	return defavalue
 }
 
 
-func (r *DxRecord)AsDoubleByPath(path string)float64  {
+func (r *DxRecord)AsDoubleByPath(path string,defavalue float64)float64  {
 	rec,keyName := r.findPathNode(path)
 	if rec != nil && keyName != ""{
-		return rec.AsDouble(keyName)
+		return rec.AsDouble(keyName,defavalue)
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsDouble(KeyName string)float64  {
+func (r *DxRecord)AsDouble(KeyName string,defavalue float64)float64  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
 		case DVT_Int: return float64((*DxIntValue)(unsafe.Pointer(value)).fvalue)
@@ -662,22 +662,22 @@ func (r *DxRecord)AsDouble(KeyName string)float64  {
 			panic("can not convert Type to Double")
 		}
 	}
-	return 0
+	return defavalue
 }
 
-func (r *DxRecord)AsStringByPath(path string)string  {
+func (r *DxRecord)AsStringByPath(path string,defavalue string)string  {
 	rec,keyName := r.findPathNode(path)
 	if rec != nil && keyName != ""{
-		return rec.AsString(keyName)
+		return rec.AsString(keyName,defavalue)
 	}
-	return ""
+	return defavalue
 }
 
-func (r *DxRecord)AsString(KeyName string)string  {
+func (r *DxRecord)AsString(KeyName string,defavalue string)string  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		return value.ToString()
 	}
-	return ""
+	return defavalue
 }
 
 func (r *DxRecord)AsRecordByPath(path string)*DxRecord  {
@@ -693,6 +693,17 @@ func (r *DxRecord)AsRecord(KeyName string)*DxRecord  {
 		if value.fValueType == DVT_Record{
 			return (*DxRecord)(unsafe.Pointer(value))
 		}
+		panic("not Record Value")
+	}
+	return nil
+}
+
+func (r *DxRecord)AsArray(KeyName string)*DxArray  {
+	if value,ok := r.fRecords[KeyName];ok && value != nil{
+		if value.fValueType == DVT_Record{
+			return (*DxArray)(unsafe.Pointer(value))
+		}
+		panic("not Array Value")
 	}
 	return nil
 }
