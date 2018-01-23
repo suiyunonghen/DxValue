@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"github.com/suiyunonghen/DxCommonLib"
 	"strings"
+	"math"
 )
 
 /******************************************************
@@ -102,8 +103,17 @@ func (r *DxRecord)NewArray(keyName string)(arr *DxArray)  {
 
 func (r *DxRecord)SetInt(KeyName string,v int)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
-		if value.fValueType == DVT_Int{
+		switch value.fValueType {
+		case DVT_Int:
 			(*DxIntValue)(unsafe.Pointer(value)).fvalue = v
+			return
+		case DVT_Int32:
+			if v <= math.MaxInt32 && v >= math.MinInt32{
+				(*DxInt32Value)(unsafe.Pointer(value)).fvalue = int32(v)
+				return
+			}
+		case DVT_Int64:
+			(*DxInt64Value)(unsafe.Pointer(value)).fvalue = int64(v)
 			return
 		}
 		value.fParent = nil
@@ -117,8 +127,15 @@ func (r *DxRecord)SetInt(KeyName string,v int)  {
 
 func (r *DxRecord)SetInt32(KeyName string,v int32)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
-		if value.fValueType == DVT_Int32{
+		switch value.fValueType {
+		case DVT_Int:
+			(*DxIntValue)(unsafe.Pointer(value)).fvalue = int(v)
+			return
+		case DVT_Int32:
 			(*DxInt32Value)(unsafe.Pointer(value)).fvalue = v
+			return
+		case DVT_Int64:
+			(*DxInt64Value)(unsafe.Pointer(value)).fvalue = int64(v)
 			return
 		}
 		value.fParent = nil
@@ -133,7 +150,19 @@ func (r *DxRecord)SetInt32(KeyName string,v int32)  {
 
 func (r *DxRecord)SetInt64(KeyName string,v int64)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
-		if value.fValueType == DVT_Int64{
+		switch value.fValueType {
+		case DVT_Int:
+			if DxCommonLib.IsAmd64 || v <= math.MaxInt32 && v >= math.MinInt32{
+				(*DxIntValue)(unsafe.Pointer(value)).fvalue = int(v)
+				return
+			}
+		case DVT_Int32:
+			if v <= math.MaxInt32 && v >= math.MinInt32{
+				(*DxInt32Value)(unsafe.Pointer(value)).fvalue = int32(v)
+				return
+			}
+			return
+		case DVT_Int64:
 			(*DxInt64Value)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
@@ -148,7 +177,7 @@ func (r *DxRecord)SetInt64(KeyName string,v int64)  {
 
 func (r *DxRecord)SetBool(KeyName string,v bool)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
-		if value.fValueType == DVT_Bool{
+		if value.fValueType == DVT_Bool {
 			(*DxBoolValue)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
@@ -230,9 +259,39 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 
 func (r *DxRecord)AsBytes(keyName string)[]byte  {
 	if value,ok := r.fRecords[keyName];ok && value != nil{
-		return value.Bytes()
+		return value.AsBytes()
 	}
 	return nil
+}
+
+func (r *DxRecord)Bytes()[]byte  {
+	var buffer bytes.Buffer
+	buffer.WriteByte('{')
+	isFirst := true
+	for k,v := range r.fRecords{
+		if !isFirst{
+			buffer.WriteString(`,"`)
+		}else{
+			isFirst = false
+			buffer.WriteByte('"')
+		}
+		buffer.WriteString(k)
+		buffer.WriteString(`":`)
+		if v != nil{
+			vt := v.fValueType
+			if vt == DVT_String || vt == DVT_Binary{
+				buffer.WriteByte('"')
+			}
+			buffer.WriteString(v.ToString())
+			if vt == DVT_String || vt == DVT_Binary{
+				buffer.WriteByte('"')
+			}
+		}else{
+			buffer.WriteString("null")
+		}
+	}
+	buffer.WriteByte('}')
+	return buffer.Bytes()
 }
 
 func (r *DxRecord)findPathNode(path string)(rec *DxRecord,keyName string)  {
@@ -708,34 +767,25 @@ func (r *DxRecord)AsArray(KeyName string)*DxArray  {
 	return nil
 }
 
-func (r *DxRecord)ToString()string  {
-	var buffer bytes.Buffer
-	buffer.WriteByte('{')
-	isFirst := true
-	for k,v := range r.fRecords{
-		if !isFirst{
-			buffer.WriteString(`,"`)
-		}else{
-			isFirst = false
-			buffer.WriteByte('"')
-		}
-		buffer.WriteString(k)
-		buffer.WriteString(`":`)
-		if v != nil{
-			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary{
-				buffer.WriteByte('"')
+func (r *DxRecord)Length()int  {
+	if r.fRecords != nil{
+		return len(r.fRecords)
+	}
+	return 0
+}
+
+func (r *DxRecord)Range(iteafunc func(keyName string,value *DxBaseValue)bool){
+	if r.fRecords != nil && iteafunc!=nil{
+		for k,v := range r.fRecords{
+			if !iteafunc(k,v){
+				return
 			}
-			buffer.WriteString(v.ToString())
-			if vt == DVT_String || vt == DVT_Binary{
-				buffer.WriteByte('"')
-			}
-		}else{
-			buffer.WriteString("null")
 		}
 	}
-	buffer.WriteByte('}')
-	return DxCommonLib.FastByte2String(buffer.Bytes())
+}
+
+func (r *DxRecord)ToString()string  {
+	return DxCommonLib.FastByte2String(r.Bytes())
 }
 
 func NewRecord()*DxRecord  {

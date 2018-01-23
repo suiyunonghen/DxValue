@@ -650,7 +650,7 @@ func (arr *DxArray)SetValue(idx int,value interface{})  {
 	}
 }
 
-func (arr *DxArray)ToString()string  {
+func (arr *DxArray)Bytes()[]byte  {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 	if arr.fValues != nil{
@@ -676,7 +676,11 @@ func (arr *DxArray)ToString()string  {
 		}
 	}
 	buf.WriteByte(']')
-	return DxCommonLib.FastByte2String(buf.Bytes())
+	return buf.Bytes()
+}
+
+func (arr *DxArray)ToString()string  {
+	return DxCommonLib.FastByte2String(arr.Bytes())
 }
 
 func NewArray()*DxArray  {

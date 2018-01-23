@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"github.com/suiyunonghen/DxCommonLib"
 	"unsafe"
+	"github.com/landjur/golibrary/errors"
+	"strings"
 )
 
 /*import (
@@ -19,18 +21,16 @@ type(
 	IDxValue			interface{
 		ValueType()DxValueType
 		CanParent()bool
-	}
-	IDxIntValue			interface{
-		AsInt32()int32
-		AsInt()int
-		AsInt64()int64
-	}
-	IDxBoolValue		interface{
-		AsBoolean()bool
-	}
-	IDxArrayValue		interface{
-		AsArray()[]IDxValue
-		Count()int
+		AsInt()(int,error)
+		AsBool()(bool,error)
+		AsInt32()(int32,error)
+		AsInt64()(int64,error)
+		AsArray()(*DxArray,error)
+		AsRecord()(*DxRecord,error)
+		AsString()string
+		AsFloat()(float32,error)
+		AsDouble()(float64,error)
+		AsBytes()([]byte,error)
 	}
 
 	DxBaseValue			struct{
@@ -102,9 +102,186 @@ const(
 	BET_Base64
 )
 
+var (
+	ValueTypeError = errors.New("Value Data Type not Match")
+)
 func (v DxBaseValue)ValueType()DxValueType  {
 	return v.fValueType
 }
+
+func (v *DxBaseValue)AsInt()(int,error){
+	switch v.fValueType {
+	case DVT_Int:
+		return (*DxIntValue)(unsafe.Pointer(v)).fvalue,nil
+	case DVT_Int32:
+		return int((*DxInt32Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int64:
+		return int((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Float:
+		return int((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Double:
+		return int((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Bool:
+		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
+			return 1,nil
+		}
+		return 0,nil
+	case DVT_Null:
+		return 0,nil
+	case DVT_String:
+		return  strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
+	default:
+		return 0,ValueTypeError
+	}
+}
+
+func (v *DxBaseValue)AsBool()(bool,error){
+	switch v.fValueType {
+	case DVT_Int:
+		return (*DxIntValue)(unsafe.Pointer(v)).fvalue != 0,nil
+	case DVT_Int32:
+		return int((*DxInt32Value)(unsafe.Pointer(v)).fvalue) != 0,nil
+	case DVT_Int64:
+		return int((*DxInt64Value)(unsafe.Pointer(v)).fvalue) != 0,nil
+	case DVT_Float:
+		return int((*DxFloatValue)(unsafe.Pointer(v)).fvalue) != 0,nil
+	case DVT_Double:
+		return int((*DxDoubleValue)(unsafe.Pointer(v)).fvalue) != 0,nil
+	case DVT_Bool: return (*DxBoolValue)(unsafe.Pointer(v)).fvalue,nil
+	case DVT_Null: return false,nil
+	case DVT_String:
+		return strings.ToUpper((*DxStringValue)(unsafe.Pointer(v)).fvalue)== "TRUE",nil
+	default:
+		return false,ValueTypeError
+	}
+}
+
+func (v *DxBaseValue)AsInt32()(int32,error){
+	switch v.fValueType {
+	case DVT_Int:
+		return int32((*DxIntValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int32:
+		return (*DxInt32Value)(unsafe.Pointer(v)).fvalue,nil
+	case DVT_Int64:
+		return int32((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Float:
+		return int32((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Double:
+		return int32((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Bool:
+		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
+			return 1,nil
+		}
+		return 0,nil
+	case DVT_Null:
+		return 0,nil
+	case DVT_String:
+		rv,err := strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
+		return int32(rv),err
+	default:
+		return 0,ValueTypeError
+	}
+}
+
+func (v *DxBaseValue)AsInt64()(int64,error){
+	switch v.fValueType {
+	case DVT_Int:
+		return int64((*DxIntValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int32:
+		return int64((*DxInt32Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int64:
+		return (*DxInt64Value)(unsafe.Pointer(v)).fvalue,nil
+	case DVT_Float:
+		return int64((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Double:
+		return int64((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Bool:
+		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
+			return 1,nil
+		}
+		return 0,nil
+	case DVT_Null:
+		return 0,nil
+	case DVT_String:
+		rv,err := strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
+		return int64(rv),err
+	default:
+		return 0,ValueTypeError
+	}
+}
+
+func (v *DxBaseValue)AsArray()(*DxArray,error){
+	if v.fValueType == DVT_Array{
+		return (*DxArray)(unsafe.Pointer(v)),nil
+	}
+	return nil,ValueTypeError
+}
+
+func (v *DxBaseValue)AsRecord()(*DxRecord,error){
+	if v.fValueType == DVT_Record{
+		return (*DxRecord)(unsafe.Pointer(v)),nil
+	}
+	return nil,ValueTypeError
+}
+
+func (v *DxBaseValue)AsString()string{
+	return v.ToString()
+}
+
+func (v *DxBaseValue)AsFloat()(float32,error){
+	switch v.fValueType {
+	case DVT_Int:
+		return float32((*DxIntValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int32:
+		return float32((*DxInt32Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int64:
+		return float32((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Float:
+		return (*DxFloatValue)(unsafe.Pointer(v)).fvalue,nil
+	case DVT_Double:
+		return float32((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Bool:
+		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
+			return 1,nil
+		}
+		return 0,nil
+	case DVT_Null:
+		return 0,nil
+	case DVT_String:
+		rv,err := strconv.ParseFloat((*DxStringValue)(unsafe.Pointer(v)).fvalue,32)
+		return float32(rv),err
+	default:
+		return 0,ValueTypeError
+	}
+}
+
+func (v *DxBaseValue)AsDouble()(float64,error){
+	switch v.fValueType {
+	case DVT_Int:
+		return float64((*DxIntValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int32:
+		return float64((*DxInt32Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int64:
+		return float64((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Float:
+		return float64((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Double:
+		return (*DxDoubleValue)(unsafe.Pointer(v)).fvalue,nil
+	case DVT_Bool:
+		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
+			return 1,nil
+		}
+		return 0,nil
+	case DVT_Null:
+		return 0,nil
+	case DVT_String:
+		rv,err := strconv.ParseFloat((*DxStringValue)(unsafe.Pointer(v)).fvalue,64)
+		return rv,err
+	default:
+		return 0,ValueTypeError
+	}
+}
+
 
 func (v *DxBaseValue)CanParent()bool  {
 	return v.fValueType == DVT_Record || v.fValueType == DVT_Array
@@ -149,7 +326,7 @@ func (v *DxBaseValue)ToString()string  {
 	}
 }
 
-func (v *DxBaseValue)Bytes()[]byte  {
+func (v *DxBaseValue)AsBytes()[]byte  {
 	switch v.fValueType {
 	case DVT_String:
 		return (*DxStringValue)(unsafe.Pointer(v)).Bytes()
@@ -170,7 +347,7 @@ func (v *DxBaseValue)Bytes()[]byte  {
 	case DVT_Int64:
 		return (*DxInt64Value)(unsafe.Pointer(v)).Bytes()
 	case DVT_Array:
-		return nil
+		return (*DxArray)(unsafe.Pointer(v)).Bytes()
 	default:
 		return nil
 	}
