@@ -10,7 +10,7 @@ import (
 	"unsafe"
 	"bytes"
 	"reflect"
-	"fmt"
+	"github.com/suiyunonghen/DxCommonLib"
 )
 
 /******************************************************
@@ -55,9 +55,19 @@ func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 		}
 	}
 	arr.ifNilInitArr2idx(idx)
+	if arr.fValues[idx] != nil{
+		if arr.fValues[idx].fValueType == DVT_Record{
+			rec = (*DxRecord)(unsafe.Pointer(arr.fValues[idx]))
+			rec.ClearValue()
+			rec.fParent = &arr.DxBaseValue
+			return
+		}
+		arr.fValues[idx].fParent = nil
+	}
 	rec = new(DxRecord)
 	rec.fValueType = DVT_Record
-	rec.fRecords = make(map[string]*DxBaseValue,20)
+	rec.fRecords = make(map[string]*DxBaseValue,32)
+	rec.fParent = &arr.DxBaseValue
 	arr.fValues = append(arr.fValues,&rec.DxBaseValue)
 	return
 }
@@ -71,8 +81,18 @@ func (arr *DxArray)NewArray(idx int)(ararr *DxArray)  {
 		}
 	}
 	arr.ifNilInitArr2idx(idx)
-	arr = new(DxArray)
+	if arr.fValues[idx] != nil{
+		if arr.fValues[idx].fValueType == DVT_Array{
+			ararr = (*DxArray)(unsafe.Pointer(arr.fValues[idx]))
+			ararr.ClearValue()
+			ararr.fParent = &arr.DxBaseValue
+			return
+		}
+		arr.fValues[idx].fParent = nil
+	}
+	ararr = new(DxArray)
 	ararr.fValueType = DVT_Array
+	ararr.fParent = &arr.DxBaseValue
 	arr.fValues = append(arr.fValues,&ararr.DxBaseValue)
 	return
 }
@@ -100,6 +120,9 @@ func (arr *DxArray)ifNilInitArr2idx(idx int)  {
 
 func (arr *DxArray)SetNull(idx int)  {
 	arr.ifNilInitArr2idx(idx)
+	if arr.fValues[idx] != nil{
+		arr.fValues[idx].fParent = nil
+	}
 	arr.fValues[idx] = nil
 }
 
@@ -111,6 +134,10 @@ func (arr *DxArray)SetInt(idx,value int)  {
 		dv := new(DxIntValue)
 		dv.fValueType = DVT_Int
 		dv.fvalue = value
+		if arr.fValues[idx] != nil{
+			arr.fValues[idx].fParent = nil
+		}
+		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
 }
@@ -123,6 +150,10 @@ func (arr *DxArray)SetInt32(idx int,value int32)  {
 		dv := new(DxInt32Value)
 		dv.fValueType = DVT_Int32
 		dv.fvalue = value
+		if arr.fValues[idx] != nil{
+			arr.fValues[idx].fParent = nil
+		}
+		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
 }
@@ -135,6 +166,10 @@ func (arr *DxArray)SetInt64(idx int,value int64)  {
 		dv := new(DxInt64Value)
 		dv.fValueType = DVT_Int64
 		dv.fvalue = value
+		if arr.fValues[idx] != nil{
+			arr.fValues[idx].fParent = nil
+		}
+		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
 }
@@ -147,6 +182,10 @@ func (arr *DxArray)SetBool(idx int,value bool)  {
 		dv := new(DxBoolValue)
 		dv.fValueType = DVT_Bool
 		dv.fvalue = value
+		if arr.fValues[idx] != nil{
+			arr.fValues[idx].fParent = nil
+		}
+		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
 }
@@ -159,6 +198,10 @@ func (arr *DxArray)SetString(idx int,value string)  {
 		dv := new(DxStringValue)
 		dv.fValueType = DVT_String
 		dv.fvalue = value
+		if arr.fValues[idx] != nil{
+			arr.fValues[idx].fParent = nil
+		}
+		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
 }
@@ -171,6 +214,10 @@ func (arr *DxArray)SetFloat(idx int,value float32)  {
 		dv := new(DxFloatValue)
 		dv.fValueType = DVT_Float
 		dv.fvalue = value
+		if arr.fValues[idx] != nil{
+			arr.fValues[idx].fParent = nil
+		}
+		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
 }
@@ -183,66 +230,51 @@ func (arr *DxArray)SetDouble(idx int,value float64)  {
 		dv := new(DxDoubleValue)
 		dv.fValueType = DVT_Double
 		dv.fvalue = value
+		if arr.fValues[idx] != nil{
+			arr.fValues[idx].fParent = nil
+		}
+		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
 }
 
-func (arr *DxArray)SetArray(idx int,value *DxArray,isbyref bool)  {
+func (arr *DxArray)SetArray(idx int,value *DxArray)  {
+	if value != nil && value.fParent != nil {
+		panic("Must Set A Single Array(no Parent)")
+	}
 	arr.ifNilInitArr2idx(idx)
-	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Array{
-		arr := (*DxArray)(unsafe.Pointer(arr.fValues[idx]))
-		if !isbyref{
-			if value.fValues == nil ||  len(value.fValues) == 0{
-				arr.ClearValue()
-			}else{
-				if arr.fValues == nil{
-					arr.fValues = make([]*DxBaseValue,len(value.fValues))
-				}
-				copy(arr.fValues,value.fValues)
-			}
-		}else{
+	if arr.fValues[idx] != nil{
+		if arr.fValues[idx].fValueType == DVT_Array{
+			arr := (*DxArray)(unsafe.Pointer(arr.fValues[idx]))
+			arr.fParent = nil
 			*arr=*value
+			arr.fParent = &arr.DxBaseValue
+			return
 		}
-	}else if isbyref{
-		arr.fValues[idx] = &value.DxBaseValue
-	} else{
-		dv := new(DxArray)
-		dv.fValueType = DVT_Array
-		if value.fValues!= nil && len(value.fValues)!=0{
-			arr.fValues = make([]*DxBaseValue,len(value.fValues))
-			copy(arr.fValues,value.fValues)
-		}
+		arr.fValues[idx].fParent = nil
 	}
+	arr.fValues[idx] = &value.DxBaseValue
+	arr.fValues[idx].fParent = &arr.DxBaseValue
 }
 
 
-func (arr *DxArray)SetRecord(idx int,value *DxRecord,isbyref bool)  {
-	arr.ifNilInitArr2idx(idx)
-	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Record{
-		if isbyref{
-			*(*DxRecord)(unsafe.Pointer(arr.fValues[idx])) = *value
-		}else{
-			rec := (*DxRecord)(unsafe.Pointer(arr.fValues[idx]))
-			rec.ClearValue()
-			if value.fRecords != nil && len(value.fRecords) > 0{
-				for k,v := range value.fRecords{
-					rec.fRecords[k] = v
-				}
-			}
-		}
-	}else if isbyref{
-		arr.fValues[idx] = &value.DxBaseValue
-	}else {
-		dv := new(DxRecord)
-		dv.fValueType = DVT_Record
-		dv.fRecords = make(map[string]*DxBaseValue,32)
-		if value.fRecords != nil && len(value.fRecords) > 0{
-			for k,v := range value.fRecords{
-				dv.fRecords[k] = v
-			}
-		}
-		arr.fValues[idx] = &dv.DxBaseValue
+func (arr *DxArray)SetRecord(idx int,value *DxRecord)  {
+	if value != nil && value.fParent != nil {
+		panic("Must Set A Single Record(no Parent)")
 	}
+	arr.ifNilInitArr2idx(idx)
+	if arr.fValues[idx] != nil{
+		if arr.fValues[idx].fValueType == DVT_Record{
+			rec := (*DxRecord)(unsafe.Pointer(arr.fValues[idx]))
+			rec.fParent = nil
+			*rec = *value
+			rec.fParent = &arr.DxBaseValue
+			return
+		}
+		arr.fValues[idx].fParent = nil
+	}
+	arr.fValues[idx] = &value.DxBaseValue
+	arr.fValues[idx].fParent = &arr.DxBaseValue
 }
 
 func (arr *DxArray)SetBinary(idx int,bt []byte)  {
@@ -253,6 +285,10 @@ func (arr *DxArray)SetBinary(idx int,bt []byte)  {
 		dv := new(DxBinaryValue)
 		dv.fValueType = DVT_Binary
 		dv.SetBinary(bt,true)
+		if arr.fValues[idx] != nil{
+			arr.fValues[idx].fParent = nil
+		}
+		dv.fParent = &arr.DxBaseValue
 		arr.fValues[idx] = &dv.DxBaseValue
 	}
 }
@@ -317,13 +353,34 @@ func (arr *DxArray)SetValue(idx int,value interface{})  {
 	case *float64:
 		arr.SetDouble(idx, *value)
 	case *DxRecord:
-		arr.SetRecord(idx, value,true)
+		arr.SetRecord(idx, value)
 	case DxRecord:
-		arr.SetRecord(idx, &value,true)
+		arr.SetRecord(idx, &value)
+	case DxArray:
+		arr.SetArray(idx,&value)
+	case *DxArray:
+		arr.SetArray(idx,value)
+	case DxInt64Value: arr.SetInt64(idx,value.fvalue)
+	case *DxInt64Value: arr.SetInt64(idx,value.fvalue)
+	case DxInt32Value: arr.SetInt32(idx,value.fvalue)
+	case *DxInt32Value: arr.SetInt32(idx,value.fvalue)
+	case DxFloatValue: arr.SetFloat(idx,value.fvalue)
+	case *DxFloatValue: arr.SetFloat(idx,value.fvalue)
+	case DxDoubleValue: arr.SetDouble(idx,value.fvalue)
+	case *DxDoubleValue: arr.SetDouble(idx,value.fvalue)
+	case DxBoolValue: arr.SetBool(idx,value.fvalue)
+	case *DxBoolValue: arr.SetBool(idx,value.fvalue)
+	case DxIntValue: arr.SetInt(idx,value.fvalue)
+	case *DxIntValue: arr.SetInt(idx,value.fvalue)
+	case DxStringValue: arr.SetString(idx,value.fvalue)
+	case *DxStringValue: arr.SetString(idx,value.fvalue)
+	case DxBinaryValue:  arr.SetBinary(idx,value.Bytes())
+	case *DxBinaryValue:  arr.SetBinary(idx,value.Bytes())
 	default:
 		reflectv := reflect.ValueOf(value)
 		rv := getRealValue(&reflectv)
 		if rv == nil{
+			arr.SetNull(idx)
 			return
 		}
 		switch rv.Kind(){
@@ -370,7 +427,6 @@ func (arr *DxArray)SetValue(idx int,value interface{})  {
 			rvalue := rv.MapIndex(mapkeys[0])
 			//获得Value类型
 			valueKind := getBaseType(rvalue.Type())
-			fmt.Println(valueKind)
 			for _,kv = range mapkeys{
 				rvalue = rv.MapIndex(kv)
 				prvalue := getRealValue(&rvalue)
@@ -397,7 +453,33 @@ func (arr *DxArray)SetValue(idx int,value interface{})  {
 					}
 				}
 			}
-		case reflect.Array:
+		case reflect.Array,reflect.Slice:
+			carr := arr.NewArray(idx)
+			vlen := rv.Len()
+			for i := 0;i< vlen;i++{
+				av := rv.Index(i)
+				arrvalue := getRealValue(&av)
+				switch arrvalue.Kind() {
+				case reflect.Int,reflect.Uint32:
+					carr.SetInt(i,int(arrvalue.Int()))
+				case reflect.Bool:
+					carr.SetBool(i,arrvalue.Bool())
+				case reflect.Int64:
+					carr.SetInt64(i,arrvalue.Int())
+				case reflect.Int32,reflect.Int8,reflect.Int16,reflect.Uint8,reflect.Uint16:
+					carr.SetInt32(i,int32(arrvalue.Int()))
+				case reflect.Float32:
+					carr.SetFloat(i,float32(arrvalue.Float()))
+				case reflect.Float64:
+					carr.SetDouble(i,arrvalue.Float())
+				case reflect.String:
+					carr.SetString(i,arrvalue.String())
+				default:
+					if arrvalue.CanInterface(){
+						carr.SetValue(i,arrvalue.Interface())
+					}
+				}
+			}
 		}
 	}
 }
@@ -406,12 +488,29 @@ func (arr *DxArray)ToString()string  {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 	if arr.fValues != nil{
+		isFirst := true
 		for i := 0;i<len(arr.fValues);i++{
-
+			av := arr.fValues[i]
+			if !isFirst{
+				buf.WriteByte(',')
+			}else{
+				isFirst = false
+			}
+			if av == nil{
+				buf.WriteString("null")
+			}else{
+				if av.fValueType == DVT_String || av.fValueType == DVT_Binary{
+					buf.WriteByte('"')
+				}
+				buf.WriteString(av.ToString())
+				if av.fValueType == DVT_String || av.fValueType == DVT_Binary{
+					buf.WriteByte('"')
+				}
+			}
 		}
 	}
 	buf.WriteByte(']')
-	return string(buf.Bytes())
+	return DxCommonLib.FastByte2String(buf.Bytes())
 }
 
 func NewArray()*DxArray  {

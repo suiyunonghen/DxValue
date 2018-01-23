@@ -42,6 +42,10 @@ func main()  {
 	fmt.Println(mrec.ToString())
 	//json.Marshal()
 
+	mrec.ClearValue()
+	mrec.ForcePath("DxSoft.Name","不得闲")
+	fmt.Println(mrec.ToString())
+
 	ma := DxValue.NewArray()
 	ma.SetInt(1,20)
 	ma.SetInt(4,12)

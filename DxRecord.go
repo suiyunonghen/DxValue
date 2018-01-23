@@ -10,7 +10,8 @@ import (
 	"unsafe"
 	"bytes"
 	"reflect"
-	"fmt"
+	"github.com/suiyunonghen/DxCommonLib"
+	"strings"
 )
 
 /******************************************************
@@ -19,27 +20,67 @@ import (
 type  DxRecord		struct{
 	DxBaseValue
 	fRecords		map[string]*DxBaseValue
+	PathSplitChar	byte
 }
 
 
 func (r *DxRecord)ClearValue()  {
-	r.fRecords = make(map[string]*DxBaseValue,32)
+	if r.fRecords != nil{
+		for _,v := range r.fRecords{
+			v.ClearValue()
+			v.fParent = nil
+		}
+	}
+	if r.fRecords == nil || len(r.fRecords) > 0{
+		r.fRecords = make(map[string]*DxBaseValue,32)
+	}
 }
 
+func (r *DxRecord)splitPathFields(charrune rune) bool {
+	return charrune == rune(r.PathSplitChar)
+}
 
 func (r *DxRecord)NewRecord(keyName string)(rec *DxRecord)  {
 	if value,ok := r.fRecords[keyName];ok && value != nil{
 		if value.fValueType == DVT_Record{
 			rec = (*DxRecord)(unsafe.Pointer(value))
 			rec.ClearValue()
+			rec.fParent = &r.DxBaseValue
 			return
 		}
+		value.fParent = nil
 	}
 	rec = new(DxRecord)
 	rec.fValueType = DVT_Record
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	r.fRecords[keyName] = &rec.DxBaseValue
+	rec.fParent = &r.DxBaseValue
 	return
+}
+
+func (r *DxRecord)Find(keyName string)*DxBaseValue  {
+	if v,ok := r.fRecords[keyName];ok{
+		return v
+	}
+	return nil
+}
+
+func (r *DxRecord)ForcePath(path string,v interface{}) {
+	fields := strings.FieldsFunc(path,r.splitPathFields)
+	vlen := len(fields)
+	if vlen == 0{
+		return
+	}
+	rec := r
+	for i := 0;i<vlen - 1;i++{
+		vbase := rec.Find(fields[i])
+		if vbase != nil && vbase.fValueType == DVT_Record{
+			rec = (*DxRecord)(unsafe.Pointer(vbase))
+		}else{
+			rec = rec.NewRecord(fields[i])
+		}
+	}
+	rec.SetValue(fields[vlen - 1],v)
 }
 
 func (r *DxRecord)NewArray(keyName string)(arr *DxArray)  {
@@ -47,11 +88,14 @@ func (r *DxRecord)NewArray(keyName string)(arr *DxArray)  {
 		if value.fValueType == DVT_Array{
 			arr = (*DxArray)(unsafe.Pointer(value))
 			arr.ClearValue()
+			arr.fParent = &r.DxBaseValue
 			return
 		}
+		value.fParent = nil
 	}
 	arr = new(DxArray)
 	arr.fValueType = DVT_Array
+	arr.fParent = &r.DxBaseValue
 	r.fRecords[keyName] = &arr.DxBaseValue
 	return
 }
@@ -62,10 +106,12 @@ func (r *DxRecord)SetInt(KeyName string,v int)  {
 			(*DxIntValue)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
+		value.fParent = nil
 	}
 	var m DxIntValue
 	m.fvalue = v
 	m.fValueType = DVT_Int
+	m.fParent = &r.DxBaseValue
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
@@ -75,10 +121,12 @@ func (r *DxRecord)SetInt32(KeyName string,v int32)  {
 			(*DxInt32Value)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
+		value.fParent = nil
 	}
 	var m DxInt32Value
 	m.fvalue = v
 	m.fValueType = DVT_Int32
+	m.fParent = &r.DxBaseValue
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
@@ -89,10 +137,12 @@ func (r *DxRecord)SetInt64(KeyName string,v int64)  {
 			(*DxInt64Value)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
+		value.fParent = nil
 	}
 	var m DxInt64Value
 	m.fvalue = v
 	m.fValueType = DVT_Int64
+	m.fParent = &r.DxBaseValue
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
@@ -102,9 +152,11 @@ func (r *DxRecord)SetBool(KeyName string,v bool)  {
 			(*DxBoolValue)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
+		value.fParent = nil
 	}
 	var m DxBoolValue
 	m.fvalue = v
+	m.fParent = &r.DxBaseValue
 	m.fValueType = DVT_Bool
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
@@ -115,9 +167,11 @@ func (r *DxRecord)SetFloat(KeyName string,v float32)  {
 			(*DxFloatValue)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
+		value.fParent = nil
 	}
 	var m DxFloatValue
 	m.fvalue = v
+	m.fParent = &r.DxBaseValue
 	m.fValueType = DVT_Float
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
@@ -128,12 +182,16 @@ func (r *DxRecord)SetDouble(KeyName string,v float64)  {
 			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
+		value.fParent = nil
 	}
 	var m DxDoubleValue
 	m.fvalue = v
+	m.fParent = &r.DxBaseValue
 	m.fValueType = DVT_Double
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
+
+
 
 func (r *DxRecord)SetString(KeyName string,v string)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
@@ -141,10 +199,12 @@ func (r *DxRecord)SetString(KeyName string,v string)  {
 			(*DxStringValue)(unsafe.Pointer(value)).fvalue = v
 			return
 		}
+		value.fParent = nil
 	}
 	var m DxStringValue
 	m.fvalue = v
 	m.fValueType = DVT_String
+	m.fParent = &r.DxBaseValue
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
@@ -159,9 +219,11 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 			}
 			return
 		}
+		value.fParent = nil
 	}
 	var m DxBinaryValue
 	m.Append(v)
+	m.fParent = &r.DxBaseValue
 	m.fValueType = DVT_Binary
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
@@ -169,6 +231,34 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 func (r *DxRecord)AsBytes(keyName string)[]byte  {
 	if value,ok := r.fRecords[keyName];ok && value != nil{
 		return value.Bytes()
+	}
+	return nil
+}
+
+func (r *DxRecord)findPathNode(path string)(rec *DxRecord,keyName string)  {
+	fields := strings.FieldsFunc(path,r.splitPathFields)
+	vlen := len(fields)
+	if vlen == 0{
+		return nil,""
+	}
+	rec = r
+	for i := 0;i < vlen - 1;i++{
+		vbase := rec.Find(fields[i])
+		if vbase != nil && vbase.fValueType == DVT_Record{
+			rec = (*DxRecord)(unsafe.Pointer(vbase))
+		}else{
+			return nil,""
+		}
+	}
+	return rec,fields[vlen - 1]
+}
+
+func (r *DxRecord)AsBytesByPath(Path string)[]byte  {
+	rec,keyName := r.findPathNode(Path)
+	if rec != nil {
+		if keyName != ""{
+			return rec.AsBytes(keyName)
+		}
 	}
 	return nil
 }
@@ -195,63 +285,44 @@ func getRealValue(v *reflect.Value)*reflect.Value  {
 	return v
 }
 
-func (r *DxRecord)SetRecordValue(keyName string,v *DxRecord,isbyref bool)  {
-	if value,ok := r.fRecords[keyName];ok && value != nil{
-		if value.fValueType == DVT_Record{
+
+func (r *DxRecord)SetRecordValue(keyName string,v *DxRecord) {
+	if v != nil && v.fParent != nil {
+		panic("Must Set A Single Record(no Parent)")
+	}
+	if value, ok := r.fRecords[keyName]; ok && value != nil {
+		if  value.fValueType == DVT_Record {
 			nrec := (*DxRecord)(unsafe.Pointer(value))
-			if isbyref{
-				nrec.fRecords = v.fRecords
-			}else if v.fRecords == nil || len(v.fRecords) == 0{
-				nrec.fRecords = nil
-			}else{
-				nrec.ClearValue()
-				for k,v := range v.fRecords{
-					nrec.fRecords[k] = v
-				}
-			}
+			nrec.fParent = nil
+			*nrec = *v
+			nrec.fParent = &r.DxBaseValue
 			return
 		}
+		value.fParent = nil
 	}
-	if isbyref{
+	if v != nil {
 		r.fRecords[keyName] = &v.DxBaseValue
-	}else{
-		nrec := r.NewRecord(keyName)
-		nrec.ClearValue()
-		for k,v := range v.fRecords{
-			nrec.fRecords[k] = v
-		}
+		v.fParent = &r.DxBaseValue
 	}
 }
 
-func (r *DxRecord)SetArray(KeyName string,v *DxArray,copyarr bool)  {
+func (r *DxRecord)SetArray(KeyName string,v *DxArray)  {
+	if v != nil && v.fParent != nil {
+		panic("Must Set A Single Array(no Parent)")
+	}
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		if value.fValueType == DVT_Array{
 			arr := (*DxArray)(unsafe.Pointer(value))
-			if copyarr{
-				if v.fValues == nil ||  len(v.fValues) == 0{
-					arr.ClearValue()
-				}else{
-					if arr.fValues == nil{
-						arr.fValues = make([]*DxBaseValue,len(v.fValues))
-					}
-					copy(arr.fValues,v.fValues)
-				}
-			}else{
-				*arr=*v
-			}
+			arr.fParent = nil
+			*arr = *v
+			arr.fParent = &r.DxBaseValue
 			return
 		}
+		value.fParent = nil
 	}
-	if !copyarr{
+	if v!=nil{
 		r.fRecords[KeyName] = &v.DxBaseValue
-	}else{
-		arr := r.NewArray(KeyName)
-		if v.fValues == nil ||  len(v.fValues) == 0{
-			arr.ClearValue()
-		}else if v.fValues!= nil && len(v.fValues)!=0{
-			arr.fValues = make([]*DxBaseValue,len(v.fValues))
-			copy(arr.fValues,v.fValues)
-		}
+		v.fParent = &r.DxBaseValue
 	}
 }
 
@@ -287,12 +358,33 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 	case float64: r.SetDouble(keyName,value)
 	case *float32: r.SetFloat(keyName,*value)
 	case *float64: r.SetDouble(keyName,*value)
-	case *DxRecord: r.SetRecordValue(keyName,value,true)
-	case DxRecord: r.SetRecordValue(keyName,&value,true)
+	case *DxRecord: r.SetRecordValue(keyName,value)
+	case DxRecord: r.SetRecordValue(keyName,&value)
+	case DxArray:  r.SetArray(keyName,&value)
+	case *DxArray: r.SetArray(keyName,value)
+	case DxInt64Value: r.SetInt64(keyName,value.fvalue)
+	case *DxInt64Value: r.SetInt64(keyName,value.fvalue)
+	case DxInt32Value: r.SetInt32(keyName,value.fvalue)
+	case *DxInt32Value: r.SetInt32(keyName,value.fvalue)
+	case DxFloatValue: r.SetFloat(keyName,value.fvalue)
+	case *DxFloatValue: r.SetFloat(keyName,value.fvalue)
+	case DxDoubleValue: r.SetDouble(keyName,value.fvalue)
+	case *DxDoubleValue: r.SetDouble(keyName,value.fvalue)
+	case DxBoolValue: r.SetBool(keyName,value.fvalue)
+	case *DxBoolValue: r.SetBool(keyName,value.fvalue)
+	case DxIntValue: r.SetInt(keyName,value.fvalue)
+	case *DxIntValue: r.SetInt(keyName,value.fvalue)
+	case DxStringValue: r.SetString(keyName,value.fvalue)
+	case *DxStringValue: r.SetString(keyName,value.fvalue)
+	case DxBinaryValue:  r.SetBinary(keyName,value.Bytes(),true)
+	case *DxBinaryValue:  r.SetBinary(keyName,value.Bytes(),true)
 	default:
 		reflectv := reflect.ValueOf(v)
 		rv := getRealValue(&reflectv)
 		if rv == nil{
+			if _,ok := r.fRecords[keyName];!ok{
+				r.fRecords[keyName] = nil
+			}
 			return
 		}
 		switch rv.Kind(){
@@ -339,7 +431,6 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 			rvalue := rv.MapIndex(mapkeys[0])
 			//获得Value类型
 			valueKind := getBaseType(rvalue.Type())
-			fmt.Println(valueKind)
 			for _,kv = range mapkeys{
 				rvalue = rv.MapIndex(kv)
 				prvalue := getRealValue(&rvalue)
@@ -366,7 +457,33 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 					}
 				}
 			}
-		case reflect.Array:
+		case reflect.Slice,reflect.Array:
+			arr := r.NewArray(keyName)
+			vlen := rv.Len()
+			for i := 0;i< vlen;i++{
+				av := rv.Index(i)
+				arrvalue := getRealValue(&av)
+				switch arrvalue.Kind() {
+				case reflect.Int,reflect.Uint32:
+					arr.SetInt(i,int(arrvalue.Int()))
+				case reflect.Bool:
+					arr.SetBool(i,arrvalue.Bool())
+				case reflect.Int64:
+					arr.SetInt64(i,arrvalue.Int())
+				case reflect.Int32,reflect.Int8,reflect.Int16,reflect.Uint8,reflect.Uint16:
+					arr.SetInt32(i,int32(arrvalue.Int()))
+				case reflect.Float32:
+					arr.SetFloat(i,float32(arrvalue.Float()))
+				case reflect.Float64:
+					arr.SetDouble(i,arrvalue.Float())
+				case reflect.String:
+					arr.SetString(i,arrvalue.String())
+				default:
+					if arrvalue.CanInterface(){
+						arr.SetValue(i,arrvalue.Interface())
+					}
+				}
+			}
 		}
 	}
 }
@@ -400,6 +517,22 @@ func (r *DxRecord)AsInt32(KeyName string)int32  {
 	return 0
 }
 
+func (r *DxRecord)AsInt32ByPath(path string)int32  {
+	rec,keyName := r.findPathNode(path)
+	if rec != nil && keyName != ""{
+		return rec.AsInt32(keyName)
+	}
+	return 0
+}
+
+func (r *DxRecord)AsIntByPath(path string)int  {
+	rec,keyName := r.findPathNode(path)
+	if rec != nil && keyName != ""{
+		return rec.AsInt(keyName)
+	}
+	return 0
+}
+
 func (r *DxRecord)AsInt(KeyName string)int  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
@@ -417,6 +550,14 @@ func (r *DxRecord)AsInt(KeyName string)int  {
 		default:
 			panic("can not convert Type to int")
 		}
+	}
+	return 0
+}
+
+func (r *DxRecord)AsInt64ByPath(path string)int64  {
+	rec,keyName := r.findPathNode(path)
+	if rec != nil && keyName != ""{
+		return rec.AsInt64(keyName)
 	}
 	return 0
 }
@@ -442,6 +583,14 @@ func (r *DxRecord)AsInt64(KeyName string)int64  {
 	return 0
 }
 
+func (r *DxRecord)AsBoolByPath(path string)bool  {
+	rec,keyName := r.findPathNode(path)
+	if rec != nil && keyName != ""{
+		return rec.AsBool(keyName)
+	}
+	return false
+}
+
 func (r *DxRecord)AsBool(KeyName string)bool  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
@@ -458,6 +607,14 @@ func (r *DxRecord)AsBool(KeyName string)bool  {
 	return false
 }
 
+
+func (r *DxRecord)AsFloatByPath(path string)float32  {
+	rec,keyName := r.findPathNode(path)
+	if rec != nil && keyName != ""{
+		return rec.AsFloat(keyName)
+	}
+	return 0
+}
 
 func (r *DxRecord)AsFloat(KeyName string)float32  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
@@ -480,6 +637,14 @@ func (r *DxRecord)AsFloat(KeyName string)float32  {
 }
 
 
+func (r *DxRecord)AsDoubleByPath(path string)float64  {
+	rec,keyName := r.findPathNode(path)
+	if rec != nil && keyName != ""{
+		return rec.AsDouble(keyName)
+	}
+	return 0
+}
+
 func (r *DxRecord)AsDouble(KeyName string)float64  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		switch value.fValueType {
@@ -500,11 +665,27 @@ func (r *DxRecord)AsDouble(KeyName string)float64  {
 	return 0
 }
 
+func (r *DxRecord)AsStringByPath(path string)string  {
+	rec,keyName := r.findPathNode(path)
+	if rec != nil && keyName != ""{
+		return rec.AsString(keyName)
+	}
+	return ""
+}
+
 func (r *DxRecord)AsString(KeyName string)string  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		return value.ToString()
 	}
 	return ""
+}
+
+func (r *DxRecord)AsRecordByPath(path string)*DxRecord  {
+	rec,keyName := r.findPathNode(path)
+	if rec != nil && keyName != ""{
+		return rec.AsRecord(keyName)
+	}
+	return nil
 }
 
 func (r *DxRecord)AsRecord(KeyName string)*DxRecord  {
@@ -531,23 +712,24 @@ func (r *DxRecord)ToString()string  {
 		buffer.WriteString(`":`)
 		if v != nil{
 			vt := v.fValueType
-			if vt == DVT_String{
+			if vt == DVT_String || vt == DVT_Binary{
 				buffer.WriteByte('"')
 			}
 			buffer.WriteString(v.ToString())
-			if vt == DVT_String{
+			if vt == DVT_String || vt == DVT_Binary{
 				buffer.WriteByte('"')
 			}
 		}else{
-			buffer.WriteString("NULL")
+			buffer.WriteString("null")
 		}
 	}
 	buffer.WriteByte('}')
-	return string(buffer.Bytes())
+	return DxCommonLib.FastByte2String(buffer.Bytes())
 }
 
 func NewRecord()*DxRecord  {
 	result := new(DxRecord)
+	result.PathSplitChar = '.'
 	result.fValueType = DVT_Record
 	result.fRecords = make(map[string]*DxBaseValue,32)
 	return result

@@ -18,6 +18,7 @@ type(
 	DxBinaryEncodeType		uint8
 	IDxValue			interface{
 		ValueType()DxValueType
+		CanParent()bool
 	}
 	IDxIntValue			interface{
 		AsInt32()int32
@@ -34,6 +35,7 @@ type(
 
 	DxBaseValue			struct{
 		fValueType		DxValueType
+		fParent			*DxBaseValue
 	}
 
 
@@ -104,6 +106,22 @@ func (v DxBaseValue)ValueType()DxValueType  {
 	return v.fValueType
 }
 
+func (v *DxBaseValue)CanParent()bool  {
+	return v.fValueType == DVT_Record || v.fValueType == DVT_Array
+}
+
+func (v *DxBaseValue)Parent()*DxBaseValue  {
+	return v.fParent
+}
+
+func (v *DxBaseValue)ClearValue()  {
+	switch v.fValueType {
+	case DVT_Record: (*DxRecord)(unsafe.Pointer(v)).ClearValue()
+	case DVT_Binary: (*DxBinaryValue)(unsafe.Pointer(v)).ClearValue()
+	case DVT_Array:  (*DxArray)(unsafe.Pointer(v)).ClearValue()
+	}
+}
+
 func (v *DxBaseValue)ToString()string  {
 	switch v.fValueType {
 	case DVT_String:
@@ -125,7 +143,7 @@ func (v *DxBaseValue)ToString()string  {
 	case DVT_Int64:
 		return (*DxInt64Value)(unsafe.Pointer(v)).ToString()
 	case DVT_Array:
-		return ""
+		return (*DxArray)(unsafe.Pointer(v)).ToString()
 	default:
 		return ""
 	}
@@ -235,6 +253,8 @@ func (v *DxStringValue)ToString()string  {
 func (v *DxStringValue)Bytes()[]byte  {
 	return ([]byte)(v.fvalue)
 }
+
+
 
 func (v *DxBinaryValue)ValueType()DxValueType  {
 	return DVT_Binary
