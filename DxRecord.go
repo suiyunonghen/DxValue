@@ -778,7 +778,7 @@ func (r *DxRecord)AsRecord(KeyName string)*DxRecord  {
 
 func (r *DxRecord)AsArray(KeyName string)*DxArray  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
-		if value.fValueType == DVT_Record{
+		if value.fValueType == DVT_Array{
 			return (*DxArray)(unsafe.Pointer(value))
 		}
 		panic("not Array Value")

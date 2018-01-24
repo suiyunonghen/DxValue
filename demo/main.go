@@ -37,9 +37,9 @@ var err error
 	crec.SetString("Mother","ParentM")
 
 
-	finfo,_ := os.Stat("D:\\test.json")
+	finfo,_ := os.Stat("f:\\DataProxy.config.json")
 
-	if file,err := os.Open("D:\\test.json");err == nil {
+	if file,err := os.Open("f:\\DataProxy.config.json");err == nil {
 
 		databytes := make([]byte, finfo.Size())
 		file.Read(databytes)
