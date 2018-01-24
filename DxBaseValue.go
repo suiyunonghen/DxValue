@@ -103,7 +103,8 @@ const(
 )
 
 var (
-	ValueTypeError = errors.New("Value Data Type not Match")
+	ErrValueType = errors.New("Value Data Type not Match")
+	ErrInvalidateJson = errors.New("Is not a Validate Json format")
 )
 func (v DxBaseValue)ValueType()DxValueType  {
 	return v.fValueType
@@ -131,7 +132,7 @@ func (v *DxBaseValue)AsInt()(int,error){
 	case DVT_String:
 		return  strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 	default:
-		return 0,ValueTypeError
+		return 0,ErrValueType
 	}
 }
 
@@ -152,7 +153,7 @@ func (v *DxBaseValue)AsBool()(bool,error){
 	case DVT_String:
 		return strings.ToUpper((*DxStringValue)(unsafe.Pointer(v)).fvalue)== "TRUE",nil
 	default:
-		return false,ValueTypeError
+		return false,ErrValueType
 	}
 }
 
@@ -179,7 +180,7 @@ func (v *DxBaseValue)AsInt32()(int32,error){
 		rv,err := strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 		return int32(rv),err
 	default:
-		return 0,ValueTypeError
+		return 0,ErrValueType
 	}
 }
 
@@ -206,7 +207,7 @@ func (v *DxBaseValue)AsInt64()(int64,error){
 		rv,err := strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 		return int64(rv),err
 	default:
-		return 0,ValueTypeError
+		return 0,ErrValueType
 	}
 }
 
@@ -214,14 +215,14 @@ func (v *DxBaseValue)AsArray()(*DxArray,error){
 	if v.fValueType == DVT_Array{
 		return (*DxArray)(unsafe.Pointer(v)),nil
 	}
-	return nil,ValueTypeError
+	return nil,ErrValueType
 }
 
 func (v *DxBaseValue)AsRecord()(*DxRecord,error){
 	if v.fValueType == DVT_Record{
 		return (*DxRecord)(unsafe.Pointer(v)),nil
 	}
-	return nil,ValueTypeError
+	return nil,ErrValueType
 }
 
 func (v *DxBaseValue)AsString()string{
@@ -251,7 +252,7 @@ func (v *DxBaseValue)AsFloat()(float32,error){
 		rv,err := strconv.ParseFloat((*DxStringValue)(unsafe.Pointer(v)).fvalue,32)
 		return float32(rv),err
 	default:
-		return 0,ValueTypeError
+		return 0,ErrValueType
 	}
 }
 
@@ -278,7 +279,7 @@ func (v *DxBaseValue)AsDouble()(float64,error){
 		rv,err := strconv.ParseFloat((*DxStringValue)(unsafe.Pointer(v)).fvalue,64)
 		return rv,err
 	default:
-		return 0,ValueTypeError
+		return 0,ErrValueType
 	}
 }
 
@@ -485,4 +486,8 @@ func (v *DxBinaryValue)SetBinary(b []byte,reSet bool)  {
 
 func (v *DxBinaryValue)Bytes()[]byte  {
 	return v.fbinary
+}
+
+func IsSpace(b byte)bool  {
+	return b == ' ' || b == '\r' || b == '\n' || b == '\t'
 }

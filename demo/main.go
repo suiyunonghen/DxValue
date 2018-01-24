@@ -22,12 +22,20 @@ func main()  {
 	fmt.Println(string(mbt))
 
 	mrec := DxValue.NewRecord()
+	_,err := mrec.JsonParserFromByte([]byte(`{"DxSoft":{"Name":"不得闲"},"Age":32,"Name":true,"testArray":["gg",23,"gasdf"]}`))//
+	if err != nil{
+		panic(err)
+	}
+	fmt.Println(mrec.ToString())
+
 	mrec.SetValue("Name","DxSoft")
 	mrec.SetValue("Age",23)
 	mrec.SetString("Sex","男")
 	crec := mrec.NewRecord("Home")
 	crec.SetString("Father","ParentF")
 	crec.SetString("Mother","ParentM")
+
+
 
 	mp := make(map[string]*DxPeople,6)
 	father := new(DxPeople)
@@ -47,6 +55,13 @@ func main()  {
 	fmt.Println(mrec.ToString())
 
 	ma := DxValue.NewArray()
+
+	_,err = ma.JsonParserFromByte([]byte(`[null,["gg",23,"gasdf"],20,null ,null ,12,{ "Name": "不得闲" }]`))
+	if err != nil{
+		panic(err)
+	}
+	fmt.Println(ma.ToString())
+
 	ma.SetInt(1,20)
 	ma.SetInt(4,12)
 	fmt.Println(ma.ToString())

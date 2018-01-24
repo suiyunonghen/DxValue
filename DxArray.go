@@ -11,6 +11,9 @@ import (
 	"bytes"
 	"reflect"
 	"github.com/suiyunonghen/DxCommonLib"
+	"math"
+	"strconv"
+	"strings"
 )
 
 /******************************************************
@@ -208,50 +211,84 @@ func (arr *DxArray)AsInt64(idx int,defValue int64)int64  {
 
 func (arr *DxArray)SetInt(idx,value int)  {
 	arr.ifNilInitArr2idx(idx)
-	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Int{
-		(*DxIntValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
-	}else{
-		dv := new(DxIntValue)
-		dv.fValueType = DVT_Int
-		dv.fvalue = value
-		if arr.fValues[idx] != nil{
-			arr.fValues[idx].fParent = nil
+	if arr.fValues[idx] != nil {
+		switch arr.fValues[idx].fValueType {
+		case DVT_Int:
+			(*DxIntValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
+			return
+		case DVT_Int32:
+			if value <= math.MaxInt32 && value >= math.MinInt32{
+				(*DxInt32Value)(unsafe.Pointer(arr.fValues[idx])).fvalue = int32(value)
+				return
+			}
+		case DVT_Int64:
+			(*DxInt64Value)(unsafe.Pointer(arr.fValues[idx])).fvalue = int64(value)
+			return
 		}
-		dv.fParent = &arr.DxBaseValue
-		arr.fValues[idx] = &dv.DxBaseValue
 	}
+
+	dv := new(DxIntValue)
+	dv.fValueType = DVT_Int
+	dv.fvalue = value
+	if arr.fValues[idx] != nil{
+		arr.fValues[idx].fParent = nil
+	}
+	dv.fParent = &arr.DxBaseValue
+	arr.fValues[idx] = &dv.DxBaseValue
 }
 
 func (arr *DxArray)SetInt32(idx int,value int32)  {
 	arr.ifNilInitArr2idx(idx)
-	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Int32{
-		(*DxInt32Value)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
-	}else{
-		dv := new(DxInt32Value)
-		dv.fValueType = DVT_Int32
-		dv.fvalue = value
-		if arr.fValues[idx] != nil{
-			arr.fValues[idx].fParent = nil
+	if arr.fValues[idx] != nil {
+		switch arr.fValues[idx].fValueType {
+		case DVT_Int:
+			(*DxIntValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = int(value)
+			return
+		case DVT_Int32:
+			(*DxInt32Value)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
+			return
+		case DVT_Int64:
+			(*DxInt64Value)(unsafe.Pointer(arr.fValues[idx])).fvalue = int64(value)
+			return
 		}
-		dv.fParent = &arr.DxBaseValue
-		arr.fValues[idx] = &dv.DxBaseValue
 	}
+	dv := new(DxInt32Value)
+	dv.fValueType = DVT_Int32
+	dv.fvalue = value
+	if arr.fValues[idx] != nil{
+		arr.fValues[idx].fParent = nil
+	}
+	dv.fParent = &arr.DxBaseValue
+	arr.fValues[idx] = &dv.DxBaseValue
 }
 
 func (arr *DxArray)SetInt64(idx int,value int64)  {
 	arr.ifNilInitArr2idx(idx)
-	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Int64{
-		(*DxInt64Value)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
-	}else{
-		dv := new(DxInt64Value)
-		dv.fValueType = DVT_Int64
-		dv.fvalue = value
-		if arr.fValues[idx] != nil{
-			arr.fValues[idx].fParent = nil
+	if arr.fValues[idx] != nil{
+		switch arr.fValues[idx].fValueType {
+		case DVT_Int:
+			if DxCommonLib.IsAmd64 || value <= math.MaxInt32 && value >= math.MinInt32{
+				(*DxIntValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = int(value)
+				return
+			}
+		case DVT_Int32:
+			if value <= math.MaxInt32 && value >= math.MinInt32{
+				(*DxInt32Value)(unsafe.Pointer(arr.fValues[idx])).fvalue = int32(value)
+				return
+			}
+		case DVT_Int64:
+			(*DxInt64Value)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
+			return
 		}
-		dv.fParent = &arr.DxBaseValue
-		arr.fValues[idx] = &dv.DxBaseValue
 	}
+	dv := new(DxInt64Value)
+	dv.fValueType = DVT_Int64
+	dv.fvalue = value
+	if arr.fValues[idx] != nil{
+		arr.fValues[idx].fParent = nil
+	}
+	dv.fParent = &arr.DxBaseValue
+	arr.fValues[idx] = &dv.DxBaseValue
 }
 
 func (arr *DxArray)SetBool(idx int,value bool)  {
@@ -312,18 +349,24 @@ func (arr *DxArray)SetString(idx int,value string)  {
 
 func (arr *DxArray)SetFloat(idx int,value float32)  {
 	arr.ifNilInitArr2idx(idx)
-	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Float{
-		(*DxFloatValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
-	}else{
-		dv := new(DxFloatValue)
-		dv.fValueType = DVT_Float
-		dv.fvalue = value
-		if arr.fValues[idx] != nil{
-			arr.fValues[idx].fParent = nil
+	if arr.fValues[idx] != nil {
+		switch arr.fValueType {
+		case DVT_Float:
+			(*DxFloatValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
+			return
+		case DVT_Double:
+			(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = float64(value)
+			return
 		}
-		dv.fParent = &arr.DxBaseValue
-		arr.fValues[idx] = &dv.DxBaseValue
 	}
+	dv := new(DxFloatValue)
+	dv.fValueType = DVT_Float
+	dv.fvalue = value
+	if arr.fValues[idx] != nil{
+		arr.fValues[idx].fParent = nil
+	}
+	dv.fParent = &arr.DxBaseValue
+	arr.fValues[idx] = &dv.DxBaseValue
 }
 
 func (arr *DxArray)AsFloat(idx int,defValue float32)float32  {
@@ -349,18 +392,26 @@ func (arr *DxArray)AsFloat(idx int,defValue float32)float32  {
 
 func (arr *DxArray)SetDouble(idx int,value float64)  {
 	arr.ifNilInitArr2idx(idx)
-	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Double{
-		(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
-	}else{
-		dv := new(DxDoubleValue)
-		dv.fValueType = DVT_Double
-		dv.fvalue = value
-		if arr.fValues[idx] != nil{
-			arr.fValues[idx].fParent = nil
+	if arr.fValues[idx] != nil{
+		switch arr.fValueType {
+		case DVT_Float:
+			if value <= math.MaxFloat32 && value >= math.MinInt32 {
+				(*DxFloatValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = float32(value)
+				return
+			}
+		case DVT_Double:
+			(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
+			return
 		}
-		dv.fParent = &arr.DxBaseValue
-		arr.fValues[idx] = &dv.DxBaseValue
 	}
+	dv := new(DxDoubleValue)
+	dv.fValueType = DVT_Double
+	dv.fvalue = value
+	if arr.fValues[idx] != nil{
+		arr.fValues[idx].fParent = nil
+	}
+	dv.fParent = &arr.DxBaseValue
+	arr.fValues[idx] = &dv.DxBaseValue
 }
 
 func (arr *DxArray)AsDouble(idx int,defValue float64)float64  {
@@ -677,6 +728,115 @@ func (arr *DxArray)Bytes()[]byte  {
 	}
 	buf.WriteByte(']')
 	return buf.Bytes()
+}
+
+func (arr *DxArray)parserValue(idx int, b []byte)(parserlen int, err error)  {
+	i := 0;
+	btlen := len(b)
+	for i < btlen{
+		if !IsSpace(b[i]){
+			switch b[i] {
+			case '[':
+				narr := NewArray()
+				if parserlen,err = narr.JsonParserFromByte(b[i:]);err!=nil{
+					return
+				}
+				arr.SetArray(idx,narr)
+				parserlen += 1
+				return
+			case '{':
+				rec := NewRecord()
+				if parserlen,err = rec.JsonParserFromByte(b[i:]);err != nil{
+					return
+				}
+				arr.SetRecord(idx,rec)
+				parserlen += 1
+				return
+
+			case ',',']':
+				bvalue := bytes.Trim(b[:i]," \r\n\t")
+				if len(bvalue) == 0{
+					return i,ErrInvalidateJson
+				}
+				if bytes.IndexByte(bvalue,'.') > -1{
+					if vf,err := strconv.ParseFloat(DxCommonLib.FastByte2String(bvalue),64);err!=nil{
+						return i,ErrInvalidateJson
+					}else{
+						arr.SetDouble(idx,vf)
+					}
+				}else{
+					st := DxCommonLib.FastByte2String(bvalue)
+					if st == "true" || strings.ToUpper(st) == "TRUE"{
+						arr.SetBool(idx,true)
+					}else if st == "false" || strings.ToUpper(st) == "FALSE"{
+						arr.SetBool(idx,false)
+					}else if st == "null" || strings.ToUpper(st) == "NULL"{
+						arr.SetNull(idx)
+					}else{
+						if vf,err := strconv.Atoi(st);err!=nil{
+							return i,ErrInvalidateJson
+						}else{
+							arr.SetInt(idx,vf)
+						}
+					}
+				}
+				return i,nil
+			case '"':
+				plen := bytes.IndexByte(b[i+1:btlen],'"')
+				if plen > -1{
+					st := DxCommonLib.FastByte2String(b[i+1:plen+i+1])
+					arr.SetString(idx,st)
+					return plen + i + 2,nil
+				}
+				return i,ErrInvalidateJson
+			}
+		}
+		i++
+	}
+	return btlen,ErrInvalidateJson
+}
+
+func (arr *DxArray)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)  {
+	btlen := len(JsonByte)
+	i := 0
+	idx := 0
+	arrStart := false
+	valuestart := false
+	for i < btlen{
+		if !arrStart && JsonByte[i] != '[' && !IsSpace(JsonByte[i]){
+			return 0,ErrInvalidateJson
+		}
+		switch JsonByte[i]{
+		case '[':
+			if arrStart{
+				if parserlen,err = arr.parserValue(idx,JsonByte[i:]);err!=nil{
+					return parserlen + i,err
+				}
+				idx++
+				i += parserlen
+			}
+			arrStart = true
+			valuestart = true
+		case ']':
+			return i,nil
+		case ',','}':
+			valuestart = true
+		default:
+			if valuestart {
+				valuestart = false
+				if parserlen,err = arr.parserValue(idx,JsonByte[i:]);err!=nil{
+					return parserlen + i,err
+				}
+				idx++
+				i += parserlen
+				continue
+			}else{
+				return i,ErrInvalidateJson
+			}
+		}
+		i++
+	}
+	return btlen,ErrInvalidateJson
 }
 
 func (arr *DxArray)ToString()string  {

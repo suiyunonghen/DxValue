@@ -13,16 +13,20 @@ import (
 	"github.com/suiyunonghen/DxCommonLib"
 	"strings"
 	"math"
+	"strconv"
 )
 
 /******************************************************
 *  DxRecord
 ******************************************************/
-type  DxRecord		struct{
-	DxBaseValue
-	fRecords		map[string]*DxBaseValue
-	PathSplitChar	byte
-}
+type(
+		DxRecord		struct{
+		DxBaseValue
+		fRecords		map[string]*DxBaseValue
+		PathSplitChar	byte
+		}
+)
+
 
 
 func (r *DxRecord)ClearValue()  {
@@ -53,6 +57,7 @@ func (r *DxRecord)NewRecord(keyName string)(rec *DxRecord)  {
 	}
 	rec = new(DxRecord)
 	rec.fValueType = DVT_Record
+	rec.PathSplitChar = r.PathSplitChar
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	r.fRecords[keyName] = &rec.DxBaseValue
 	rec.fParent = &r.DxBaseValue
@@ -190,10 +195,19 @@ func (r *DxRecord)SetBool(KeyName string,v bool)  {
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
+func (r *DxRecord)SetNull(KeyName string)  {
+	r.fRecords[KeyName] = nil
+}
+
+
+
 func (r *DxRecord)SetFloat(KeyName string,v float32)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		if value.fValueType == DVT_Float{
 			(*DxFloatValue)(unsafe.Pointer(value)).fvalue = v
+			return
+		}else if value.fValueType == DVT_Double{
+			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(v)
 			return
 		}
 		value.fParent = nil
@@ -210,6 +224,11 @@ func (r *DxRecord)SetDouble(KeyName string,v float64)  {
 		if value.fValueType == DVT_Double{
 			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = v
 			return
+		}else if value.fValueType == DVT_Float{
+			if v <= math.MaxFloat32 && v >= math.MinInt32{
+				(*DxFloatValue)(unsafe.Pointer(value)).fvalue = float32(v)
+				return
+			}
 		}
 		value.fParent = nil
 	}
@@ -786,6 +805,146 @@ func (r *DxRecord)Range(iteafunc func(keyName string,value *DxBaseValue)bool){
 
 func (r *DxRecord)ToString()string  {
 	return DxCommonLib.FastByte2String(r.Bytes())
+}
+
+func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error)  {
+	blen := len(b)
+	i := 0
+	valuestart := -1
+	for i<blen {
+		if !IsSpace(b[i]){
+			switch b[i] {
+			case ':':
+				valuestart = i
+			case '{':
+				var rec DxRecord
+				rec.PathSplitChar = r.PathSplitChar
+				rec.fValueType = DVT_Record
+				rec.fRecords = make(map[string]*DxBaseValue,32)
+				if parserlen,err = rec.JsonParserFromByte(b[i:blen]);err == nil{
+					r.SetRecordValue(keyName,&rec)
+				}
+				parserlen+=2 //会多解析一个{
+				return
+			case '[':
+				var arr DxArray
+				arr.fValueType = DVT_Array
+				if parserlen,err = arr.JsonParserFromByte(b[i:]);err == nil{
+					r.SetArray(keyName,&arr)
+				}
+				parserlen+=2
+				return
+			case ',','}':
+				bvalue := bytes.Trim(b[valuestart + 1:i]," \r\n\t")
+				if len(bvalue) == 0{
+					return i,ErrInvalidateJson
+				}
+				if bytes.IndexByte(bvalue,'.') > -1{
+					if vf,err := strconv.ParseFloat(DxCommonLib.FastByte2String(bvalue),64);err!=nil{
+						return i,ErrInvalidateJson
+					}else{
+						r.SetDouble(keyName,vf)
+					}
+				}else {
+					st := DxCommonLib.FastByte2String(bvalue)
+					if st == "true" || strings.ToUpper(st) == "TRUE"{
+						r.SetBool(keyName,true)
+					}else if st == "false" || strings.ToUpper(st) == "FALSE"{
+						r.SetBool(keyName,false)
+					}else if st == "null" || strings.ToUpper(st) == "NULL"{
+						r.SetNull(keyName)
+					}else{
+						if vf,err := strconv.Atoi(st);err!=nil{
+							return i,ErrInvalidateJson
+						}else{
+							r.SetInt(keyName,vf)
+						}
+					}
+				}
+				return i,nil
+			case '"': //string
+				plen := bytes.IndexByte(b[i+1:blen],'"')
+				if plen > -1{
+					st := DxCommonLib.FastByte2String(b[i+1:plen+i+1])
+					r.SetString(keyName,st)
+					return plen + i + 2,nil
+				}
+				return i,ErrInvalidateJson
+			default:
+				if valuestart == -1{
+					return i,ErrInvalidateJson
+				}
+			}
+		}
+		i += 1
+	}
+	return blen,ErrInvalidateJson
+}
+
+
+func (r *DxRecord)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)  {
+	i := 0
+	r.ClearValue()
+	objStart := false
+	keyStart := false
+	btlen := len(JsonByte)
+	plen := -1
+	keyName := ""
+	for i < btlen{
+		if !objStart && JsonByte[i] != '{' && !IsSpace(JsonByte[i]){
+			return 0,ErrInvalidateJson
+		}
+		switch JsonByte[i]{
+		case '{':
+			objStart = true
+			keyStart = true
+		case '}':
+			if keyStart{
+				return i,ErrInvalidateJson
+			}
+			objStart = false
+			return i,nil
+		case '"': //keyName
+			if keyStart{
+				//获取string
+				plen = bytes.IndexByte(JsonByte[i+1:btlen],'"')
+				if plen > -1{
+					keyName = DxCommonLib.FastByte2String(JsonByte[i+1:i+1+plen])
+				}
+				i += plen+2
+				keyStart = false
+				//解析Value
+				if ilen,err := r.parserValue(keyName,JsonByte[i:btlen]);err!=nil{
+					return ilen + i,err
+				}else{
+					i += ilen
+					continue
+				}
+
+			}
+		case ',': //next key
+			if keyStart{
+				return i,ErrInvalidateJson
+			}
+			keyStart = true
+		case ':': //value
+			if keyStart || objStart{
+				return i,ErrInvalidateJson
+			}
+		case '[':
+			if objStart || keyStart{
+				return i,ErrInvalidateJson
+			}
+		case ']':
+			if keyStart || keyStart{
+				return i,ErrInvalidateJson
+			}
+		default:
+
+		}
+		i+=1
+	}
+	return btlen,ErrInvalidateJson
 }
 
 func NewRecord()*DxRecord  {
