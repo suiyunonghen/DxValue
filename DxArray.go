@@ -734,6 +734,7 @@ func (arr *DxArray)Bytes()[]byte  {
 func (arr *DxArray)parserValue(idx int, b []byte)(parserlen int, err error)  {
 	i := 0;
 	btlen := len(b)
+	validCharIndex := -1
 	for i < btlen{
 		if !IsSpace(b[i]){
 			switch b[i] {
@@ -753,9 +754,10 @@ func (arr *DxArray)parserValue(idx int, b []byte)(parserlen int, err error)  {
 				arr.SetRecord(idx,rec)
 				parserlen += 1
 				return
-
 			case ',',']':
-				bvalue := bytes.Trim(b[:i]," \r\n\t")
+				//bvalue := bytes.Trim(b[:i]," \r\n\t")
+				//获取有效的字符开始的位置
+				bvalue := b[:validCharIndex+1]
 				if len(bvalue) == 0{
 					return i,ErrInvalidateJson
 				}
@@ -790,6 +792,8 @@ func (arr *DxArray)parserValue(idx int, b []byte)(parserlen int, err error)  {
 					return plen + i + 2,nil
 				}
 				return i,ErrInvalidateJson
+			default:
+				validCharIndex = i
 			}
 		}
 		i++
@@ -819,6 +823,7 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)
 				}
 				idx++
 				i += parserlen
+				continue
 			}
 			arrStart = true
 			valuestart = true

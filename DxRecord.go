@@ -28,7 +28,6 @@ type(
 )
 
 
-
 func (r *DxRecord)ClearValue()  {
 	if r.fRecords != nil{
 		for _,v := range r.fRecords{
@@ -252,7 +251,6 @@ func (r *DxRecord)SetString(KeyName string,v string)  {
 	var m DxStringValue
 	m.fvalue = v
 	m.fValueType = DVT_String
-	m.fParent = &r.DxBaseValue
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
@@ -811,11 +809,14 @@ func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error
 	blen := len(b)
 	i := 0
 	valuestart := -1
+	validCharIndex := -1
+	startValue := false
 	for i<blen {
 		if !IsSpace(b[i]){
 			switch b[i] {
 			case ':':
-				valuestart = i
+				startValue = true
+				//valuestart = i //自己记录有效的开始位置，和有效的结束位置，省去一个trim
 			case '{':
 				var rec DxRecord
 				rec.PathSplitChar = r.PathSplitChar
@@ -835,7 +836,8 @@ func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error
 				parserlen+=2
 				return
 			case ',','}':
-				bvalue := bytes.Trim(b[valuestart + 1:i]," \r\n\t")
+				//bvalue := bytes.Trim(b[valuestart + 1:i]," \r\n\t")
+				bvalue := b[valuestart: validCharIndex+1]
 				if len(bvalue) == 0{
 					return i,ErrInvalidateJson
 				}
@@ -871,8 +873,14 @@ func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error
 				}
 				return i,ErrInvalidateJson
 			default:
-				if valuestart == -1{
+				if !startValue && valuestart == -1{
 					return i,ErrInvalidateJson
+				}
+				if valuestart == -1{
+					valuestart = i
+					startValue = false
+				}else{
+					validCharIndex = i
 				}
 			}
 		}
@@ -924,7 +932,6 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte)(parserlen int, err error) 
 					i += ilen
 					continue
 				}
-
 			}
 		case ',': //next key
 			if keyStart{
