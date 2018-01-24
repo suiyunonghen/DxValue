@@ -14,6 +14,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"fmt"
 )
 
 /******************************************************
@@ -803,7 +804,11 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)
 	arrStart := false
 	valuestart := false
 	for i < btlen{
-		if !arrStart && JsonByte[i] != '[' && !IsSpace(JsonByte[i]){
+		if IsSpace(JsonByte[i]){
+			i++
+			continue
+		}
+		if !arrStart && JsonByte[i] != '['{
 			return 0,ErrInvalidateJson
 		}
 		switch JsonByte[i]{
@@ -831,6 +836,7 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)
 				i += parserlen
 				continue
 			}else{
+				fmt.Println(JsonByte[i])
 				return i,ErrInvalidateJson
 			}
 		}

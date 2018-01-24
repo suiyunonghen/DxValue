@@ -891,7 +891,11 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte)(parserlen int, err error) 
 	plen := -1
 	keyName := ""
 	for i < btlen{
-		if !objStart && JsonByte[i] != '{' && !IsSpace(JsonByte[i]){
+		if IsSpace(JsonByte[i]){
+			i++
+			continue
+		}
+		if !objStart && JsonByte[i] != '{' {
 			return 0,ErrInvalidateJson
 		}
 		switch JsonByte[i]{

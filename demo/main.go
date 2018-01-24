@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/suiyunonghen/DxValue"
 	//"encoding/json"
-	"bufio"
-	"encoding/json"
+	"os"
 )
 
 type DxPeople struct {
@@ -22,13 +21,13 @@ func main()  {
 	mbt := DxCommonLib.Hex2Binary(string(bt))
 	fmt.Println(mbt)
 	fmt.Println(string(mbt))
-
+var err error
 	mrec := DxValue.NewRecord()
-	_,err := mrec.JsonParserFromByte([]byte(`{"DxSoft":{"Name":"不得闲"},"Age":32,"Name":true,"testArray":["gg",23,"gasdf"]}`))//
+	/*_,err := mrec.JsonParserFromByte([]byte(`{"DxSoft":{"Name":"不得闲"},"Age":32,"Name":true,"testArray":["gg",23,"gasdf"]}`))//
 	if err != nil{
 		panic(err)
 	}
-	fmt.Println(mrec.ToString())
+	fmt.Println(mrec.ToString())*/
 
 	mrec.SetValue("Name","DxSoft")
 	mrec.SetValue("Age",23)
@@ -37,6 +36,24 @@ func main()  {
 	crec.SetString("Father","ParentF")
 	crec.SetString("Mother","ParentM")
 
+
+	finfo,_ := os.Stat("D:\\test.json")
+
+	if file,err := os.Open("D:\\test.json");err == nil {
+
+		databytes := make([]byte, finfo.Size())
+		file.Read(databytes)
+
+		file.Close()
+		if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF {
+			databytes = databytes[3:]
+		}
+		_,err = mrec.JsonParserFromByte(databytes)
+		if err != nil{
+			panic(err)
+		}
+		fmt.Println(mrec.ToString())
+	}
 
 
 	mp := make(map[string]*DxPeople,6)
@@ -56,7 +73,9 @@ func main()  {
 	mrec.ForcePath("DxSoft.Name","不得闲")
 	fmt.Println(mrec.ToString())
 
-	json.NewDecoder()
+
+
+
 
 	ma := DxValue.NewArray()
 
