@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"github.com/suiyunonghen/DxCommonLib"
 	"unsafe"
-	"github.com/landjur/golibrary/errors"
+	"errors"
 	"strings"
 )
 

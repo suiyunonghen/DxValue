@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/suiyunonghen/DxValue"
 	//"encoding/json"
+	"bufio"
+	"encoding/json"
 )
 
 type DxPeople struct {
@@ -54,9 +56,11 @@ func main()  {
 	mrec.ForcePath("DxSoft.Name","不得闲")
 	fmt.Println(mrec.ToString())
 
+	json.NewDecoder()
+
 	ma := DxValue.NewArray()
 
-	_,err = ma.JsonParserFromByte([]byte(`[null,["gg",23,"gasdf"],20,null ,null ,12,{ "Name": "不得闲" }]`))
+	_,err = ma.JsonParserFromByte([]byte(`[null,["gg","23","gasdf"],20,null ,null ,12,{ "Name": "不得闲" }]`))
 	if err != nil{
 		panic(err)
 	}
