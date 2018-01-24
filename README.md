@@ -18,7 +18,7 @@
     ```json
     {"BoolValue":  true  ,"object":{"objBool":  false  }}
     ```
-    >设置PathSplitChar='\' ，那么可以使用object\objBool来获取objBool的值，如下
+    >设置PathSplitChar='.'(PathSplitChar默认值是.) ，那么可以使用object.objBool来获取objBool的值，如下
     ```go
     rc := NewRecord()
 	rc.JsonParserFromByte([]byte(`{"BoolValue":  true  ,"object":{"objBool":  false  }}`))
