@@ -14,6 +14,7 @@
     - KV存储，采用Key查找对应的值，具备有AsInt(Key),AsBool(key),AsString(Key)等获取相关值的函数
     - 支持路径模式查找获取和路径模式创建，比如AsStringByPath，AsRecordByPath等
     - 使用ForcePath来创建路径并赋值
+    - JsonParserFromByte用来将Json串解码，其中参数2主要用来设定是否针对字符串做自动转义检查转码并解码转义字符
     > 路径分隔采用对象的PathSplitChar来设置分隔符，比如，JSon格式如下
     ```json
     {"BoolValue":  true  ,"object":{"objBool":  false  }}
@@ -21,7 +22,7 @@
     >设置PathSplitChar='.'(PathSplitChar默认值是.) ，那么可以使用object.objBool来获取objBool的值，如下
     ```go
     rc := NewRecord()
-	rc.JsonParserFromByte([]byte(`{"BoolValue":  true  ,"object":{"objBool":  false  }}`))
+	rc.JsonParserFromByte([]byte(`{"BoolValue":  true  ,"object":{"objBool":  false  }}`),false)
 	fmt.Println("BoolValue=",rc.AsBool("BoolValue",false))
 	fmt.Println("object.objBool=",rc.AsBoolByPath("object.objBool",true))
     ```
@@ -40,11 +41,12 @@
     - 支持针对MsgPack的数组对象格式的编码解码，并生成数组对象内容
     - 数组值可以任意嵌套
     - 可以包含任意Json,MsgPack格式支持的数据类型，使用SetValue(idx,v)赋，或者使用SetInt,SetInt32,SetArray等强制类型函数赋值  
+    - JsonParserFromByte用来将Json串解码，其中参数2主要用来设定是否针对字符串做自动转义检查转码并解码转义字符
     - 具备有AsInt(idx),AsBool(idx),AsString(idx)等获取相关值的函数
     >用法如下：
     ```go
     arr := NewArray()
-	  _,err := arr.JsonParserFromByte([]byte(`[  32  ,  "2342"  ,[ 2 , true , false  ,{ "Name" : "DxSoft" , "Age"  :  32 } ] ]`))
+	  _,err := arr.JsonParserFromByte([]byte(`[  32  ,  "2342"  ,[ 2 , true , false  ,{ "Name" : "DxSoft" , "Age"  :  32 } ] ]`),false)
     if err == nil {
 		fmt.Println(arr.ToString())
 	}else{
