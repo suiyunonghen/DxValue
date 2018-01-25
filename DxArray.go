@@ -731,7 +731,7 @@ func (arr *DxArray)Bytes()[]byte  {
 	return buf.Bytes()
 }
 
-func (arr *DxArray)parserValue(idx int, b []byte)(parserlen int, err error)  {
+func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape bool)(parserlen int, err error)  {
 	i := 0;
 	btlen := len(b)
 	validCharIndex := -1
@@ -740,7 +740,7 @@ func (arr *DxArray)parserValue(idx int, b []byte)(parserlen int, err error)  {
 			switch b[i] {
 			case '[':
 				narr := NewArray()
-				if parserlen,err = narr.JsonParserFromByte(b[i:]);err!=nil{
+				if parserlen,err = narr.JsonParserFromByte(b[i:],ConvertEscape);err!=nil{
 					return
 				}
 				arr.SetArray(idx,narr)
@@ -748,7 +748,7 @@ func (arr *DxArray)parserValue(idx int, b []byte)(parserlen int, err error)  {
 				return
 			case '{':
 				rec := NewRecord()
-				if parserlen,err = rec.JsonParserFromByte(b[i:]);err != nil{
+				if parserlen,err = rec.JsonParserFromByte(b[i:],ConvertEscape);err != nil{
 					return
 				}
 				arr.SetRecord(idx,rec)
@@ -801,7 +801,7 @@ func (arr *DxArray)parserValue(idx int, b []byte)(parserlen int, err error)  {
 	return btlen,ErrInvalidateJson
 }
 
-func (arr *DxArray)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)  {
+func (arr *DxArray)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
 	btlen := len(JsonByte)
 	i := 0
 	idx := 0
@@ -818,7 +818,7 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)
 		switch JsonByte[i]{
 		case '[':
 			if arrStart{
-				if parserlen,err = arr.parserValue(idx,JsonByte[i:]);err!=nil{
+				if parserlen,err = arr.parserValue(idx,JsonByte[i:],ConvertEscape);err!=nil{
 					return parserlen + i,err
 				}
 				idx++
@@ -834,7 +834,7 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)
 		default:
 			if valuestart {
 				valuestart = false
-				if parserlen,err = arr.parserValue(idx,JsonByte[i:]);err!=nil{
+				if parserlen,err = arr.parserValue(idx,JsonByte[i:],ConvertEscape);err!=nil{
 					return parserlen + i,err
 				}
 				idx++

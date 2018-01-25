@@ -402,6 +402,13 @@ func (r *DxRecord)SetArray(KeyName string,v *DxArray)  {
 	}
 }
 
+func (r *DxRecord)AsBaseValue(keyName string)*DxBaseValue{
+	if r.fRecords != nil{
+		return r.fRecords[keyName]
+	}
+	return nil
+}
+
 func (r *DxRecord)SetValue(keyName string,v interface{})  {
 	if v == nil{
 		r.fRecords[keyName] = nil
@@ -805,7 +812,7 @@ func (r *DxRecord)ToString()string  {
 	return DxCommonLib.FastByte2String(r.Bytes())
 }
 
-func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error)  {
+func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape bool)(parserlen int, err error)  {
 	blen := len(b)
 	i := 0
 	valuestart := -1
@@ -822,7 +829,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error
 				rec.PathSplitChar = r.PathSplitChar
 				rec.fValueType = DVT_Record
 				rec.fRecords = make(map[string]*DxBaseValue,32)
-				if parserlen,err = rec.JsonParserFromByte(b[i:blen]);err == nil{
+				if parserlen,err = rec.JsonParserFromByte(b[i:blen],ConvertEscape);err == nil{
 					r.SetRecordValue(keyName,&rec)
 				}
 				parserlen+=2 //会多解析一个{
@@ -830,7 +837,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error
 			case '[':
 				var arr DxArray
 				arr.fValueType = DVT_Array
-				if parserlen,err = arr.JsonParserFromByte(b[i:]);err == nil{
+				if parserlen,err = arr.JsonParserFromByte(b[i:],ConvertEscape);err == nil{
 					r.SetArray(keyName,&arr)
 				}
 				parserlen+=2
@@ -867,7 +874,13 @@ func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error
 			case '"': //string
 				plen := bytes.IndexByte(b[i+1:blen],'"')
 				if plen > -1{
-					st := DxCommonLib.FastByte2String(b[i+1:plen+i+1])
+					bvalue := b[i+1:plen+i+1]
+					st := ""
+					if ConvertEscape{
+						st = DxCommonLib.ParserEscapeStr(bvalue)
+					}else{
+						st = DxCommonLib.FastByte2String(bvalue)
+					}
 					r.SetString(keyName,st)
 					return plen + i + 2,nil
 				}
@@ -890,7 +903,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte)(parserlen int, err error
 }
 
 
-func (r *DxRecord)JsonParserFromByte(JsonByte []byte)(parserlen int, err error)  {
+func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
 	i := 0
 	r.ClearValue()
 	objStart := false
@@ -926,7 +939,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte)(parserlen int, err error) 
 				i += plen+2
 				keyStart = false
 				//解析Value
-				if ilen,err := r.parserValue(keyName,JsonByte[i:btlen]);err!=nil{
+				if ilen,err := r.parserValue(keyName,JsonByte[i:btlen],ConvertEscape);err!=nil{
 					return ilen + i,err
 				}else{
 					i += ilen

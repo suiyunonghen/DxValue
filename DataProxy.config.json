@@ -2,7 +2,7 @@
   "list":
   [
     {
-      "id":"LAS7",
+      "id":"\u6821\u56ed\u7f51\t02得闲",
       "input":{"type":"tcp-client","host":"10.189.128.252","port":9003,"remark":""},
       "output":
       [
@@ -12,7 +12,7 @@
     },
     {
       "id":"CHC7",
-      "input":{"type":"tcp-client","host":"10.159.124.253","port":9003,"remark":"校园网"},
+      "input":{"type":"tcp-client","host":"10.159.124.253","port":9003,"remark":"\u6821\u56ed\u7f51"},
       "output":
       [
         { "id":"CHC7.01","type":"ntrip-server","host":"127.0.0.1","port":2101,"password":"0000",
