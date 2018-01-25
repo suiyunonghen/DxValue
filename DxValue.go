@@ -101,6 +101,82 @@ func (v *DxValue)SetInt64Value(value int64)  {
 	v.fValue = &m.DxBaseValue
 }
 
+func (v *DxValue)CanParent()bool  {
+	if v.fValue == nil{
+		return false
+	}
+	return v.fValue.CanParent()
+}
+
+func (v *DxValue)AsInt()(int,error){
+	if v.fValue == nil{
+		return 0,nil
+	}
+	return v.fValue.AsInt()
+}
+
+func (v *DxValue)AsBool()(bool,error){
+	if v.fValue == nil{
+		return false,nil
+	}
+	return v.fValue.AsBool()
+}
+
+func (v *DxValue)AsInt32()(int32,error){
+	if v.fValue == nil{
+		return 0,nil
+	}
+	return v.fValue.AsInt32()
+}
+
+func (v *DxValue)AsInt64()(int64,error){
+	if v.fValue == nil{
+		return 0,nil
+	}
+	return v.fValue.AsInt64()
+}
+
+func (v *DxValue)AsArray()(*DxArray,error){
+	if v.fValue == nil{
+		return nil,nil
+	}
+	return v.fValue.AsArray()
+}
+
+func (v *DxValue)AsRecord()(*DxRecord,error){
+	if v.fValue == nil{
+		return nil,nil
+	}
+	return v.fValue.AsRecord()
+}
+
+func (v *DxValue)AsString()string{
+	if v.fValue == nil{
+		return ""
+	}
+	return v.fValue.AsString()
+}
+
+func (v *DxValue)AsFloat()(float32,error){
+	if v.fValue == nil{
+		return 0,nil
+	}
+	return v.fValue.AsFloat()
+}
+
+func (v *DxValue)AsDouble()(float64,error){
+	if v.fValue == nil{
+		return 0,nil
+	}
+	return v.fValue.AsDouble()
+}
+
+func (v *DxValue)AsBytes()([]byte,error){
+	if v.fValue == nil{
+		return nil,nil
+	}
+	return v.fValue.AsBytes(),nil
+}
 
 func (v *DxValue)ClearValue()  {
 	v.fValue = nil
