@@ -272,13 +272,13 @@ func (v *DxValue)LoadJsonFile(fileName string,ConvertEscape bool)error  {
 	return err
 }
 
-func (v *DxValue)SaveJsonFile(fileName string)error  {
+func (v *DxValue)SaveJsonFile(fileName string,BOMFile bool)error  {
 	if v.fValue != nil{
 		switch v.fValue.fValueType {
 		case DVT_Array:
-			return (*DxArray)(unsafe.Pointer(v.fValue)).SaveJsonFile(fileName)
+			return (*DxArray)(unsafe.Pointer(v.fValue)).SaveJsonFile(fileName,BOMFile)
 		case DVT_Record:
-			return (*DxRecord)(unsafe.Pointer(v.fValue)).SaveJsonFile(fileName)
+			return (*DxRecord)(unsafe.Pointer(v.fValue)).SaveJsonFile(fileName,BOMFile)
 		}
 	}
 	return nil

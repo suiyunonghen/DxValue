@@ -995,6 +995,9 @@ func (r *DxRecord)SaveJsonWriter(w io.Writer)error  {
 func (r *DxRecord)SaveJsonFile(fileName string,BOMFile bool)error  {
 	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
 		defer file.Close()
+		if BOMFile{
+			file.Write([]byte{0xEF,0xBB,0xBF})
+		}
 		return r.SaveJsonWriter(file)
 	}else{
 		return err

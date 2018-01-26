@@ -881,9 +881,12 @@ func (arr *DxArray)LoadJsonFile(fileName string,ConvertEscape bool)error  {
 	return err
 }
 
-func (arr *DxArray)SaveJsonFile(fileName string)(err error){
+func (arr *DxArray)SaveJsonFile(fileName string,BOMFile bool)(err error){
 	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
 		defer file.Close()
+		if BOMFile{
+			file.Write([]byte{0xEF,0xBB,0xBF})
+		}
 		return arr.SaveJsonWriter(file)
 	}else{
 		return err

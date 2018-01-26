@@ -26,7 +26,7 @@ func TestDxArray_SaveJsonFile(t *testing.T) {
 	v.LoadJsonFile("DataProxy.config.json",true)
 	if rec,_ := v.AsRecord();rec != nil{
 		if arr := rec.AsArray("list");arr!=nil{
-			arr.SaveJsonFile("d:\\1.json")
+			arr.SaveJsonFile("d:\\1.json",true)
 			fmt.Println("SaveJsonOK")
 		}
 	}
