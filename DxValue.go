@@ -177,7 +177,7 @@ func (v *DxValue)AsBytes()([]byte,error){
 	if v.fValue == nil{
 		return nil,nil
 	}
-	return v.fValue.AsBytes(),nil
+	return v.fValue.AsBytes()
 }
 
 func (v *DxValue)ClearValue()  {

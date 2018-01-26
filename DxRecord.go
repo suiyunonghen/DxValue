@@ -282,7 +282,8 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 
 func (r *DxRecord)AsBytes(keyName string)[]byte  {
 	if value,ok := r.fRecords[keyName];ok && value != nil{
-		return value.AsBytes()
+		bt,_ := value.AsBytes()
+		return bt
 	}
 	return nil
 }

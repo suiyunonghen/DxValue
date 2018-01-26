@@ -327,30 +327,30 @@ func (v *DxBaseValue)ToString()string  {
 	}
 }
 
-func (v *DxBaseValue)AsBytes()[]byte  {
+func (v *DxBaseValue)AsBytes()([]byte,error)  {
 	switch v.fValueType {
 	case DVT_String:
-		return (*DxStringValue)(unsafe.Pointer(v)).Bytes()
+		return (*DxStringValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Binary:
-		return (*DxBinaryValue)(unsafe.Pointer(v)).Bytes()
+		return (*DxBinaryValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Float:
-		return (*DxFloatValue)(unsafe.Pointer(v)).Bytes()
+		return (*DxFloatValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Double:
-		return (*DxDoubleValue)(unsafe.Pointer(v)).Bytes()
+		return (*DxDoubleValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Bool:
-		return (*DxBoolValue)(unsafe.Pointer(v)).Bytes()
+		return (*DxBoolValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Record:
-		return (*DxRecord)(unsafe.Pointer(v)).Bytes()
+		return (*DxRecord)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Int32:
-		return (*DxInt32Value)(unsafe.Pointer(v)).Bytes()
+		return (*DxInt32Value)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Int:
-		return (*DxIntValue)(unsafe.Pointer(v)).Bytes()
+		return (*DxIntValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Int64:
-		return (*DxInt64Value)(unsafe.Pointer(v)).Bytes()
+		return (*DxInt64Value)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Array:
-		return (*DxArray)(unsafe.Pointer(v)).Bytes()
+		return (*DxArray)(unsafe.Pointer(v)).Bytes(),nil
 	default:
-		return nil
+		return nil,nil
 	}
 }
 
