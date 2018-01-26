@@ -120,6 +120,17 @@ func TestDxValue_JsonParserFromByte(t *testing.T) {
 	}
 }
 
+func TestDxRecord_SaveJsonFile(t *testing.T) {
+	rec := NewRecord()
+	rec.SetInt("Age",12)
+	rec.SetString("Name","suiyunonghen")
+	rec.SetValue("Home",map[string]interface{}{
+		"Addres": "湖北武汉",
+		"code":"430000",
+		"Peoples":4,
+	})
+	rec.SaveJsonFile("d:\\testJson.json",true)
+}
 
 func TestDxRecord_AsString(t *testing.T) {
 	rc := NewRecord()

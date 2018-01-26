@@ -34,6 +34,24 @@
     fmt.Println(rc.ToString()
     ```
     > 使用本功能则可以获得以上的Json格式字符串
+
+    > 使用LoadJsonFile加载Json文件如下
+    ```go
+    rec := NewRecord()
+    rec.LoadJsonFile("DataProxy.config.json",true) //参数2指定是否自动解析转义符
+    ```
+    > 使用SaveJsonFile保存内容到Json格式文件
+    ```go
+    rec := NewRecord()
+    rec.SetInt("Age",12)
+    rec.SetString("Name","suiyunonghen")
+    rec.SetValue("Home",map[string]interface{}{
+        "Addres": "湖北武汉",
+        "code":"430000",
+        "Peoples":4,
+    })
+    rec.SaveJsonFile("d:\\testJson.json",true)
+    ```
     
 2. DxArray对象
     - 数组对象  
@@ -43,6 +61,8 @@
     - 可以包含任意Json,MsgPack格式支持的数据类型，使用SetValue(idx,v)赋，或者使用SetInt,SetInt32,SetArray等强制类型函数赋值  
     - JsonParserFromByte用来将Json串解码，其中参数2主要用来设定是否针对字符串做自动转义检查转码并解码转义字符
     - 具备有AsInt(idx),AsBool(idx),AsString(idx)等获取相关值的函数
+    - 使用LoadJsonFile加载Json文件
+    - 使用SaveJsonFile保存内容到Json格式文件
     >用法如下：
     ```go
     arr := NewArray()
@@ -57,4 +77,17 @@
     - 万能值对象  
     - 支持任意Json,MsgPack对象格式的编码解码，并且生成对象内容
     - 用法使用DxRecore和DxArray结合使用
-    - 尚未完成
+    - 使用LoadJsonFile加载Json文件（参考Record)
+    - 使用SaveJsonFile保存内容到Json格式文件（参考Record)
+    - JsonParserFromByte用来将Json串解码，其中参数2主要用来设定是否针对字符串做自动转义检查转码并解码转义字符，并且自动识别JSON格式
+    ```go
+    var v DxValue
+    v.LoadJsonFile("DataProxy.config.json",true)
+    fmt.Println(v.AsString())
+    if rec,_ := v.AsRecord();rec != nil{
+        if arr := rec.AsArray("list");arr!=nil{
+            arr.SaveJsonFile("d:\\1.json",true)
+            fmt.Println("SaveJsonOK")
+        }
+    }
+    ```
