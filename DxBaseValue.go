@@ -484,6 +484,12 @@ func (v *DxBinaryValue)SetBinary(b []byte,reSet bool)  {
 	copy(v.fbinary,b)
 }
 
+func (v *DxBinaryValue)ClearValue()  {
+	if v.fbinary != nil{
+		v.fbinary = v.fbinary[:0]
+	}
+}
+
 func (v *DxBinaryValue)Bytes()[]byte  {
 	return v.fbinary
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"encoding/json"
 	"github.com/json-iterator/go"
+	"unsafe"
 )
 
 func TestDxRecord_JsonParserFromByte(t *testing.T) {
@@ -99,10 +100,24 @@ func TestDxRecord_AsArray(t *testing.T) {
 	}
 }
 
-func TestEsCapteStr(t *testing.T)  {
-	str := "\u6821\u56ed\u7f51"
-	//DxCommonLib.FastByte2String([]byte(str))
-	str = fmt.Sprintf("%v",str)
+func TestDxValue_JsonParserFromByte(t *testing.T) {
+	var v DxValue
+	buf, err := ioutil.ReadFile("DataProxy.config.json")
+	if err != nil {
+		fmt.Println("ReadFile Err:",err)
+		return
+	}
+	_,err = v.JsonParserFromByte(buf,false)
+	if err != nil{
+		fmt.Println("Parser Error: ",err)
+	}else{
+		switch v.ValueType() {
+		case DVT_Record:
+			fmt.Println("Is Json Object: ",(*DxRecord)(unsafe.Pointer(v.fValue)).ToString())
+		case DVT_Array:
+			fmt.Println("Is Json Array: ",(*DxArray)(unsafe.Pointer(v.fValue)).ToString())
+		}
+	}
 }
 
 

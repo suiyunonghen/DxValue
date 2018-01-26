@@ -179,6 +179,49 @@ func (v *DxValue)AsBytes()([]byte,error){
 }
 
 func (v *DxValue)ClearValue()  {
+	if v.fValue != nil{
+		v.fValue.ClearValue()
+	}
 	v.fValue = nil
+}
+
+func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
+	for i := 0; i < len(JsonByte) ; i++  {
+		if !IsSpace(JsonByte[i]){
+			switch JsonByte[i] {
+			case '{':
+				var rec *DxRecord
+				if v.fValue == nil || v.fValue.fValueType != DVT_Record{
+					rec = &DxRecord{}
+					rec.PathSplitChar = '.'
+					rec.fValueType = DVT_Record
+					rec.fRecords = make(map[string]*DxBaseValue,32)
+				}else{
+					rec = (*DxRecord)(unsafe.Pointer(v.fValue))
+				}
+				parserlen, err = rec.JsonParserFromByte(JsonByte[i:],ConvertEscape)
+				if err == nil {
+					v.fValue = &rec.DxBaseValue
+				}
+				return
+			case '[':
+				var arr *DxArray
+				if v.fValue == nil || v.fValue.fValueType != DVT_Array{
+					arr = &DxArray{}
+					arr.fValueType = DVT_Array
+				}else{
+					arr = (*DxArray)(unsafe.Pointer(v.fValue))
+				}
+				parserlen, err = arr.JsonParserFromByte(JsonByte[i:],ConvertEscape)
+				if err == nil {
+					v.fValue = &arr.DxBaseValue
+				}
+				return
+			default:
+				return i,ErrInvalidateJson
+			}
+		}
+	}
+	return 0,ErrInvalidateJson
 }
 
