@@ -14,3 +14,20 @@ func TestDxArray_JsonParserFromByte(t *testing.T) {
 		fmt.Println("Paser Error")
 	}
 }
+
+func TestDxArray_LoadJsonFile(t *testing.T) {
+	var v DxValue
+	v.LoadJsonFile("DataProxy.config.json",true)
+	fmt.Println(v.AsString())
+}
+
+func TestDxArray_SaveJsonFile(t *testing.T) {
+	var v DxValue
+	v.LoadJsonFile("DataProxy.config.json",true)
+	if rec,_ := v.AsRecord();rec != nil{
+		if arr := rec.AsArray("list");arr!=nil{
+			arr.SaveJsonFile("d:\\1.json")
+			fmt.Println("SaveJsonOK")
+		}
+	}
+}

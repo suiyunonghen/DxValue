@@ -14,6 +14,10 @@ import (
 	"strings"
 	"math"
 	"strconv"
+	"io/ioutil"
+	"io"
+	"bufio"
+	"os"
 )
 
 /******************************************************
@@ -927,6 +931,79 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape bool)(parse
 	return blen,ErrInvalidateJson
 }
 
+func (r *DxRecord)LoadJsonFile(fileName string,ConvertEscape bool)error  {
+	databytes, err := ioutil.ReadFile("DataProxy.config.json")
+	if err != nil {
+		return err
+	}
+	if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF{//BOM
+		databytes = databytes[3:]
+	}
+	_,err = r.JsonParserFromByte(databytes,ConvertEscape)
+	return err
+}
+
+func (r *DxRecord)SaveJsonWriter(w io.Writer)error  {
+	writer := bufio.NewWriter(w)
+	err := writer.WriteByte('{')
+	if err != nil{
+		return err
+	}
+	isFirst := true
+	for k,v := range r.fRecords{
+		if !isFirst{
+			_,err = writer.WriteString(`,"`)
+		}else{
+			isFirst = false
+			err = writer.WriteByte('"')
+		}
+		if err != nil{
+			return err
+		}
+		_,err = writer.WriteString(k)
+		if err!=nil{
+			return err
+		}
+		_, err = writer.WriteString(`":`)
+		if err!=nil{
+			return err
+		}
+		if v != nil{
+			vt := v.fValueType
+			if vt == DVT_String || vt == DVT_Binary{
+				err = writer.WriteByte('"')
+			}
+			if err != nil{
+				return err
+			}
+			_,err = writer.WriteString(v.ToString())
+			if err == nil && (vt == DVT_String || vt == DVT_Binary){
+				err = writer.WriteByte('"')
+			}
+		}else{
+			_,err = writer.WriteString("null")
+		}
+		if err != nil{
+			return err
+		}
+	}
+	writer.WriteByte('}')
+	err = writer.Flush()
+	return err
+}
+
+func (r *DxRecord)SaveJsonFile(fileName string,BOMFile bool)error  {
+	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
+		defer file.Close()
+		return r.SaveJsonWriter(file)
+	}else{
+		return err
+	}
+}
+
+func (r *DxRecord)LoadJsonReader(reader io.Reader)error  {
+	return nil
+}
 
 func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
 	i := 0

@@ -15,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 	"fmt"
+	"io/ioutil"
+	"io"
+	"bufio"
+	"os"
 )
 
 /******************************************************
@@ -863,6 +867,71 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parser
 
 func (arr *DxArray)ToString()string  {
 	return DxCommonLib.FastByte2String(arr.Bytes())
+}
+
+func (arr *DxArray)LoadJsonFile(fileName string,ConvertEscape bool)error  {
+	databytes, err := ioutil.ReadFile("DataProxy.config.json")
+	if err != nil {
+		return err
+	}
+	if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF{//BOM
+		databytes = databytes[3:]
+	}
+	_,err = arr.JsonParserFromByte(databytes,ConvertEscape)
+	return err
+}
+
+func (arr *DxArray)SaveJsonFile(fileName string)(err error){
+	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
+		defer file.Close()
+		return arr.SaveJsonWriter(file)
+	}else{
+		return err
+	}
+}
+
+func (arr *DxArray)SaveJsonWriter(w io.Writer)(err error) {
+	writer := bufio.NewWriter(w)
+	err = writer.WriteByte('[')
+	if err != nil{
+		return
+	}
+	if arr.fValues != nil{
+		isFirst := true
+		for i := 0;i<len(arr.fValues);i++{
+			av := arr.fValues[i]
+			if !isFirst{
+				err = writer.WriteByte(',')
+				if err != nil{
+					return
+				}
+			}else{
+				isFirst = false
+			}
+			if av == nil{
+				_,err = writer.WriteString("null")
+			}else{
+				if av.fValueType == DVT_String || av.fValueType == DVT_Binary{
+					if err = writer.WriteByte('"');err!=nil{
+						return
+					}
+				}
+				_,err = writer.WriteString(av.ToString())
+				if err == nil && (av.fValueType == DVT_String || av.fValueType == DVT_Binary){
+					err = writer.WriteByte('"')
+				}
+			}
+			if err != nil{
+				return
+			}
+		}
+	}
+	writer.WriteByte(']')
+	return writer.Flush()
+}
+
+func (r *DxArray)LoadJsonReader(reader io.Reader)error  {
+	return nil
 }
 
 func NewArray()*DxArray  {

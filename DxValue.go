@@ -4,6 +4,8 @@ import (
 	"unsafe"
 	"math"
 	"github.com/suiyunonghen/DxCommonLib"
+	"io/ioutil"
+	"io"
 )
 
 /******************************************************
@@ -253,3 +255,31 @@ func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserle
 	return 0,ErrInvalidateJson
 }
 
+func (r *DxValue)LoadJsonReader(reader io.Reader)error  {
+	return nil
+}
+
+
+func (v *DxValue)LoadJsonFile(fileName string,ConvertEscape bool)error  {
+	databytes, err := ioutil.ReadFile("DataProxy.config.json")
+	if err != nil {
+		return err
+	}
+	if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF{//BOM
+		databytes = databytes[3:]
+	}
+	_,err = v.JsonParserFromByte(databytes,ConvertEscape)
+	return err
+}
+
+func (v *DxValue)SaveJsonFile(fileName string)error  {
+	if v.fValue != nil{
+		switch v.fValue.fValueType {
+		case DVT_Array:
+			return (*DxArray)(unsafe.Pointer(v.fValue)).SaveJsonFile(fileName)
+		case DVT_Record:
+			return (*DxRecord)(unsafe.Pointer(v.fValue)).SaveJsonFile(fileName)
+		}
+	}
+	return nil
+}
