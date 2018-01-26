@@ -2,7 +2,7 @@
   "list":
   [
     {
-      "id":"\u6821\u56ed\u7f51\t02得闲",
+      "id":"\u4E0D\u5F97\u95F212%203abc",
       "input":{"type":"tcp-client","host":"10.189.128.252","port":9003,"remark":""},
       "output":
       [
