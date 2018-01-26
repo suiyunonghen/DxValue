@@ -70,6 +70,8 @@ func (r *DxRecord)Find(keyName string)*DxBaseValue  {
 	return nil
 }
 
+
+
 func (r *DxRecord)ForcePath(path string,v interface{}) {
 	fields := strings.FieldsFunc(path,r.splitPathFields)
 	vlen := len(fields)
@@ -796,6 +798,29 @@ func (r *DxRecord)Length()int  {
 		return len(r.fRecords)
 	}
 	return 0
+}
+
+func (r *DxRecord)Contains(keyName string)bool  {
+	if r.fRecords != nil{
+		if vr,vk := r.findPathNode(keyName);vr!=nil && vr.fRecords != nil{
+			_,ok := vr.fRecords[vk]
+			return ok
+		}
+	}
+	return false
+}
+
+func (r *DxRecord)Remove(keyOrPath string)  {
+	if r.fRecords != nil{
+		if vr,vk := r.findPathNode(keyOrPath);vr!=nil && vr.fRecords != nil{
+			if v,ok := vr.fRecords[vk];ok{
+				if v != nil{
+					v.ClearValue()
+				}
+				delete(vr.fRecords,vk)
+			}
+		}
+	}
 }
 
 func (r *DxRecord)Range(iteafunc func(keyName string,value *DxBaseValue)bool){

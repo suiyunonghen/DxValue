@@ -731,6 +731,17 @@ func (arr *DxArray)Bytes()[]byte  {
 	return buf.Bytes()
 }
 
+func (arr *DxArray)Delete(idx int)  {
+	if arr.fValues != nil{
+		if idx >= 0 && idx < len(arr.fValues){
+			if arr.fValues[idx] != nil{
+				arr.fValues[idx].ClearValue()
+			}
+			arr.fValues = append(arr.fValues[:idx],arr.fValues[idx+1:]...)
+		}
+	}
+}
+
 func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape bool)(parserlen int, err error)  {
 	i := 0;
 	btlen := len(b)

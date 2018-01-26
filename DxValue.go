@@ -185,6 +185,34 @@ func (v *DxValue)ClearValue()  {
 	v.fValue = nil
 }
 
+func (v *DxValue)NewRecord()*DxRecord  {
+	var rec *DxRecord
+	if v.fValue == nil || v.fValue.fValueType != DVT_Record{
+		rec = &DxRecord{}
+		rec.PathSplitChar = '.'
+		rec.fValueType = DVT_Record
+		rec.fRecords = make(map[string]*DxBaseValue,32)
+		v.fValue = &rec.DxBaseValue
+	}else{
+		rec = (*DxRecord)(unsafe.Pointer(v.fValue))
+		rec.ClearValue()
+	}
+	return rec
+}
+
+func (v *DxValue)NewArray()*DxArray  {
+	var arr *DxArray
+	if v.fValue == nil || v.fValue.fValueType != DVT_Array{
+		arr = &DxArray{}
+		arr.fValueType = DVT_Array
+		v.fValue = &arr.DxBaseValue
+	}else{
+		arr = (*DxArray)(unsafe.Pointer(v.fValue))
+		arr.ClearValue()
+	}
+	return arr
+}
+
 func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
 	for i := 0; i < len(JsonByte) ; i++  {
 		if !IsSpace(JsonByte[i]){
