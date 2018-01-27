@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"fmt"
 	"encoding/json"
-	"github.com/json-iterator/go"
+	//"github.com/json-iterator/go"
 	"unsafe"
 )
 
@@ -40,7 +40,7 @@ func BenchmarkDxRecord_JsonParserFromByte(b *testing.B) {
 }
 
 
-func BenchmarkJsoniterParser(b *testing.B){
+/*func BenchmarkJsoniterParser(b *testing.B){
 	buf, err := ioutil.ReadFile("DataProxy.config.json")
 	if err != nil {
 		fmt.Println("ReadFile Err:",err)
@@ -50,7 +50,7 @@ func BenchmarkJsoniterParser(b *testing.B){
 	for i := 0;i<b.N;i++ {
 		jsoniter.Unmarshal(buf,&mp)
 	}
-}
+}*/
 
 func BenchmarkStandJsonParser(b *testing.B){
 	buf, err := ioutil.ReadFile("DataProxy.config.json")
@@ -138,4 +138,18 @@ func TestDxRecord_AsString(t *testing.T) {
 	fmt.Println("StringValue=",rc.AsString("StringValue",""))
 	fmt.Println("object.objStr=",rc.AsStringByPath("object.objStr",""))
 	fmt.Println("object.ObjName=",rc.AsStringByPath("object.ObjName",""))
+}
+
+func TestDxRecord_SetIntRecordValue(t *testing.T) {
+	rc := NewRecord()
+	inarc := NewIntKeyRecord()
+	inarc.SetInt(2,23)
+	inarc.SetValue(23,"DxSoft")
+	rc.SetIntRecordValue("IntRecord",inarc)
+	fmt.Println(rc.Contains("IntRecord.23"))
+	if !rc.Contains("IntRecord.ConVertName"){
+		rc.ForcePath("IntRecord.ConVertName","Record")
+		fmt.Println(rc.Contains("IntRecord.ConVertName"))
+	}
+	fmt.Println(rc.ToString())
 }

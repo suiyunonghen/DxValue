@@ -9,11 +9,6 @@ import (
 	"strings"
 )
 
-/*import (
-	""
-)*/
-
-
 
 type(
 	DxValueType				uint8
@@ -93,8 +88,9 @@ const(
 	DVT_Double
 	DVT_String
 	DVT_Binary
-	DVT_Record
 	DVT_Array
+	DVT_Record
+	DVT_RecordIntKey
 )
 
 const(
@@ -225,6 +221,13 @@ func (v *DxBaseValue)AsRecord()(*DxRecord,error){
 	return nil,ErrValueType
 }
 
+func (v *DxBaseValue)AsIntRecord()(*DxIntKeyRecord,error){
+	if v.fValueType == DVT_RecordIntKey{
+		return (*DxIntKeyRecord)(unsafe.Pointer(v)),nil
+	}
+	return nil,ErrValueType
+}
+
 func (v *DxBaseValue)AsString()string{
 	return v.ToString()
 }
@@ -285,18 +288,21 @@ func (v *DxBaseValue)AsDouble()(float64,error){
 
 
 func (v *DxBaseValue)CanParent()bool  {
-	return v.fValueType == DVT_Record || v.fValueType == DVT_Array
+	return v.fValueType >= DVT_Array
 }
 
 func (v *DxBaseValue)Parent()*DxBaseValue  {
 	return v.fParent
 }
 
-func (v *DxBaseValue)ClearValue()  {
+func (v *DxBaseValue)ClearValue(clearInner bool)  {
 	switch v.fValueType {
-	case DVT_Record: (*DxRecord)(unsafe.Pointer(v)).ClearValue()
-	case DVT_Binary: (*DxBinaryValue)(unsafe.Pointer(v)).ClearValue()
-	case DVT_Array:  (*DxArray)(unsafe.Pointer(v)).ClearValue()
+	case DVT_Record: (*DxRecord)(unsafe.Pointer(v)).ClearValue(clearInner)
+	case DVT_RecordIntKey: (*DxIntKeyRecord)(unsafe.Pointer(v)).ClearValue(clearInner)
+	case DVT_Binary: (*DxBinaryValue)(unsafe.Pointer(v)).ClearValue(clearInner)
+	case DVT_Array:  (*DxArray)(unsafe.Pointer(v)).ClearValue(clearInner)
+	default:
+		v.fParent = nil
 	}
 }
 
@@ -314,6 +320,8 @@ func (v *DxBaseValue)ToString()string  {
 		return (*DxBoolValue)(unsafe.Pointer(v)).ToString()
 	case DVT_Record:
 		return (*DxRecord)(unsafe.Pointer(v)).ToString()
+	case DVT_RecordIntKey:
+		return (*DxIntKeyRecord)(unsafe.Pointer(v)).ToString()
 	case DVT_Int32:
 		return (*DxInt32Value)(unsafe.Pointer(v)).ToString()
 	case DVT_Int:
@@ -341,6 +349,8 @@ func (v *DxBaseValue)AsBytes()([]byte,error)  {
 		return (*DxBoolValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Record:
 		return (*DxRecord)(unsafe.Pointer(v)).Bytes(),nil
+	case DVT_RecordIntKey:
+		return (*DxIntKeyRecord)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Int32:
 		return (*DxInt32Value)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Int:
@@ -442,10 +452,11 @@ func (v *DxBinaryValue)ToString()string  {
 	if v.fbinary == nil || len(v.fbinary) == 0{
 		return ""
 	}
-	if v.EncodeType == BET_Base64{
-		return base64.StdEncoding.EncodeToString(v.fbinary)
+	switch v.EncodeType {
+	case BET_Base64: return base64.StdEncoding.EncodeToString(v.fbinary)
+	case BET_Hex: return DxCommonLib.Binary2Hex(v.fbinary)
 	}
-	return DxCommonLib.Binary2Hex(v.fbinary)
+	return ""
 }
 
 func (v *DxBinaryValue)Append(b []byte)  {
@@ -484,7 +495,10 @@ func (v *DxBinaryValue)SetBinary(b []byte,reSet bool)  {
 	copy(v.fbinary,b)
 }
 
-func (v *DxBinaryValue)ClearValue()  {
+func (v *DxBinaryValue)ClearValue(clearInner bool)  {
+	if clearInner{
+		v.fbinary = nil
+	}
 	if v.fbinary != nil{
 		v.fbinary = v.fbinary[:0]
 	}
