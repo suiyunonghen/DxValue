@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"encoding/json"
 	//"github.com/json-iterator/go"
+	"github.com/suiyunonghen/DxCommonLib"
 	"unsafe"
+	"time"
 )
 
 func TestDxRecord_JsonParserFromByte(t *testing.T) {
@@ -16,11 +18,20 @@ func TestDxRecord_JsonParserFromByte(t *testing.T) {
 		return
 	}
 	rc := NewRecord()
-	_,err = rc.JsonParserFromByte(buf,false)
+	_,err = rc.JsonParserFromByte(buf,true)
 	if err != nil{
 		fmt.Println("Parser Error: ",err)
 	}
 	fmt.Println(rc.ToString())
+}
+
+func TestParserTime(t *testing.T)  {
+	fmt.Println(time.Now().Format("2006-01-02T15:04:05Z"))
+	fmt.Println(time.Parse("2006-01-02T15:04:05Z","2010-07-12T03:05:21Z"))
+	at := DxCommonLib.ParserJsonTime("/Date(1402384458000)/")
+	fmt.Println(at.ToTime().Format("2006-01-02T15:04:05Z"))
+	at = DxCommonLib.ParserJsonTime("/Date(1224043200000+0800)/")
+	fmt.Println(at.ToTime().Format("2006-01-02T15:04:05Z"))
 }
 
 func BenchmarkDxRecord_JsonParserFromByte(b *testing.B) {

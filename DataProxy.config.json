@@ -3,11 +3,11 @@
   [
     {
       "id":"\u4E0D\u5F97\u95F212%203abc",
-      "input":{"type":"tcp-client","host":"10.189.128.252","port":9003,"remark":""},
+      "input":{"type":"tcp-client","host":"10.189.128.252","port":9003,"remark":"","testDateTime":"/Date(1224043200000+0800)/"},
       "output":
       [
         { "id":"LAS7.01","type":"ntrip-server","host":"127.0.0.1","port":2101,"password":"0000",
-          "mountpoint":"LAS7"}
+          "mountpoint":"LAS7","DT":"/Date(1402384458000)/"}
       ]
     },
     {

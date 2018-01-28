@@ -161,6 +161,13 @@ func (v *DxValue)AsFloat()(float32,error){
 	return v.fValue.AsFloat()
 }
 
+func (v *DxValue)AsDateTime()(DxCommonLib.TDateTime,error)  {
+	if v.fValue == nil{
+		return 0,nil
+	}
+	return v.fValue.AsDateTime()
+}
+
 func (v *DxValue)AsDouble()(float64,error){
 	if v.fValue == nil{
 		return 0,nil

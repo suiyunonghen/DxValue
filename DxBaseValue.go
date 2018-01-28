@@ -7,6 +7,7 @@ import (
 	"unsafe"
 	"errors"
 	"strings"
+	"time"
 )
 
 
@@ -26,6 +27,7 @@ type(
 		AsFloat()(float32,error)
 		AsDouble()(float64,error)
 		AsBytes()([]byte,error)
+		AsDateTime()(DxCommonLib.TDateTime,error)
 	}
 
 	DxBaseValue			struct{
@@ -86,6 +88,7 @@ const(
 	DVT_Bool
 	DVT_Float
 	DVT_Double
+	DVT_DateTime
 	DVT_String
 	DVT_Binary
 	DVT_Array
@@ -116,7 +119,7 @@ func (v *DxBaseValue)AsInt()(int,error){
 		return int((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
 	case DVT_Float:
 		return int((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
-	case DVT_Double:
+	case DVT_Double,DVT_DateTime:
 		return int((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
 	case DVT_Bool:
 		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
@@ -132,6 +135,37 @@ func (v *DxBaseValue)AsInt()(int,error){
 	}
 }
 
+func (v *DxBaseValue)AsDateTime()(DxCommonLib.TDateTime,error){
+	switch v.fValueType {
+	case DVT_Int:
+		return (DxCommonLib.TDateTime)((*DxIntValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int32:
+		return (DxCommonLib.TDateTime)((*DxInt32Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Int64:
+		return (DxCommonLib.TDateTime)((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Float:
+		return (DxCommonLib.TDateTime)((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_Double,DVT_DateTime:
+		return (DxCommonLib.TDateTime)((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
+	case DVT_String:
+		t,err := time.Parse("2006-01-02T15:04:05Z",(*DxStringValue)(unsafe.Pointer(v)).fvalue)
+		if err == nil{
+			return DxCommonLib.Time2DelphiTime(&t),err
+		}
+		t,err = time.Parse("2006-01-02 15:04:05",(*DxStringValue)(unsafe.Pointer(v)).fvalue)
+		if err == nil{
+			return DxCommonLib.Time2DelphiTime(&t),err
+		}
+		t,err = time.Parse("2006/01/02 15:04:05",(*DxStringValue)(unsafe.Pointer(v)).fvalue)
+		if err == nil{
+			return DxCommonLib.Time2DelphiTime(&t),err
+		}
+		return -1,err
+	default:
+		return -1,ErrValueType
+	}
+}
+
 func (v *DxBaseValue)AsBool()(bool,error){
 	switch v.fValueType {
 	case DVT_Int:
@@ -142,7 +176,7 @@ func (v *DxBaseValue)AsBool()(bool,error){
 		return int((*DxInt64Value)(unsafe.Pointer(v)).fvalue) != 0,nil
 	case DVT_Float:
 		return int((*DxFloatValue)(unsafe.Pointer(v)).fvalue) != 0,nil
-	case DVT_Double:
+	case DVT_Double,DVT_DateTime:
 		return int((*DxDoubleValue)(unsafe.Pointer(v)).fvalue) != 0,nil
 	case DVT_Bool: return (*DxBoolValue)(unsafe.Pointer(v)).fvalue,nil
 	case DVT_Null: return false,nil
@@ -163,7 +197,7 @@ func (v *DxBaseValue)AsInt32()(int32,error){
 		return int32((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
 	case DVT_Float:
 		return int32((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
-	case DVT_Double:
+	case DVT_Double,DVT_DateTime:
 		return int32((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
 	case DVT_Bool:
 		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
@@ -190,7 +224,7 @@ func (v *DxBaseValue)AsInt64()(int64,error){
 		return (*DxInt64Value)(unsafe.Pointer(v)).fvalue,nil
 	case DVT_Float:
 		return int64((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
-	case DVT_Double:
+	case DVT_Double,DVT_DateTime:
 		return int64((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
 	case DVT_Bool:
 		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
@@ -242,7 +276,7 @@ func (v *DxBaseValue)AsFloat()(float32,error){
 		return float32((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
 	case DVT_Float:
 		return (*DxFloatValue)(unsafe.Pointer(v)).fvalue,nil
-	case DVT_Double:
+	case DVT_Double,DVT_DateTime:
 		return float32((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),nil
 	case DVT_Bool:
 		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
@@ -269,7 +303,7 @@ func (v *DxBaseValue)AsDouble()(float64,error){
 		return float64((*DxInt64Value)(unsafe.Pointer(v)).fvalue),nil
 	case DVT_Float:
 		return float64((*DxFloatValue)(unsafe.Pointer(v)).fvalue),nil
-	case DVT_Double:
+	case DVT_Double,DVT_DateTime:
 		return (*DxDoubleValue)(unsafe.Pointer(v)).fvalue,nil
 	case DVT_Bool:
 		if (*DxBoolValue)(unsafe.Pointer(v)).fvalue{
@@ -314,7 +348,7 @@ func (v *DxBaseValue)ToString()string  {
 		return (*DxBinaryValue)(unsafe.Pointer(v)).ToString()
 	case DVT_Float:
 		return (*DxFloatValue)(unsafe.Pointer(v)).ToString()
-	case DVT_Double:
+	case DVT_Double,DVT_DateTime:
 		return (*DxDoubleValue)(unsafe.Pointer(v)).ToString()
 	case DVT_Bool:
 		return (*DxBoolValue)(unsafe.Pointer(v)).ToString()
@@ -343,7 +377,7 @@ func (v *DxBaseValue)AsBytes()([]byte,error)  {
 		return (*DxBinaryValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Float:
 		return (*DxFloatValue)(unsafe.Pointer(v)).Bytes(),nil
-	case DVT_Double:
+	case DVT_Double,DVT_DateTime:
 		return (*DxDoubleValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Bool:
 		return (*DxBoolValue)(unsafe.Pointer(v)).Bytes(),nil
@@ -363,6 +397,7 @@ func (v *DxBaseValue)AsBytes()([]byte,error)  {
 		return nil,nil
 	}
 }
+
 
 func (v *DxInt32Value)ToString()string  {
 	return strconv.Itoa(int(v.fvalue))
@@ -424,6 +459,9 @@ func (v *DxFloatValue)Bytes()[]byte  {
 
 
 func (v *DxDoubleValue)ToString()string  {
+	if v.fValueType == DVT_DateTime{
+		return DxCommonLib.TDateTime(v.fvalue).ToTime().Format("2006-01-02 15:04:05")
+	}
 	return strconv.FormatFloat(float64(v.fvalue),'f','e',64)
 }
 
@@ -432,6 +470,11 @@ func (v *DxDoubleValue)Bytes()[]byte  {
 	*(*float64)(unsafe.Pointer(&mb[0])) = v.fvalue
 	return mb
 }
+
+func (v *DxDoubleValue)Time()time.Time  {
+	return DxCommonLib.TDateTime(v.fvalue).ToTime()
+}
+
 
 
 func (v *DxStringValue)ToString()string  {

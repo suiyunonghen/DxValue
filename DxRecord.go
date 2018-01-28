@@ -18,6 +18,7 @@ import (
 	"io"
 	"bufio"
 	"os"
+	"time"
 )
 
 /******************************************************
@@ -260,7 +261,7 @@ func (r *DxRecord)SetFloat(KeyName string,v float32)  {
 		if value.fValueType == DVT_Float{
 			(*DxFloatValue)(unsafe.Pointer(value)).fvalue = v
 			return
-		}else if value.fValueType == DVT_Double{
+		}else if value.fValueType == DVT_Double || value.fValueType == DVT_DateTime{
 			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(v)
 			return
 		}
@@ -275,7 +276,7 @@ func (r *DxRecord)SetFloat(KeyName string,v float32)  {
 
 func (r *DxRecord)SetDouble(KeyName string,v float64)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
-		if value.fValueType == DVT_Double{
+		if value.fValueType == DVT_Double || value.fValueType == DVT_DateTime{
 			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = v
 			return
 		}else if value.fValueType == DVT_Float{
@@ -293,13 +294,105 @@ func (r *DxRecord)SetDouble(KeyName string,v float64)  {
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
+func (r *DxRecord)SetDateTime(KeyName string,v DxCommonLib.TDateTime)  {
+	if value,ok := r.fRecords[KeyName];ok && value != nil{
+		if value.fValueType == DVT_DateTime{
+			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(v)
+			return
+		}
+		value.ClearValue(true)
+	}
+	var m DxDoubleValue
+	m.fvalue = float64(v)
+	m.fValueType = DVT_DateTime
+	r.fRecords[KeyName] = &m.DxBaseValue
+}
 
+func (r *DxRecord)AsDateTime(keyName string,defavalue DxCommonLib.TDateTime)DxCommonLib.TDateTime  {
+	if value,ok := r.fRecords[keyName];ok && value != nil{
+		switch value.fValueType {
+		case DVT_Int: return DxCommonLib.TDateTime((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int32: return DxCommonLib.TDateTime((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Int64: return DxCommonLib.TDateTime((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+		case DVT_Bool:
+			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+				return 1
+			}
+			return 0
+		case DVT_Double,DVT_DateTime:return DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Float:return DxCommonLib.TDateTime((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_String:
+			if result,err := value.AsDateTime();err == nil{
+				return result
+			}else{
+				panic("can not convert Type to TDateTime")
+			}
+		default:
+			panic("can not convert Type to TDateTime")
+		}
+	}
+	return defavalue
+}
 
 func (r *DxRecord)SetString(KeyName string,v string)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
-		if value.fValueType == DVT_Double{
+		switch value.fValueType {
+		case DVT_String:
 			(*DxStringValue)(unsafe.Pointer(value)).fvalue = v
 			return
+		case DVT_DateTime:
+			if jt := DxCommonLib.ParserJsonTime(v);jt >= 0{
+				(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(jt)
+				return
+			}
+			t,err := time.Parse("2006-01-02T15:04:05Z",v)
+			if err == nil{
+				(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+				return
+			}
+			t,err = time.Parse("2006-01-02 15:04:05",v)
+			if err == nil{
+				(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+				return
+			}
+			t,err = time.Parse("2006/01/02 15:04:05",v)
+			if err == nil{
+				(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+				return
+			}
+		case DVT_Bool:
+			if v == "true" || strings.ToLower(v) == "true"{
+				(*DxBoolValue)(unsafe.Pointer(value)).fvalue = true
+				return
+			}else if v == "false" || strings.ToLower(v) == "false" {
+				(*DxBoolValue)(unsafe.Pointer(value)).fvalue = false
+				return
+			}
+		case DVT_Int:
+			if iv,err := strconv.Atoi(v);err == nil{
+				(*DxIntValue)(unsafe.Pointer(value)).fvalue = iv
+				return
+			}
+		case DVT_Int32:
+			if iv,err := strconv.Atoi(v);err == nil{
+				(*DxInt32Value)(unsafe.Pointer(value)).fvalue = int32(iv)
+				return
+			}
+		case DVT_Int64:
+			if iv,err := strconv.ParseInt(v,10,64);err == nil{
+				(*DxInt64Value)(unsafe.Pointer(value)).fvalue = iv
+				return
+			}
+		case DVT_Float:
+			if iv,err := strconv.ParseFloat(v,32);err == nil{
+				(*DxFloatValue)(unsafe.Pointer(value)).fvalue = float32(iv)
+				return
+			}
+		case DVT_Double:
+			if iv,err := strconv.ParseFloat(v,64);err == nil{
+				(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = iv
+				return
+			}
 		}
 		value.ClearValue(true)
 	}
@@ -308,6 +401,7 @@ func (r *DxRecord)SetString(KeyName string,v string)  {
 	m.fValueType = DVT_String
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
+
 
 func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
@@ -555,6 +649,8 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 	case float64: r.SetDouble(keyName,value)
 	case *float32: r.SetFloat(keyName,*value)
 	case *float64: r.SetDouble(keyName,*value)
+	case time.Time: r.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(&value))
+	case *time.Time: r.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(value))
 	case *DxRecord: r.SetRecordValue(keyName,value)
 	case DxRecord: r.SetRecordValue(keyName,&value)
 	case *DxIntKeyRecord: r.SetIntRecordValue(keyName,value)
@@ -744,7 +840,7 @@ func (r *DxRecord)AsInt32(KeyName string,defavalue int32)int32  {
 			}else{
 				return 0
 			}
-		case DVT_Double:return int32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Double,DVT_DateTime:return int32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int32((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		default:
 			panic("can not convert Type to int32")
@@ -835,7 +931,7 @@ func (r *DxRecord)AsInt(KeyName string,defavalue int)int  {
 			}else{
 				return 0
 			}
-		case DVT_Double:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Double,DVT_DateTime:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		default:
 			panic("can not convert Type to int")
@@ -891,7 +987,7 @@ func (r *DxRecord)AsInt64(KeyName string,defavalue int64)int64  {
 			}else{
 				return 0
 			}
-		case DVT_Double:return int64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Double,DVT_DateTime:return int64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		default:
 			panic("can not convert Type to int64")
@@ -942,7 +1038,7 @@ func (r *DxRecord)AsBool(KeyName string,defavalue bool)bool  {
 		case DVT_Int32: return (*DxInt32Value)(unsafe.Pointer(value)).fvalue != 0
 		case DVT_Int64: return (*DxInt64Value)(unsafe.Pointer(value)).fvalue != 0
 		case DVT_Bool: return bool((*DxBoolValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Double:return float64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue) != 0
+		case DVT_Double,DVT_DateTime:return float64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue) != 0
 		case DVT_Float:return float32((*DxFloatValue)(unsafe.Pointer(value)).fvalue) != 0
 		default:
 			panic("can not convert Type to Bool")
@@ -998,7 +1094,7 @@ func (r *DxRecord)AsFloat(KeyName string,defavalue float32)float32  {
 				return 1
 			}
 			return 0
-		case DVT_Double:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Double,DVT_DateTime:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return (*DxFloatValue)(unsafe.Pointer(value)).fvalue
 		default:
 			panic("can not convert Type to Float")
@@ -1055,7 +1151,7 @@ func (r *DxRecord)AsDouble(KeyName string,defavalue float64)float64  {
 			}
 			return 0
 		case DVT_Double:return float64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Float:return float64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_Float,DVT_DateTime:return float64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		default:
 			panic("can not convert Type to Double")
 		}
@@ -1385,6 +1481,11 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape bool)(parse
 					st := ""
 					if ConvertEscape{
 						st = DxCommonLib.ParserEscapeStr(bvalue)
+						jt := DxCommonLib.ParserJsonTime(st)
+						if jt >= 0{
+							r.SetDateTime(keyName,jt)
+							return plen + i + 2,nil
+						}
 					}else{
 						st = DxCommonLib.FastByte2String(bvalue)
 					}
@@ -1485,6 +1586,20 @@ func (r *DxRecord)SaveJsonFile(fileName string,BOMFile bool)error  {
 func (r *DxRecord)LoadJsonReader(reader io.Reader)error  {
 	return nil
 }
+
+func (r *DxRecord)SaveMsgPackWriter(w io.Writer)error  {
+return nil
+}
+
+func (r *DxRecord)SaveMsgPackFile(fileName string)error  {
+	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
+		defer file.Close()
+		return r.SaveMsgPackWriter(file)
+	}else{
+		return err
+	}
+}
+
 
 func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
 	i := 0
