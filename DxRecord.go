@@ -1583,18 +1583,16 @@ func (r *DxRecord)SaveJsonFile(fileName string,BOMFile bool)error  {
 	}
 }
 
+
 func (r *DxRecord)LoadJsonReader(reader io.Reader)error  {
 	return nil
-}
-
-func (r *DxRecord)SaveMsgPackWriter(w io.Writer)error  {
-return nil
 }
 
 func (r *DxRecord)SaveMsgPackFile(fileName string)error  {
 	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
 		defer file.Close()
-		return r.SaveMsgPackWriter(file)
+		var coder DxMsgPackCoder
+		return coder.EncodeRecord(r,file)
 	}else{
 		return err
 	}

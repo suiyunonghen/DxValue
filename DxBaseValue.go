@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"io"
 )
 
 
@@ -28,6 +29,11 @@ type(
 		AsDouble()(float64,error)
 		AsBytes()([]byte,error)
 		AsDateTime()(DxCommonLib.TDateTime,error)
+	}
+
+	IDxValueCoder		interface{
+		Encode(v *DxBaseValue,w io.Writer)
+		Decode(r io.Reader)*DxBaseValue
 	}
 
 	DxBaseValue			struct{
