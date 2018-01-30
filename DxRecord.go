@@ -1605,8 +1605,7 @@ func (r *DxRecord)LoadJsonReader(reader io.Reader)error  {
 func (r *DxRecord)SaveMsgPackFile(fileName string)error  {
 	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
 		defer file.Close()
-		var coder DxMsgPackCoder
-		return coder.EncodeRecord(r,file)
+		return EncodeMsgPackRecord(r,file)
 	}else{
 		return err
 	}

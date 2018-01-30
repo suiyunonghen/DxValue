@@ -23,6 +23,7 @@ func TestDxRecord_JsonParserFromByte(t *testing.T) {
 		fmt.Println("Parser Error: ",err)
 	}
 	fmt.Println(rc.ToString())
+	rc.SaveMsgPackFile("d:\\testMsgPack.bin")
 }
 
 func TestParserTime(t *testing.T)  {
@@ -144,7 +145,6 @@ func TestDxRecord_SaveJsonFile(t *testing.T) {
 	rec.SetFloat("Float",-34.534)
 	rec.SetValue("Now",time.Now())
 	rec.SaveJsonFile("d:\\testJson.json",true)
-	rec.SaveMsgPackFile("d:\\testMsgPack.bin")
 }
 
 func TestDxRecord_AsString(t *testing.T) {

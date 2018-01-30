@@ -13,6 +13,7 @@ import (
 	"math"
 	"time"
 	"bufio"
+	"errors"
 )
 
 type(
@@ -20,25 +21,51 @@ type(
 )
 
 const(
-	max_fixmap_len		= 16
-	max_map16_len		= 1 << 16
-	max_map32_len		= 1 << 32
+	max_fixmap_len		= 15
+	max_map16_len		= 1 << 16 - 1
+	max_map32_len		= 1 << 32 - 1
 
-	max_fixstr_len		= 32
-	max_str8_len		= 1 << 8
-	max_str16_len		= 1 << 16
-	max_str32_len		= 1 << 32
+	max_fixstr_len		= 32 - 1
+	max_str8_len		= 1 << 8 - 1
+	max_str16_len		= 1 << 16 - 1
+	max_str32_len		= 1 << 32 - 1
 )
 
-func (coder DxMsgPackCoder)Encode(v *DxBaseValue, w io.Writer)(err error)  {
-	switch v.fValueType {
-	case DVT_Record:
-		return coder.EncodeRecord((*DxRecord)(unsafe.Pointer(v)),w)
+var (
+	ErrInvalidateMsgPack = errors.New("Is not a Validate MsgPack format")
+	msgpackDecodefuncs = map[byte]func(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(value *DxBaseValue, err error){
+		0xc0:decodeNil,
+		0xc2:decodefalse,
+		0xc3:decodetrue,
+		0xcc:decodeUint8,
+		0xcd:decodeUint16,
+		0xce:decodeUint32,
+		0xcf:decodeUint64,
+		0xd0:decodeInt8,
+		0xd1:decodeInt16,
+		0xd2:decodeInt32,
+		0xd3:decodeInt64,
+		0xca:decodeFloat32,
+		0xcb:decodeFloat64,
+		0xd9:decodeStr8,
+		0xda:decodeStr16,
+		0xdb:decodeStr32,
+		0xc4:decodeBin8,
+		0xc5:decodeBin16,
+		0xc6:decodeBin32,
+		0xd6:decodeDateTime,
+		0xdc:decodeArr16,
+		0xdd:decodeArr32,
+		0xde:decodeRecord16,
+		0xdf:decodeRecord32,
 	}
-	return nil
+)
+func (coder DxMsgPackCoder)Encode(v *DxBaseValue, w io.Writer)(err error)  {
+	return EncodeMsgPackBaseValue(v,w)
 }
 
-func (coder DxMsgPackCoder)EncodeRecord(r *DxRecord,w io.Writer)(err error)  {
+
+func EncodeMsgPackRecord(r *DxRecord,w io.Writer)(err error)  {
 	var writer *bufio.Writer
 	ok := false
 	if writer,ok = w.(*bufio.Writer);!ok{
@@ -72,37 +99,9 @@ func (coder DxMsgPackCoder)EncodeRecord(r *DxRecord,w io.Writer)(err error)  {
 		}
 		//写入v
 		if v != nil{
-			switch v.fValueType {
-			case DVT_Record:
-				err = coder.EncodeRecord((*DxRecord)(unsafe.Pointer(v)),writer)
-			case DVT_Int:
-				err = EncodeMsgPackInt(int64((*DxIntValue)(unsafe.Pointer(v)).fvalue),writer)
-			case DVT_Int32:
-				err = EncodeMsgPackInt(int64((*DxInt32Value)(unsafe.Pointer(v)).fvalue),writer)
-			case DVT_Int64:
-				err = EncodeMsgPackInt((*DxInt64Value)(unsafe.Pointer(v)).fvalue,writer)
-			case DVT_Bool:
-				err = EncodeMsgPackBool((*DxBoolValue)(unsafe.Pointer(v)).fvalue,writer)
-			case DVT_String:
-				err = EncodeMsgPackString((*DxStringValue)(unsafe.Pointer(v)).fvalue,writer)
-			case DVT_Float:
-				err = EncodeMsgPackFloat((*DxFloatValue)(unsafe.Pointer(v)).fvalue,writer)
-			case DVT_Double:
-				err = EncodeMsgPackDouble((*DxDoubleValue)(unsafe.Pointer(v)).fvalue,writer)
-			case DVT_Binary:
-				if (*DxBinaryValue)(unsafe.Pointer(v)).fbinary != nil{
-					err = EncodeMsgPackBinary((*DxBinaryValue)(unsafe.Pointer(v)).fbinary,writer)
-				}else{
-					writer.WriteByte(0xc0) //null
-				}
-			case DVT_Array:
-			case DVT_DateTime:
-				err = EncodeMsgPackDateTime(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),writer)
-			default:
-				writer.WriteByte(0xc0) //null
-			}
+			err = EncodeMsgPackBaseValue(v,writer)
 		}else{
-			writer.WriteByte(0xc0) //null
+			err = writer.WriteByte(0xc0) //null
 		}
 
 		if err != nil{
@@ -111,6 +110,702 @@ func (coder DxMsgPackCoder)EncodeRecord(r *DxRecord,w io.Writer)(err error)  {
 		maplen--
 		if maplen == 0{
 			break
+		}
+	}
+	err = writer.Flush()
+	return err
+}
+
+func decodeNil(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(value *DxBaseValue,err error)  {
+	if parentValue == nil{
+		return nil,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodefalse(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(value *DxBaseValue,err error)  {
+	if parentValue == nil{
+		var bf DxBoolValue
+		bf.fValueType = DVT_Bool
+		return &bf.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodetrue(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(value *DxBaseValue,err error)  {
+	if parentValue == nil{
+		var bf DxBoolValue
+		bf.fValueType = DVT_Bool
+		bf.fvalue = true
+		return &bf.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeUint8(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err != nil{
+			return nil,err
+		}
+		var bv DxInt32Value
+		bv.fValueType = DVT_Int32
+		bv.fvalue = int32(b[0])
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeUint16(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		vuint16 := uint16(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint16);err!= nil{
+			return nil,err
+		}
+		var bv DxInt32Value
+		bv.fValueType = DVT_Int32
+		bv.fvalue = int32(vuint16)
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeUint32(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		vuint32 := uint32(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint32);err!= nil{
+			return nil,err
+		}
+		var bv DxInt64Value
+		bv.fValueType = DVT_Int64
+		bv.fvalue = int64(vuint32)
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeUint64(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		vuint64 := uint64(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint64);err!= nil{
+			return nil,err
+		}
+		var bv DxInt64Value
+		bv.fValueType = DVT_Int64
+		bv.fvalue = int64(vuint64)
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeInt8(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err != nil{
+			return nil,err
+		}
+		var bv DxInt32Value
+		bv.fValueType = DVT_Int32
+		bv.fvalue = int32(int8(b[0]))
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeInt16(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		vuint16 := int16(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint16);err!= nil{
+			return nil,err
+		}
+		var bv DxInt32Value
+		bv.fValueType = DVT_Int32
+		bv.fvalue = int32(vuint16)
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeInt32(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		vuint32 := int32(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint32);err!= nil{
+			return nil,err
+		}
+		var bv DxInt32Value
+		bv.fValueType = DVT_Int32
+		bv.fvalue = vuint32
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeInt64(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		vuint64 := int64(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint64);err!= nil{
+			return nil,err
+		}
+		var bv DxInt64Value
+		bv.fValueType = DVT_Int64
+		bv.fvalue = vuint64
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeFloat32(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		v32 := int32(0)
+		if err := binary.Read(r,binary.BigEndian,&v32);err!= nil{
+			return nil,err
+		}
+		var bv DxFloatValue
+		bv.fValueType = DVT_Float
+		bv.fvalue = *(*float32)(unsafe.Pointer(&v32))
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeFloat64(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		v64 := int64(0)
+		if err := binary.Read(r,binary.BigEndian,&v64);err!= nil{
+			return nil,err
+		}
+		var bv DxDoubleValue
+		bv.fValueType = DVT_Double
+		bv.fvalue = *(*float64)(unsafe.Pointer(&v64))
+		return &bv.DxBaseValue,nil
+	}else {
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+
+func decodeStr8(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err!=nil{
+			return nil,err
+		}
+		var bv DxStringValue
+		if b[0] > 0{
+			mb := make([]byte,int(b[0]))
+			if _,err = r.Read(mb);err!=nil{
+				return nil,err
+			}
+			bv.fvalue = DxCommonLib.FastByte2String(mb)
+		}
+		bv.fValueType = DVT_String
+		return &bv.DxBaseValue,nil
+	}else{
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeStr16(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		strlen := uint16(0)
+		err := binary.Read(r,binary.BigEndian,&strlen)
+		if err!= nil{
+			return nil,err
+		}
+		var bv DxStringValue
+		if strlen > 0{
+			mb := make([]byte,int(strlen))
+			if _,err = r.Read(mb);err!=nil{
+				return nil,err
+			}
+			bv.fvalue = DxCommonLib.FastByte2String(mb)
+		}
+		bv.fValueType = DVT_String
+		return &bv.DxBaseValue,nil
+	}else{
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeStr32(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		strlen := uint32(0)
+		err := binary.Read(r,binary.BigEndian,&strlen)
+		if err!= nil{
+			return nil,err
+		}
+		var bv DxStringValue
+		if strlen > 0{
+			mb := make([]byte,int(strlen))
+			if _,err = r.Read(mb);err!=nil{
+				return nil,err
+			}
+			bv.fvalue = DxCommonLib.FastByte2String(mb)
+		}
+		bv.fValueType = DVT_String
+		return &bv.DxBaseValue,nil
+	}else{
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeBin8(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err!=nil{
+			return nil,err
+		}
+		var bv DxBinaryValue
+		if b[0] > 0{
+			mb := make([]byte,int(b[0]))
+			if _,err = r.Read(mb);err!=nil{
+				return nil,err
+			}
+			bv.fbinary = mb
+		}
+		bv.fValueType = DVT_Binary
+		return &bv.DxBaseValue,nil
+	}else{
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeBin16(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		strlen := uint16(0)
+		err := binary.Read(r,binary.BigEndian,&strlen)
+		if err!= nil{
+			return nil,err
+		}
+		var bv DxBinaryValue
+		if strlen > 0{
+			mb := make([]byte,int(strlen))
+			if _,err = r.Read(mb);err!=nil{
+				return nil,err
+			}
+			bv.fbinary = mb
+		}
+		bv.fValueType = DVT_Binary
+		return &bv.DxBaseValue,nil
+	}else{
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeBin32(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		strlen := uint32(0)
+		err := binary.Read(r,binary.BigEndian,&strlen)
+		if err!= nil{
+			return nil,err
+		}
+		var bv DxBinaryValue
+		if strlen > 0{
+			mb := make([]byte,int(strlen))
+			if _,err = r.Read(mb);err!=nil{
+				return nil,err
+			}
+			bv.fbinary = mb
+		}
+		bv.fValueType = DVT_Binary
+		return &bv.DxBaseValue,nil
+	}else{
+		return nil,ErrInvalidateMsgPack
+	}
+}
+
+func decodeDateTime(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	if parentValue == nil{
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err!=nil{
+			return nil,err
+		}
+		if int8(b[0]) == -1{
+			ms := uint32(0)
+			err := binary.Read(r,binary.BigEndian,&ms)
+			if err!= nil{
+				return nil,err
+			}
+			var bv DxDoubleValue
+			ntime := time.Now()
+			ns := ntime.Unix()
+			ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+			bv.fvalue = float64(DxCommonLib.Time2DelphiTime(&ntime))
+			bv.fValueType = DVT_DateTime
+			return &bv.DxBaseValue,nil
+		}
+
+	}
+	return nil,ErrInvalidateMsgPack
+}
+
+func decodeArray(r io.Reader,arr *DxArray,arrlen int)error  {
+	for i := 0;i<arrlen;i++{
+
+	}
+	return nil
+}
+
+func decodeArr16(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	arrlen := uint16(0)
+	err := binary.Read(r,binary.BigEndian,&arrlen)
+	if err!= nil{
+		return nil,err
+	}
+	arr := NewArray()
+	if err = decodeArray(r,arr,int(arrlen));err!=nil{
+		return nil,err
+	}
+	return &arr.DxBaseValue,nil
+}
+
+func decodeArr32(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	arrlen := uint32(0)
+	err := binary.Read(r,binary.BigEndian,&arrlen)
+	if err!= nil{
+		return nil,err
+	}
+	arr := NewArray()
+	if err = decodeArray(r,arr,int(arrlen));err!=nil{
+		return nil,err
+	}
+	return &arr.DxBaseValue,nil
+}
+
+func decodeString(r io.Reader,bflag byte)(string, error)  {
+	strlen := 0
+	if bflag == 0{
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err!=nil{
+			return "",err
+		}
+		bflag = b[0]
+	}
+	switch bflag {
+	case 0xd9:
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err!=nil{
+			return "",err
+		}
+		strlen = int(b[0])
+	case 0xda:
+		alen := uint16(0)
+		err := binary.Read(r,binary.BigEndian,&alen)
+		if err!= nil{
+			return "",err
+		}
+		strlen = int(alen)
+	case 0xdb:
+		alen := uint32(0)
+		err := binary.Read(r,binary.BigEndian,&alen)
+		if err!= nil{
+			return "",err
+		}
+		strlen = int(alen)
+	default:
+		if bflag & 0xa0 != 0xa0{
+			return "",ErrInvalidateMsgPack
+		}
+		strlen = int(bflag & 0x1f)
+	}
+	if strlen > 0{
+		mb := make([]byte,strlen)
+		if _,err := r.Read(mb);err!=nil{
+			return "",err
+		}
+		return DxCommonLib.FastByte2String(mb),nil
+	}
+	return "",nil
+}
+
+func decodeInt(r io.Reader,bflag byte)(int64, error)  {
+	var b [1]byte
+	if bflag == 0{
+		_,err := r.Read(b[:])
+		if err!=nil{
+			return 0,err
+		}
+		bflag = b[0]
+	}
+	switch bflag {
+	case 0xcc,0xd0:
+		if _,err := r.Read(b[:]);err!=nil{
+			return 0,err
+		}
+		if bflag == 0xcc{
+			return int64(b[0]),nil
+		}
+		return int64(int8(b[0])),nil
+	case 0xcd,0xd1:
+		vuint16 := uint16(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint16);err!= nil{
+			return 0,err
+		}
+		if bflag == 0xcd{
+			return int64(vuint16),nil
+		}
+		return int64(int16(vuint16)),nil
+	case 0xce,0xd2:
+		vuint32 := uint32(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint32);err!= nil{
+			return 0,err
+		}
+		if bflag == 0xcd{
+			return int64(vuint32),nil
+		}
+		return int64(int32(vuint32)),nil
+	case 0xcf,0xd3:
+		vuint64 := uint64(0)
+		if err := binary.Read(r,binary.BigEndian,&vuint64);err!= nil{
+			return 0,err
+		}
+		return int64(vuint64),nil
+	default:
+		if bflag <= 0x7f{
+			return int64(bflag),nil
+		}else if bflag & 0x80 == 0x80{
+			return int64(bflag & 0xF),nil
+		}else{
+			return 0,ErrInvalidateMsgPack
+		}
+	}
+}
+
+func decodeMap(r io.Reader,rec *DxRecord,reclen int)error  {
+	for i := 0;i<reclen-1;i++{
+		keyName,err := decodeString(r,0)
+		if err != nil{
+			return err
+		}
+
+	}
+}
+
+func decodeIntMap(r io.Reader,rec *DxIntKeyRecord,reclen int)error  {
+
+}
+
+func decodeRecord32(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	recLen := uint32(0)
+	err := binary.Read(r,binary.BigEndian,&recLen)
+	if err!= nil{
+		return nil,err
+	}
+
+	if recLen > 0{
+		//先读取一个，判定Map类型
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err != nil{
+			return nil,err
+		}
+		//字符串类型
+		if b[0] == 0xd9 || b[0] == 0xda || b[0] == 0xdb || b[0] & 0xa0 == 0xa0{
+			rec := NewRecord()
+			keyName,err := decodeString(r,b[0])
+			if err != nil{
+				return nil,err
+			}
+			_,err = r.Read(b[:])
+			if err != nil{
+				return nil,err
+			}
+			switch  {
+			case b[0]>=0xd9 && b[0] <= 0xdb ||  b[0] & 0xa0 == 0xa0:
+				str,aerr := decodeString(r,b[0])
+				if aerr != nil{
+					return nil,aerr
+				}
+				rec.SetString(keyName,str)
+			case b[0] >= 0xcc && b[0] <= 0xcf || b[0] >= 0xd0 && b[0] <= 0xd3 || b[0] <= 0x7f:
+				if i64,aerr := decodeInt(r,b[0]);aerr != nil{
+					return nil,aerr
+				}else{
+					rec.SetInt64(keyName,i64)
+				}
+			}
+			decodeMap(r,rec,int(recLen) - 1)
+		}else if b[0] >= 0xcc && b[0] <= 0xcf || b[0] >= 0xd0 && b[0] <= 0xd3 || b[0] <= 0x7f{
+			rec := NewIntKeyRecord()
+			decodeIntMap(r,rec,int(recLen) - 1)
+		}else{
+			return nil,ErrInvalidateMsgPack
+		}
+	}
+
+	return nil,nil
+}
+
+func decodeRecord16(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo int64)(*DxBaseValue,error)  {
+	recLen := uint16(0)
+	err := binary.Read(r,binary.BigEndian,&recLen)
+	if err!= nil{
+		return nil,err
+	}
+	if recLen > 0{
+		//先读取一个，判定Map类型
+	}
+	return nil,nil
+}
+
+func DecodeMsgPack(r io.Reader)(value *DxBaseValue, err error)  {
+	var (
+		reader *bufio.Reader
+		bt byte
+	)
+	ok := false
+	if reader,ok = r.(*bufio.Reader);!ok{
+		reader = bufio.NewReader(r)
+	}
+	for{
+		bt,err = reader.ReadByte()
+		if err != nil{
+			return nil,err
+		}
+		if decodefunc,ok := msgpackDecodefuncs[bt];ok{
+			return decodefunc(r,value,"",-1)
+		}
+	}
+}
+
+func EncodeMsgPackRecordIntKey(r *DxIntKeyRecord,w io.Writer)(err error)  {
+	var writer *bufio.Writer
+	ok := false
+	if writer,ok = w.(*bufio.Writer);!ok{
+		writer = bufio.NewWriter(w)
+	}
+	maplen := len(r.fRecords)
+	if maplen <= max_fixmap_len{   //fixmap
+		err = writer.WriteByte(0x80 | byte(maplen))
+	}else if maplen <= max_map16_len{
+		//写入长度
+		mb := [3]byte{}
+		mb[0] = 0xDE
+		binary.BigEndian.PutUint16(mb[1:],uint16(maplen))
+		_,err = writer.Write(mb[:])
+	}else{
+		if maplen > max_map32_len{
+			maplen = max_map32_len
+		}
+		mb := [5]byte{}
+		mb[0] = 0xDF
+		binary.BigEndian.PutUint32(mb[1:],uint32(maplen))
+		_,err = writer.Write(mb[:])
+	}
+	if err != nil{
+		return
+	}
+	//写入对象信息,Kv对
+	for k,v := range r.fRecords{
+		if err = EncodeMsgPackInt(k,writer);err != nil{
+			return
+		}
+		//写入v
+		if v != nil{
+			err = EncodeMsgPackBaseValue(v,writer)
+		}else{
+			err = writer.WriteByte(0xc0) //null
+		}
+
+		if err != nil{
+			return
+		}
+		maplen--
+		if maplen == 0{
+			break
+		}
+	}
+	err = writer.Flush()
+	return err
+}
+
+func EncodeMsgPackBaseValue(v *DxBaseValue,w io.Writer)(err error)  {
+	switch v.fValueType {
+	case DVT_Record:
+		err = EncodeMsgPackRecord((*DxRecord)(unsafe.Pointer(v)),w)
+	case DVT_RecordIntKey:
+		err = EncodeMsgPackRecordIntKey((*DxIntKeyRecord)(unsafe.Pointer(v)),w)
+	case DVT_Int:
+		err = EncodeMsgPackInt(int64((*DxIntValue)(unsafe.Pointer(v)).fvalue),w)
+	case DVT_Int32:
+		err = EncodeMsgPackInt(int64((*DxInt32Value)(unsafe.Pointer(v)).fvalue),w)
+	case DVT_Int64:
+		err = EncodeMsgPackInt((*DxInt64Value)(unsafe.Pointer(v)).fvalue,w)
+	case DVT_Bool:
+		err = EncodeMsgPackBool((*DxBoolValue)(unsafe.Pointer(v)).fvalue,w)
+	case DVT_String:
+		err = EncodeMsgPackString((*DxStringValue)(unsafe.Pointer(v)).fvalue,w)
+	case DVT_Float:
+		err = EncodeMsgPackFloat((*DxFloatValue)(unsafe.Pointer(v)).fvalue,w)
+	case DVT_Double:
+		err = EncodeMsgPackDouble((*DxDoubleValue)(unsafe.Pointer(v)).fvalue,w)
+	case DVT_Binary:
+		if (*DxBinaryValue)(unsafe.Pointer(v)).fbinary != nil{
+			err = EncodeMsgPackBinary((*DxBinaryValue)(unsafe.Pointer(v)).fbinary,w)
+		}else{
+			_,err = w.Write([]byte{0xc0}) //null
+		}
+	case DVT_Array:
+		err = EncodeMsgPackArray((*DxArray)(unsafe.Pointer(v)),w)
+	case DVT_DateTime:
+		err = EncodeMsgPackDateTime(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue),w)
+	default:
+		_,err =  w.Write([]byte{0xc0}) //null
+	}
+	return err
+}
+
+func EncodeMsgPackArray(arr *DxArray,w io.Writer)(err error)  {
+	var writer *bufio.Writer
+	ok := false
+	if writer,ok = w.(*bufio.Writer);!ok{
+		writer = bufio.NewWriter(w)
+	}
+	arlen := arr.Length()
+	switch {
+	case arlen < 16: //1001XXXX|    N objects
+		_,err = writer.Write([]byte{0x90 | byte(arlen)})
+	case arlen <= max_map16_len:  //0xdc  |YYYYYYYY|YYYYYYYY|    N objects
+		var mb [3]byte
+		mb[0] = 0xdc
+		binary.BigEndian.PutUint16(mb[1:],uint16(arlen))
+		_,err = writer.Write(mb[:])
+	default:
+		if arlen > max_map32_len{
+			arlen = max_map32_len
+		}
+		var mb [5]byte
+		mb[0] = 0xdd
+		binary.BigEndian.PutUint32(mb[1:],uint32(arlen))
+		_,err = writer.Write(mb[:])
+	}
+	for i := 0;i <= arlen - 1;i++{
+		if arr.fValues[i] == nil{
+			err = writer.WriteByte(0xc0) //null
+		}else{
+			err = EncodeMsgPackBaseValue(arr.fValues[i],writer)
+		}
+		if err != nil{
+			return
 		}
 	}
 	err = writer.Flush()
