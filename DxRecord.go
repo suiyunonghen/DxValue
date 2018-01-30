@@ -446,11 +446,18 @@ func (r *DxRecord)Bytes()[]byte  {
 		buffer.WriteString(`":`)
 		if v != nil{
 			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary{
+			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime{
 				buffer.WriteByte('"')
 			}
-			buffer.WriteString(v.ToString())
-			if vt == DVT_String || vt == DVT_Binary{
+			if vt == DVT_DateTime{
+				buffer.WriteString("/Date(")
+				buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
+				buffer.WriteString(")/")
+			}else{
+				buffer.WriteString(v.ToString())
+			}
+
+			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime{
 				buffer.WriteByte('"')
 			}
 		}else{
@@ -1549,14 +1556,21 @@ func (r *DxRecord)SaveJsonWriter(w io.Writer)error  {
 		}
 		if v != nil{
 			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary{
+			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime{
 				err = writer.WriteByte('"')
 			}
 			if err != nil{
 				return err
 			}
-			_,err = writer.WriteString(v.ToString())
-			if err == nil && (vt == DVT_String || vt == DVT_Binary){
+			if vt == DVT_DateTime{
+				_,err = writer.WriteString("/Date(")
+				_,err = writer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
+				_,err = writer.WriteString(")/")
+			}else{
+				_,err = writer.WriteString(v.ToString())
+			}
+
+			if err == nil && (vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime) {
 				err = writer.WriteByte('"')
 			}
 		}else{
