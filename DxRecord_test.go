@@ -9,6 +9,7 @@ import (
 	"github.com/suiyunonghen/DxCommonLib"
 	"unsafe"
 	"time"
+	"bytes"
 )
 
 func TestDxRecord_JsonParserFromByte(t *testing.T) {
@@ -144,7 +145,23 @@ func TestDxRecord_SaveJsonFile(t *testing.T) {
 	rec.SetDouble("Double",234234234.4564564)
 	rec.SetFloat("Float",-34.534)
 	rec.SetValue("Now",time.Now())
-	rec.SaveJsonFile("d:\\testJson.json",true)
+	//rec.SaveJsonFile("d:\\testJson.json",true)
+	rec.SaveMsgPackFile("d:\\msgpack.bin")
+}
+
+func TestMsgPackDecode(t *testing.T)  {
+	bt, err := ioutil.ReadFile("d:\\msgpack.bin")
+	if err != nil {
+		fmt.Println("ReadFile Err:",err)
+		return
+	}
+	buf := bytes.NewBuffer(bt)
+	if rec,err := DecodeMsgPack(buf);err!=nil{
+		fmt.Println("Error；",err)
+	}else{
+		fmt.Println(rec.ToString())
+	}
+
 }
 
 func TestDxRecord_AsString(t *testing.T) {

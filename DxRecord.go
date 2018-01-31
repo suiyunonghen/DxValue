@@ -408,7 +408,7 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 		if value.fValueType == DVT_Binary{
 			bv := (*DxBinaryValue)(unsafe.Pointer(value))
 			if reWrite{
-				bv.SetBinary(v,false)
+				bv.SetBinary(v,true)
 			}else{
 				bv.Append(v)
 			}
@@ -417,7 +417,7 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 		value.ClearValue(true)
 	}
 	var m DxBinaryValue
-	m.Append(v)
+	m.fbinary = v
 	m.fParent = &r.DxBaseValue
 	m.fValueType = DVT_Binary
 	r.fRecords[KeyName] = &m.DxBaseValue

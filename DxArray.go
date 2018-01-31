@@ -60,7 +60,7 @@ func (arr *DxArray)TruncateArray(ArrLen int)  {
 
 
 func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
-	if idx == -1{
+	if idx < 0{
 		if arr.fValues != nil{
 			idx = 0
 		}else{
@@ -86,7 +86,7 @@ func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 }
 
 func (arr *DxArray)NewIntRecord(idx int)(rec *DxIntKeyRecord)   {
-	if idx == -1{
+	if idx < 0{
 		if arr.fValues != nil{
 			idx = 0
 		}else{
@@ -112,7 +112,7 @@ func (arr *DxArray)NewIntRecord(idx int)(rec *DxIntKeyRecord)   {
 }
 
 func (arr *DxArray)NewArray(idx int)(ararr *DxArray)  {
-	if idx == -1{
+	if idx < 0{
 		if arr.fValues != nil{
 			idx = 0
 		}else{
@@ -172,6 +172,9 @@ func (arr *DxArray)VaueTypeByIndex(idx int)DxValueType  {
 }
 
 func (arr *DxArray)SetNull(idx int)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
 		arr.fValues[idx].ClearValue(true)
@@ -247,6 +250,9 @@ func (arr *DxArray)AsInt64(idx int,defValue int64)int64  {
 
 
 func (arr *DxArray)SetInt(idx,value int)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil {
 		switch arr.fValues[idx].fValueType {
@@ -274,6 +280,9 @@ func (arr *DxArray)SetInt(idx,value int)  {
 }
 
 func (arr *DxArray)SetInt32(idx int,value int32)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil {
 		switch arr.fValues[idx].fValueType {
@@ -298,6 +307,9 @@ func (arr *DxArray)SetInt32(idx int,value int32)  {
 }
 
 func (arr *DxArray)SetInt64(idx int,value int64)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
 		switch arr.fValues[idx].fValueType {
@@ -326,6 +338,9 @@ func (arr *DxArray)SetInt64(idx int,value int64)  {
 }
 
 func (arr *DxArray)SetBool(idx int,value bool)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Bool{
 		(*DxBoolValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = value
@@ -366,6 +381,9 @@ func (arr *DxArray)AsString(idx int,defValue string)string  {
 }
 
 func (arr *DxArray)SetString(idx int,value string)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
 		switch arr.fValues[idx].fValueType {
@@ -431,6 +449,9 @@ func (arr *DxArray)SetString(idx int,value string)  {
 
 
 func (arr *DxArray)SetFloat(idx int,value float32)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil {
 		switch arr.fValueType {
@@ -473,6 +494,9 @@ func (arr *DxArray)AsFloat(idx int,defValue float32)float32  {
 }
 
 func (arr *DxArray)SetDouble(idx int,value float64)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
 		switch arr.fValueType {
@@ -496,6 +520,9 @@ func (arr *DxArray)SetDouble(idx int,value float64)  {
 }
 
 func (arr *DxArray)SetDateTime(idx int,t DxCommonLib.TDateTime)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	value := float64(t)
 	if arr.fValues[idx] != nil{
@@ -562,6 +589,9 @@ func (arr *DxArray)AsDateTime(idx int,defValue DxCommonLib.TDateTime)DxCommonLib
 }
 
 func (arr *DxArray)SetArray(idx int,value *DxArray)  {
+	if idx < 0{
+		return
+	}
 	if value != nil && value.fParent != nil {
 		panic("Must Set A Single Array(no Parent)")
 	}
@@ -592,6 +622,9 @@ func (arr *DxArray)AsArray(idx int)(*DxArray)  {
 
 
 func (arr *DxArray)SetRecord(idx int,value *DxRecord)  {
+	if idx < 0{
+		return
+	}
 	if value != nil && value.fParent != nil {
 		panic("Must Set A Single Record(no Parent)")
 	}
@@ -631,6 +664,9 @@ func (arr *DxArray)AsIntRecord(idx int)(*DxIntKeyRecord)  {
 }
 
 func (arr *DxArray)SetBinary(idx int,bt []byte)  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil && arr.fValues[idx].fValueType == DVT_Binary{
 		(*DxBinaryValue)(unsafe.Pointer(arr.fValues[idx])).SetBinary(bt,true)
@@ -647,6 +683,9 @@ func (arr *DxArray)SetBinary(idx int,bt []byte)  {
 }
 
 func (arr *DxArray)SetValue(idx int,value interface{})  {
+	if idx < 0{
+		return
+	}
 	arr.ifNilInitArr2idx(idx)
 	if value == nil{
 		arr.SetNull(idx)
