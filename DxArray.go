@@ -682,6 +682,18 @@ func (arr *DxArray)SetBinary(idx int,bt []byte)  {
 	}
 }
 
+func (arr *DxArray)SetBaseValue(idx int,v *DxBaseValue)  {
+	if v.fValueType == DVT_Unknown{
+		panic("UnKnown Value")
+	}
+	arr.ifNilInitArr2idx(idx)
+	if v == nil{
+		arr.SetNull(idx)
+		return
+	}
+	arr.fValues[idx] = v
+}
+
 func (arr *DxArray)SetValue(idx int,value interface{})  {
 	if idx < 0{
 		return
@@ -752,6 +764,7 @@ func (arr *DxArray)SetValue(idx int,value interface{})  {
 		arr.SetArray(idx,&value)
 	case *DxArray:
 		arr.SetArray(idx,value)
+	case *DxBaseValue: arr.SetBaseValue(idx,value)
 	case DxInt64Value: arr.SetInt64(idx,value.fvalue)
 	case *DxInt64Value: arr.SetInt64(idx,value.fvalue)
 	case DxInt32Value: arr.SetInt32(idx,value.fvalue)

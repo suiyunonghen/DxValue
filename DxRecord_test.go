@@ -150,7 +150,7 @@ func TestDxRecord_SaveJsonFile(t *testing.T) {
 }
 
 func TestMsgPackDecode(t *testing.T)  {
-	bt, err := ioutil.ReadFile("d:\\msgpack.bin")
+	bt, err := ioutil.ReadFile("d:\\testMsgPack.bin")
 	if err != nil {
 		fmt.Println("ReadFile Err:",err)
 		return
