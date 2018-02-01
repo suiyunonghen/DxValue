@@ -32,8 +32,9 @@ type(
 	}
 
 	IDxValueCoder		interface{
-		Encode(v *DxBaseValue,w io.Writer)
-		Decode(r io.Reader)*DxBaseValue
+		Encode(v *DxBaseValue,w io.Writer)(err error)
+		DecodeResult(r io.Reader)(*DxBaseValue,error)
+		Decode(r io.Reader,v *DxBaseValue)(err error)
 	}
 
 	DxBaseValue			struct{
@@ -82,6 +83,23 @@ type(
 		EncodeType	DxBinaryEncodeType
 		fbinary 	[]byte
 	}
+
+
+	//扩展类型的编码解码器
+	IExtTypeCoder  interface{
+		AsInt(data []byte)int
+		AsFloat(data []byte)float32
+		AsDouble(data []byte)float64
+		AsDateTime(data []byte)time.Time
+		AsString(data []byte)string
+		AsInt64(data []byte)int64
+	}
+
+	DxExtValue		struct{
+		DxBaseValue
+		ExtType		byte		//扩展类型
+		fdata		[]byte
+	}
 )
 
 
@@ -97,6 +115,7 @@ const(
 	DVT_DateTime
 	DVT_String
 	DVT_Binary
+	DVT_Ext				//扩展类型,MsgPack的
 	DVT_Array
 	DVT_Record
 	DVT_RecordIntKey
@@ -110,10 +129,23 @@ const(
 var (
 	ErrValueType = errors.New("Value Data Type not Match")
 	ErrInvalidateJson = errors.New("Is not a Validate Json format")
+	extTypes map[byte]IExtTypeCoder
 )
 func (v DxBaseValue)ValueType()DxValueType  {
 	return v.fValueType
 }
+
+func RegisterExtType(ExtType byte,extCoder IExtTypeCoder)  {
+	if extTypes == nil{
+		extTypes = make(map[byte]IExtTypeCoder,32)
+	}
+	if extCoder == nil{
+		delete(extTypes,ExtType)
+	}else{
+		extTypes[ExtType] = extCoder
+	}
+}
+
 
 func (v *DxBaseValue)AsInt()(int,error){
 	switch v.fValueType {
@@ -134,6 +166,13 @@ func (v *DxBaseValue)AsInt()(int,error){
 		return 0,nil
 	case DVT_Null:
 		return 0,nil
+	case DVT_Ext:
+		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
+			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
+				return extcoder.AsInt((*DxExtValue)(unsafe.Pointer(v)).fdata),nil
+			}
+		}
+		return 0,ErrValueType
 	case DVT_String:
 		return  strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 	default:
@@ -167,6 +206,14 @@ func (v *DxBaseValue)AsDateTime()(DxCommonLib.TDateTime,error){
 			return DxCommonLib.Time2DelphiTime(&t),err
 		}
 		return -1,err
+	case DVT_Ext:
+		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
+			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
+				t := extcoder.AsDateTime((*DxExtValue)(unsafe.Pointer(v)).fdata)
+				return DxCommonLib.Time2DelphiTime(&t),nil
+			}
+		}
+		return -1,ErrValueType
 	default:
 		return -1,ErrValueType
 	}
@@ -210,6 +257,13 @@ func (v *DxBaseValue)AsInt32()(int32,error){
 			return 1,nil
 		}
 		return 0,nil
+	case DVT_Ext:
+		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
+			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
+				return int32(extcoder.AsInt((*DxExtValue)(unsafe.Pointer(v)).fdata)),nil
+			}
+		}
+		return 0,ErrValueType
 	case DVT_Null:
 		return 0,nil
 	case DVT_String:
@@ -237,6 +291,13 @@ func (v *DxBaseValue)AsInt64()(int64,error){
 			return 1,nil
 		}
 		return 0,nil
+	case DVT_Ext:
+		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
+			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
+				return extcoder.AsInt64((*DxExtValue)(unsafe.Pointer(v)).fdata),nil
+			}
+		}
+		return 0,ErrValueType
 	case DVT_Null:
 		return 0,nil
 	case DVT_String:
@@ -289,6 +350,13 @@ func (v *DxBaseValue)AsFloat()(float32,error){
 			return 1,nil
 		}
 		return 0,nil
+	case DVT_Ext:
+		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
+			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
+				return extcoder.AsFloat((*DxExtValue)(unsafe.Pointer(v)).fdata),nil
+			}
+		}
+		return 0,ErrValueType
 	case DVT_Null:
 		return 0,nil
 	case DVT_String:
@@ -316,6 +384,13 @@ func (v *DxBaseValue)AsDouble()(float64,error){
 			return 1,nil
 		}
 		return 0,nil
+	case DVT_Ext:
+		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
+			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
+				return extcoder.AsDouble((*DxExtValue)(unsafe.Pointer(v)).fdata),nil
+			}
+		}
+		return 0,ErrValueType
 	case DVT_Null:
 		return 0,nil
 	case DVT_String:
@@ -370,6 +445,13 @@ func (v *DxBaseValue)ToString()string  {
 		return (*DxInt64Value)(unsafe.Pointer(v)).ToString()
 	case DVT_Array:
 		return (*DxArray)(unsafe.Pointer(v)).ToString()
+	case DVT_Ext:
+		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
+			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
+				return extcoder.AsString((*DxExtValue)(unsafe.Pointer(v)).fdata)
+			}
+		}
+		return ""
 	default:
 		return ""
 	}
@@ -395,6 +477,8 @@ func (v *DxBaseValue)AsBytes()([]byte,error)  {
 		return (*DxInt32Value)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Int:
 		return (*DxIntValue)(unsafe.Pointer(v)).Bytes(),nil
+	case DVT_Ext:
+		return (*DxExtValue)(unsafe.Pointer(v)).fdata,nil
 	case DVT_Int64:
 		return (*DxInt64Value)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Array:

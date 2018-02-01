@@ -150,7 +150,7 @@ func TestDxRecord_SaveJsonFile(t *testing.T) {
 }
 
 func TestMsgPackDecode(t *testing.T)  {
-	bt, err := ioutil.ReadFile("d:\\testMsgPack.bin")
+	bt, err := ioutil.ReadFile("test.Msgpack")
 	if err != nil {
 		fmt.Println("ReadFile Err:",err)
 		return
@@ -161,8 +161,18 @@ func TestMsgPackDecode(t *testing.T)  {
 	}else{
 		fmt.Println(rec.ToString())
 	}
+}
+
+func TestDxRecord_LoadMsgPackFile(t *testing.T) {
+	rec := NewRecord()
+	if err := rec.LoadMsgPackFile("test.Msgpack");err!=nil{
+		fmt.Println("Error；",err)
+	}else{
+		fmt.Println(rec.ToString())
+	}
 
 }
+
 
 func TestDxRecord_AsString(t *testing.T) {
 	rc := NewRecord()

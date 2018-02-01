@@ -64,6 +64,162 @@ func (coder DxMsgPackCoder)Encode(v *DxBaseValue, w io.Writer)(err error)  {
 	return EncodeMsgPackBaseValue(v,w)
 }
 
+func (coder DxMsgPackCoder)DecodeResult(r io.Reader)(*DxBaseValue,error)  {
+	return DecodeMsgPack(r)
+}
+
+
+func decode2Record(r io.Reader,rec2Fill *DxBaseValue,recLen int)(error)  {
+	if recLen > 0 {
+		//先读取一个，判定Map类型
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err != nil{
+			return err
+		}
+		//字符串类型
+		if rec2Fill.fValueType == DVT_Record && (b[0] == 0xd9 || b[0] == 0xda || b[0] == 0xdb || b[0] & 0xa0 == 0xa0) ||
+		   rec2Fill.fValueType == DVT_RecordIntKey && (b[0] >= 0xcc && b[0] <= 0xcf || b[0] >= 0xd0 && b[0] <= 0xd3 || b[0] <= 0x7f){
+			_,err = decodeStrRecord((*DxRecord)(unsafe.Pointer(rec2Fill)),r,b[0],recLen)
+			return err
+		}else{
+			return ErrInvalidateMsgPack
+		}
+	}
+	return nil
+}
+
+func (coder DxMsgPackCoder)Decode(r io.Reader,v *DxBaseValue)(err error)  {
+	var (
+		reader *bufio.Reader
+		bt byte
+	)
+	ok := false
+	if reader,ok = r.(*bufio.Reader);!ok{
+		reader = bufio.NewReader(r)
+	}
+	bt,err = reader.ReadByte()
+	if err != nil{
+		return err
+	}
+	switch v.fValueType {
+	case DVT_Ext:
+		if bt >= 0xd4 && bt == 0xd8 || bt>= 0xc7 && bt <= 0xc9{
+			if mb,err := decodeExtvalue(reader,bt);err!=nil{
+				return err
+			}else{
+				vext := (*DxExtValue)(unsafe.Pointer(v))
+				vext.fdata = mb[1:]
+				vext.ExtType = mb[0]
+				return nil
+			}
+		}
+		return ErrValueType
+	case DVT_Record,DVT_RecordIntKey:
+		rlen := -1
+		if bt >= 0x80 && bt<=0x8f{
+			rlen = int(bt & 0xf)
+		}else if bt == 0xde{
+			clen := uint16(0)
+			if err = binary.Read(reader,binary.BigEndian,&clen);err != nil{
+				return err
+			}
+			rlen = int(clen)
+		}else if bt == 0xdf{
+			clen := uint32(0)
+			if err = binary.Read(reader,binary.BigEndian,&clen);err != nil{
+				return err
+			}
+			rlen = int(clen)
+		}
+		if rlen >= 0{
+			v.ClearValue(false)
+			return decode2Record(reader,v,rlen)
+		}
+		return ErrValueType
+	case DVT_String:
+		if bt >= 0xd9 && bt <= 0xdb || bt >= 0xa0 && bt <= 0xbf{
+			if st,err := decodeString(reader,bt);err!=nil{
+				return err
+			}else{
+				(*DxStringValue)(unsafe.Pointer(v)).fvalue = st
+			}
+		}else{
+			return ErrValueType
+		}
+	case DVT_Array:
+		arlen := -1
+		if bt >= 0x90 && bt <= 0x9f{
+			arlen = int(bt & 0xf)
+		}else if bt == 0xdc{
+			clen := uint16(0)
+			if err = binary.Read(r,binary.BigEndian,&clen);err != nil{
+				return err
+			}
+			arlen = int(clen)
+		}else if bt == 0xdd{
+			clen := uint32(0)
+			if err = binary.Read(r,binary.BigEndian,&clen);err != nil{
+				return err
+			}
+			arlen = int(clen)
+		}
+		if arlen > 0 {
+			arr := (*DxArray)(unsafe.Pointer(v))
+			arr.TruncateArray(arlen)
+			if err = decodeArray(r,arr,int(bt));err!=nil{
+				return err
+			}
+			return nil
+		}
+		return ErrValueType
+	case DVT_Int32:
+		if vt,err := decodeInt(reader,bt);err!=nil{
+			return err
+		}else{
+			(*DxInt32Value)(unsafe.Pointer(v)).fvalue = int32(vt)
+			return nil
+		}
+	case DVT_Int:
+		if vt,err := decodeInt(reader,bt);err!=nil{
+			return err
+		}else{
+			(*DxIntValue)(unsafe.Pointer(v)).fvalue = int(vt)
+			return nil
+		}
+	case DVT_Int64:
+		if vt,err := decodeInt(reader,bt);err!=nil{
+			return err
+		}else{
+			(*DxInt64Value)(unsafe.Pointer(v)).fvalue = vt
+			return nil
+		}
+	case DVT_DateTime:
+		if bt != 0xd6{
+			return ErrValueType
+		}
+		bt,err = reader.ReadByte()
+		if err != nil{
+			return err
+		}
+		if int8(bt) != -1{
+			return ErrValueType
+		}
+		ms := uint32(0)
+		err := binary.Read(r,binary.BigEndian,&ms)
+		if err!= nil{
+			return err
+		}
+		ntime := time.Now()
+		ns := ntime.Unix()
+		ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+		(*DxDoubleValue)(unsafe.Pointer(v)).fvalue =float64(DxCommonLib.Time2DelphiTime(&ntime))
+		return nil
+	}
+	return ErrValueType
+}
+
+
 
 func EncodeMsgPackRecord(r *DxRecord,w io.Writer)(err error)  {
 	var writer *bufio.Writer
@@ -450,6 +606,16 @@ func decodeDateTime(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo i
 			bv.fvalue = float64(DxCommonLib.Time2DelphiTime(&ntime))
 			bv.fValueType = DVT_DateTime
 			return &bv.DxBaseValue,nil
+		}else{
+			var mb [4]byte
+			if _,err = r.Read(mb[:]);err!=nil{
+				return nil,err
+			}
+			var bv DxExtValue
+			bv.fValueType = DVT_Ext
+			bv.fdata = mb[1:]
+			bv.ExtType = mb[0]
+			return &bv.DxBaseValue,nil
 		}
 
 	}
@@ -484,7 +650,7 @@ func decodeArray(r io.Reader,arr *DxArray,arrlen int)error  {
 				return err
 			}
 			arr.SetArray(i,carr)
-		case bt[0] >= 0xa0 && bt[0] <= 0xbf:
+		case bt[0] >= 0xd9 && bt[0] <= 0xdb || bt[0] >= 0xa0 && bt[0] <= 0xbf:
 			if st,err := decodeString(r,bt[0]);err!=nil{
 				return err
 			}else{
@@ -498,6 +664,7 @@ func decodeArray(r io.Reader,arr *DxArray,arrlen int)error  {
 			}
 		case bt[0] == 0xc0:
 			arr.SetNull(i)
+		case bt[0] == 0xc1: //un used
 		case bt[0] == 0xc2:
 			arr.SetBool(i,false)
 		case bt[0] == 0xc3:
@@ -526,12 +693,6 @@ func decodeArray(r io.Reader,arr *DxArray,arrlen int)error  {
 				return err
 			}
 			arr.SetDouble(i,*(*float64)(unsafe.Pointer(&v64)))
-		case bt[0] >= 0xd9 && bt[0] <= 0xdb || bt[0] >= 0xa0 && bt[0] <= 0xbf:
-			if st,err := decodeString(r,bt[0]);err!=nil{
-				return err
-			}else{
-				arr.SetString(i,st)
-			}
 		case bt[0] >= 0xc4 && bt[0] <= 0xc6:
 			if b,err :=decodeBinary(r,bt[0]);err!=nil{
 				return err
@@ -553,7 +714,17 @@ func decodeArray(r io.Reader,arr *DxArray,arrlen int)error  {
 				ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
 				arr.SetDateTime(i,DxCommonLib.Time2DelphiTime(&ntime))
 			}else{
-				return ErrInvalidateMsgPack
+				var mb [4]byte
+				if _,err = r.Read(mb[:]);err!=nil{
+					return err
+				}
+				arr.SetExtValue(i,bt[0],mb[:]) //扩展类型
+			}
+		case bt[0] >= 0xd4 && bt[0] == 0xd8 || bt[0]>= 0xc7 && bt[0] <= 0xc9://扩展类型
+			if mb,err := decodeExtvalue(r,bt[0]);err!=nil{
+				return err
+			}else{
+				arr.SetExtValue(i,mb[0],mb[1:])
 			}
 		case bt[0] == 0xdc:
 			clen := uint16(0)
@@ -769,21 +940,52 @@ func decodeInt(r io.Reader,bflag byte)(int64, error)  {
 	}
 }
 
-/*
-func decodeMap(r io.Reader,rec *DxRecord,reclen int)error  {
-
-	return nil
-}
-
-func decodeIntMap(r io.Reader,rec *DxIntKeyRecord,reclen int)error  {
-	for i := 0;i<reclen-1;i++{
-		if _,err := decodeRecord(r,&rec.DxBaseValue,1);err != nil{
-			return err
+func decodeExtvalue(r io.Reader,bflag byte)(mb []byte,err error){
+	btlen := -1
+	if bflag == 0{
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err!=nil{
+			return nil,err
 		}
+		bflag = b[0]
 	}
-	return nil
+	switch bflag {
+	case 0xd4:
+		btlen = 2
+	case 0xd5:
+		btlen = 3
+	case 0xd7:
+		btlen = 9
+	case 0xd8:
+		btlen = 17
+	case 0xc7:
+		var b [1]byte
+		_,err := r.Read(b[:])
+		if err!=nil{
+			return nil,err
+		}
+		btlen = int(b[0])
+	case 0xc8:
+		u16 := uint16(0)
+		if err = binary.Read(r,binary.BigEndian,&u16);err!=nil{
+			return nil,err
+		}
+		btlen = int(u16)
+	case 0xc9:
+		u32 := uint32(0)
+		if err = binary.Read(r,binary.BigEndian,&u32);err!=nil{
+			return nil,err
+		}
+		btlen = int(u32)
+	}
+	mb = make([]byte,btlen)
+	if _,err = r.Read(mb);err!=nil{
+		return nil,err
+	}
+	return mb,nil
 }
-*/
+
 
 func decodeStrRecord(rec *DxRecord,r io.Reader,keyflag byte,recLen int)(*DxBaseValue,error)  {
 	var b [1]byte
@@ -810,7 +1012,6 @@ func decodeStrRecord(rec *DxRecord,r io.Reader,keyflag byte,recLen int)(*DxBaseV
 		}else{
 			rec.SetInt64(keyName,i64)
 		}
-
 	case b[0] == 0xca:
 		v32 := int32(0)
 		if err := binary.Read(r,binary.BigEndian,&v32);err!= nil{
@@ -880,7 +1081,17 @@ func decodeStrRecord(rec *DxRecord,r io.Reader,keyflag byte,recLen int)(*DxBaseV
 			ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
 			rec.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(&ntime))
 		}else {
-			return nil,ErrInvalidateMsgPack
+			var mb [4]byte
+			if _,err = r.Read(mb[:]);err!=nil{
+				return nil,err
+			}
+			rec.SetExtValue(keyName,b[0],mb[:]) //扩展类型
+		}
+	case b[0] >= 0xd4 && b[0] == 0xd8 || b[0]>= 0xc7 && b[0] <= 0xc9://扩展类型
+		if mb,err := decodeExtvalue(r,b[0]);err!=nil{
+			return nil,err
+		}else{
+			rec.SetExtValue(keyName,mb[0],mb[1:])
 		}
 	case b[0] == 0xdc:
 		clen := uint16(0)
@@ -925,6 +1136,156 @@ func decodeStrRecord(rec *DxRecord,r io.Reader,keyflag byte,recLen int)(*DxBaseV
 }
 
 
+func decodeIntKeyRecord(rec *DxIntKeyRecord,r io.Reader,keyflag byte,recLen int)(*DxBaseValue,error)  {
+	var b [1]byte
+	intKey,err := decodeInt(r,keyflag)
+	if err != nil{
+		return nil,err
+	}
+	_,err = r.Read(b[:])
+	if err != nil{
+		return nil,err
+	}
+	switch  {
+	case b[0]>=0xd9 && b[0] <= 0xdb ||  b[0] >= 0xa0 && b[0] <= 0xbf:
+		str,aerr := decodeString(r,b[0])
+		if aerr != nil{
+			return nil,aerr
+		}
+		rec.SetString(intKey,str)
+	case b[0] >= 0xe0 && b[0] <= 0xff:
+		rec.SetInt32(intKey, -int32((b[0] & 0x1f)))
+	case b[0] >= 0xcc && b[0] <= 0xcf || b[0] >= 0xd0 && b[0] <= 0xd3 || b[0] <= 0x7f:
+		if i64,aerr := decodeInt(r,b[0]);aerr != nil{
+			return nil,aerr
+		}else{
+			rec.SetInt64(intKey,i64)
+		}
+	case b[0] == 0xca:
+		v32 := int32(0)
+		if err := binary.Read(r,binary.BigEndian,&v32);err!= nil{
+			return nil,err
+		}
+		rec.SetFloat(intKey,*(*float32)(unsafe.Pointer(&v32)))
+	case b[0] == 0xcb:
+		v64 := int64(0)
+		if err := binary.Read(r,binary.BigEndian,&v64);err!= nil{
+			return nil,err
+		}
+		rec.SetDouble(intKey,*(*float64)(unsafe.Pointer(&v64)))
+	case b[0] >= 0xc4 && b[0] <= 0xc6:
+		mb,aerr := decodeBinary(r,b[0])
+		if aerr != nil{
+			return nil,aerr
+		}
+		rec.SetBinary(intKey,mb,true)
+	case b[0] == 0xde:
+		clen := uint16(0)
+		if err = binary.Read(r,binary.BigEndian,&clen);err != nil{
+			return nil,err
+		}
+		if recbase, err := decodeRecord(r,nil,int(clen));err!=nil{
+			return nil,err
+		}else{
+			switch recbase.fValueType {
+			case DVT_Record: rec.SetRecordValue(intKey,(*DxRecord)(unsafe.Pointer(recbase)))
+			case DVT_RecordIntKey: rec.SetIntRecordValue(intKey,(*DxIntKeyRecord)(unsafe.Pointer(recbase)))
+			}
+		}
+	case b[0] == 0xdf:
+		crecLen := uint32(0)
+		if err = binary.Read(r,binary.BigEndian,&crecLen);err != nil{
+			return nil,err
+		}
+		if recbase, err := decodeRecord(r,nil,int(crecLen));err!=nil{
+			return nil,err
+		}else{
+			switch recbase.fValueType {
+			case DVT_Record: rec.SetRecordValue(intKey,(*DxRecord)(unsafe.Pointer(recbase)))
+			case DVT_RecordIntKey: rec.SetIntRecordValue(intKey,(*DxIntKeyRecord)(unsafe.Pointer(recbase)))
+			}
+		}
+	case b[0] >= 0x80 && b[0] <= 0x8f:
+		rlen := int(b[0] & 0xf)
+		if recbase, err := decodeRecord(r,nil,int(rlen));err!=nil{
+			return nil,err
+		}else{
+			switch recbase.fValueType {
+			case DVT_Record: rec.SetRecordValue(intKey,(*DxRecord)(unsafe.Pointer(recbase)))
+			case DVT_RecordIntKey: rec.SetIntRecordValue(intKey,(*DxIntKeyRecord)(unsafe.Pointer(recbase)))
+			}
+		}
+	case b[0] == 0xd6:
+		if _,err = r.Read(b[:]);err!=nil{
+			return nil,err
+		}
+		if int8(b[0]) == -1{
+			ms := uint32(0)
+			err := binary.Read(r,binary.BigEndian,&ms)
+			if err!= nil{
+				return nil,err
+			}
+			ntime := time.Now()
+			ns := ntime.Unix()
+			ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+			rec.SetDateTime(intKey,DxCommonLib.Time2DelphiTime(&ntime))
+		}else {
+			var mb [4]byte
+			if _,err = r.Read(mb[:]);err!=nil{
+				return nil,err
+			}
+			rec.SetExtValue(intKey,b[0],mb[:]) //扩展类型
+		}
+	case b[0] >= 0xd4 && b[0] == 0xd8 || b[0]>= 0xc7 && b[0] <= 0xc9://扩展类型
+		if mb,err := decodeExtvalue(r,b[0]);err!=nil{
+			return nil,err
+		}else{
+			rec.SetExtValue(intKey,mb[0],mb[1:])
+		}
+	case b[0] == 0xdc:
+		clen := uint16(0)
+		if err = binary.Read(r,binary.BigEndian,&clen);err != nil{
+			return nil,err
+		}
+		//解析Array
+		arr := NewArray()
+		arr.TruncateArray(int(clen))
+		if err = decodeArray(r,arr,int(clen));err!=nil{
+			return nil,err
+		}
+		rec.SetArray(intKey,arr)
+	case b[0] == 0xdd:
+		crecLen := uint32(0)
+		if err = binary.Read(r,binary.BigEndian,&crecLen);err != nil{
+			return nil,err
+		}
+		//解析Array
+		arr := NewArray()
+		arr.TruncateArray(int(crecLen))
+		if err = decodeArray(r,arr,int(crecLen));err!=nil{
+			return nil,err
+		}
+		rec.SetArray(intKey,arr)
+	case b[0] >= 0x90 && b[0] <= 0x9f:
+		b[0] = b[0] & 0xf
+		arr := NewArray()
+		arr.TruncateArray(int(b[0]))
+		if err = decodeArray(r,arr,int(b[0]));err!=nil{
+			return nil,err
+		}
+		rec.SetArray(intKey,arr)
+	}
+
+	for i := 0;i<recLen-1;i++{
+		if _,err := decodeRecord(r,&rec.DxBaseValue,1);err != nil{
+			return nil,err
+		}
+	}
+	return &rec.DxBaseValue,nil
+}
+
+
+
 func decodeRecord(r io.Reader,parentValue *DxBaseValue,recLen int)(*DxBaseValue, error)  {
 	if recLen > 0 || parentValue != nil{
 		//先读取一个，判定Map类型
@@ -956,13 +1317,7 @@ func decodeRecord(r io.Reader,parentValue *DxBaseValue,recLen int)(*DxBaseValue,
 				rec = NewIntKeyRecord()
 			}
 
-
-			for i := 0;i<recLen-1;i++{
-				if _,err := decodeRecord(r,&rec.DxBaseValue,1);err != nil{
-					return nil,err
-				}
-			}
-			return &rec.DxBaseValue,nil
+			return decodeIntKeyRecord(rec,r,b[0],recLen)
 		}else{
 			return nil,ErrInvalidateMsgPack
 		}
@@ -987,6 +1342,7 @@ func decodeRecord16(r io.Reader,parentValue *DxBaseValue,strkey string,intkey in
 	}
 	return decodeRecord(r,parentValue,int(recLen))
 }
+
 
 
 func DecodeMsgPack(r io.Reader)(value *DxBaseValue, err error)  {
@@ -1033,6 +1389,16 @@ func DecodeMsgPack(r io.Reader)(value *DxBaseValue, err error)  {
 				var v DxStringValue
 				v.fvalue = st
 				v.fValueType = DVT_String
+				return &v.DxBaseValue,nil
+			}
+		case bt >= 0xd4 && bt == 0xd8 || bt>= 0xc7 && bt <= 0xc9://扩展类型
+			if mb,err := decodeExtvalue(reader,bt);err!=nil{
+				return nil,err
+			}else{
+				var v DxExtValue
+				v.fValueType = DVT_Ext
+				v.fdata = mb[1:]
+				v.ExtType = mb[0]
 				return &v.DxBaseValue,nil
 			}
 		case bt >= 0xe0 && bt<= 0xff:
@@ -1126,6 +1492,8 @@ func EncodeMsgPackBaseValue(v *DxBaseValue,w io.Writer)(err error)  {
 		}else{
 			_,err = w.Write([]byte{0xc0}) //null
 		}
+	case DVT_Ext:
+		err = EncodeMsgPackExtValue((*DxExtValue)(unsafe.Pointer(v)),w)
 	case DVT_Array:
 		err = EncodeMsgPackArray((*DxArray)(unsafe.Pointer(v)),w)
 	case DVT_DateTime:
@@ -1221,7 +1589,10 @@ func EncodeMsgPackDouble(v float64,w io.Writer)(err error)  {
 }
 
 func EncodeMsgPackBinary(bt []byte,w io.Writer)(err error)  {
-	btlen := len(bt)
+	btlen := 0
+	if bt != nil{
+		btlen = len(bt)
+	}
 	switch {
 	case btlen <= max_str8_len:
 		_,err = w.Write([]byte{0xc4,byte(btlen)})
@@ -1244,6 +1615,8 @@ func EncodeMsgPackBinary(bt []byte,w io.Writer)(err error)  {
 	}
 	return
 }
+
+
 
 func EncodeMsgPackInt(vint int64,w io.Writer)(err error)  {
 	switch {
@@ -1313,5 +1686,61 @@ func EncodeMsgPackDateTime(dt DxCommonLib.TDateTime,w io.Writer)(err error)  {
 	b[1] = 0xff
 	binary.BigEndian.PutUint32(b[2:],uint32(dt.ToTime().Unix()))
 	_,err = w.Write(b[:])
+	return
+}
+
+
+func EncodeMsgPackExtValue(v *DxExtValue,w io.Writer)(err error)  {
+	btlen := 0
+	if v.fdata == nil || len(v.fdata) == 0{
+		return nil
+	}
+
+	btlen = len(v.fdata)
+	bt := v.fdata
+	switch {
+	case btlen == 1:
+		_,err = w.Write([]byte{0xd4,v.ExtType})
+	case btlen == 2:
+		_,err = w.Write([]byte{0xd5,v.ExtType})
+	case btlen <= 4:
+		_,err = w.Write([]byte{0xd6,v.ExtType})
+		if btlen < 4{
+			bt = append(bt,0)
+			btlen = 4
+		}
+	case btlen <= 8:
+		_,err = w.Write([]byte{0xd7,v.ExtType})
+		if btlen < 8{
+			bt = append(bt,make([]byte,8-btlen)...)
+			btlen = 8
+		}
+	case btlen <= 16:
+		_,err = w.Write([]byte{0xd8,v.ExtType})
+		if btlen < 16{
+			bt = append(bt,make([]byte,16-btlen)...)
+			btlen = 16
+		}
+	case btlen <= max_str8_len:
+		_,err = w.Write([]byte{0xc7,byte(btlen),v.ExtType})
+	case btlen <= max_str16_len:
+		var mb [4]byte
+		mb[0] = 0xc8
+		binary.BigEndian.PutUint16(mb[1:],uint16(btlen))
+		mb[3] = v.ExtType
+		_,err = w.Write(mb[:])
+	default:
+		if btlen > max_str32_len{
+			btlen = max_str32_len
+		}
+		var mb [6]byte
+		mb[0] = 0xc6
+		binary.BigEndian.PutUint32(mb[1:],uint32(btlen))
+		mb[5] = v.ExtType
+		_,err = w.Write(mb[:])
+	}
+	if err == nil && btlen > 0{
+		_,err = w.Write(bt[:btlen])
+	}
 	return
 }

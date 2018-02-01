@@ -423,6 +423,31 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
+func (r *DxRecord)SetExtValue(keyName string,extType byte, extbt []byte)  {
+	if value,ok := r.fRecords[keyName];ok && value != nil{
+		if value.fValueType == DVT_Ext{
+			bv := (*DxExtValue)(unsafe.Pointer(value))
+			bv.ExtType = extType
+			bv.fdata = extbt
+			return
+		}
+		value.ClearValue(true)
+	}
+	var m DxExtValue
+	m.fdata = extbt
+	m.fParent = &r.DxBaseValue
+	m.ExtType = extType
+	m.fValueType = DVT_Ext
+	r.fRecords[keyName] = &m.DxBaseValue
+}
+
+func (r *DxRecord)AsExtValue(keyName string)(*DxExtValue)  {
+	if value,ok := r.fRecords[keyName];ok && value != nil && value.fValueType == DVT_Ext{
+		return (*DxExtValue)(unsafe.Pointer(value))
+	}
+	return nil
+}
+
 func (r *DxRecord)AsBytes(keyName string)[]byte  {
 	if value,ok := r.fRecords[keyName];ok && value != nil{
 		bt,_ := value.AsBytes()
@@ -446,7 +471,7 @@ func (r *DxRecord)Bytes()[]byte  {
 		buffer.WriteString(`":`)
 		if v != nil{
 			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime{
+			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 				buffer.WriteByte('"')
 			}
 			if vt == DVT_DateTime{
@@ -457,7 +482,7 @@ func (r *DxRecord)Bytes()[]byte  {
 				buffer.WriteString(v.ToString())
 			}
 
-			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime{
+			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 				buffer.WriteByte('"')
 			}
 		}else{
@@ -1518,7 +1543,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape bool)(parse
 }
 
 func (r *DxRecord)LoadJsonFile(fileName string,ConvertEscape bool)error  {
-	databytes, err := ioutil.ReadFile("DataProxy.config.json")
+	databytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
@@ -1611,6 +1636,20 @@ func (r *DxRecord)SaveMsgPackFile(fileName string)error  {
 	}
 }
 
+func (r *DxRecord)LoadMsgPackReader(reader io.Reader)error  {
+	coder := DxMsgPackCoder{}
+	return coder.Decode(reader,&r.DxBaseValue)
+}
+
+func (r *DxRecord)LoadMsgPackFile(fileName string)error  {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	coder := DxMsgPackCoder{}
+	return coder.Decode(f,&r.DxBaseValue)
+}
 
 func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
 	i := 0

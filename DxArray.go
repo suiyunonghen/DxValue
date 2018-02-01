@@ -928,6 +928,39 @@ func (arr *DxArray)SetValue(idx int,value interface{})  {
 	}
 }
 
+
+func (arr *DxArray)SetExtValue(idx int,extType byte,extbt []byte)  {
+	if idx < 0{
+		return
+	}
+	arr.ifNilInitArr2idx(idx)
+	if arr.fValues[idx] != nil{
+		if arr.fValues[idx].fValueType == DVT_Ext{
+			bv := (*DxExtValue)(unsafe.Pointer(arr.fValues[idx]))
+			bv.ExtType = extType
+			bv.fdata = extbt
+			return
+		}
+		arr.fValues[idx].ClearValue(true)
+	}
+	var bv DxExtValue
+	bv.fdata = extbt
+	bv.ExtType = extType
+	bv.fValueType = DVT_Ext
+	arr.fValues[idx] = &bv.DxBaseValue
+	arr.fValues[idx].fParent = &arr.DxBaseValue
+}
+
+func (arr *DxArray)AsExtValue(idx int)(*DxExtValue)  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
+		if arr.fValues[idx].fValueType == DVT_Ext{
+			return (*DxExtValue)(unsafe.Pointer(arr.fValues[idx]))
+		}
+		panic("not ExtType Value")
+	}
+	return nil
+}
+
 func (arr *DxArray)Bytes()[]byte  {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
@@ -1161,8 +1194,33 @@ func (arr *DxArray)SaveJsonWriter(w io.Writer)(err error) {
 	return writer.Flush()
 }
 
-func (r *DxArray)LoadJsonReader(reader io.Reader)error  {
+func (arr *DxArray)LoadJsonReader(reader io.Reader)error  {
 	return nil
+}
+
+
+func (arr *DxArray)LoadMsgPackReader(reader io.Reader)error  {
+	coder := DxMsgPackCoder{}
+	return coder.Decode(reader,&arr.DxBaseValue)
+}
+
+func (arr *DxArray)LoadMsgPackFile(fileName string)error  {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	coder := DxMsgPackCoder{}
+	return coder.Decode(f,&arr.DxBaseValue)
+}
+
+func (arr *DxArray)SaveMsgPackFile(fileName string)error  {
+	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
+		defer file.Close()
+		return EncodeMsgPackArray(arr,file)
+	}else{
+		return err
+	}
 }
 
 func NewArray()*DxArray  {

@@ -967,6 +967,30 @@ func (r *DxIntKeyRecord)AsFloat(key int64,defavalue float32)float32  {
 	return defavalue
 }
 
+func (r *DxIntKeyRecord)SetExtValue(intKey int64,extType byte,extbt []byte)  {
+	if value,ok := r.fRecords[intKey];ok && value != nil{
+		if value.fValueType == DVT_Ext{
+			bv := (*DxExtValue)(unsafe.Pointer(value))
+			bv.fdata = extbt
+			bv.ExtType = extType
+			return
+		}
+		value.ClearValue(true)
+	}
+	var m DxExtValue
+	m.fdata = extbt
+	m.fParent = &r.DxBaseValue
+	m.fValueType = DVT_Ext
+	m.ExtType = extType
+	r.fRecords[intKey] = &m.DxBaseValue
+}
+
+func (r *DxIntKeyRecord)AsExtValue(intKey int64)(*DxExtValue)  {
+	if value,ok := r.fRecords[intKey];ok && value != nil && value.fValueType == DVT_Ext{
+		return (*DxExtValue)(unsafe.Pointer(value))
+	}
+	return nil
+}
 
 func (r *DxIntKeyRecord)AsDoubleByPath(path string,defavalue float64)float64  {
 	parentBase,keyName := r.findPathNode(path)
@@ -1395,7 +1419,7 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape bool)(pars
 }
 
 func (r *DxIntKeyRecord)LoadJsonFile(fileName string,ConvertEscape bool)error  {
-	databytes, err := ioutil.ReadFile("DataProxy.config.json")
+	databytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
@@ -1469,6 +1493,30 @@ func (r *DxIntKeyRecord)SaveJsonFile(fileName string,BOMFile bool)error  {
 
 func (r *DxIntKeyRecord)LoadJsonReader(reader io.Reader)error  {
 	return nil
+}
+
+func (r *DxIntKeyRecord)LoadMsgPackReader(reader io.Reader)error  {
+	coder := DxMsgPackCoder{}
+	return coder.Decode(reader,&r.DxBaseValue)
+}
+
+func (r *DxIntKeyRecord)LoadMsgPackFile(fileName string)error  {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	coder := DxMsgPackCoder{}
+	return coder.Decode(f,&r.DxBaseValue)
+}
+
+func (r *DxIntKeyRecord)SaveMsgPackFile(fileName string)error  {
+	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
+		defer file.Close()
+		return EncodeMsgPackRecordIntKey(r,file)
+	}else{
+		return err
+	}
 }
 
 func (r *DxIntKeyRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
