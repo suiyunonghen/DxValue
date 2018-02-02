@@ -330,11 +330,19 @@ func (arr *DxArray)SetInt64(idx int,value int64)  {
 			arr.fValues[idx].ClearValue(true)
 		}
 	}
-	dv := new(DxInt64Value)
-	dv.fValueType = DVT_Int64
-	dv.fvalue = value
-	dv.fParent = &arr.DxBaseValue
-	arr.fValues[idx] = &dv.DxBaseValue
+	if value <= math.MaxInt32 && value >= math.MinInt32{
+		dv := new(DxInt32Value)
+		dv.fValueType = DVT_Int32
+		dv.fvalue = int32(value)
+		dv.fParent = &arr.DxBaseValue
+		arr.fValues[idx] = &dv.DxBaseValue
+	}else{
+		dv := new(DxInt64Value)
+		dv.fValueType = DVT_Int64
+		dv.fvalue = value
+		dv.fParent = &arr.DxBaseValue
+		arr.fValues[idx] = &dv.DxBaseValue
+	}
 }
 
 func (arr *DxArray)SetBool(idx int,value bool)  {

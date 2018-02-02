@@ -1,4 +1,4 @@
-package DxValue
+package DxMsgPack
 
 import (
 	"testing"
@@ -7,18 +7,23 @@ import (
 	"github.com/vmihailenco/msgpack"
 	"os"
 	"io"
+	"bufio"
+	"github.com/suiyunonghen/DxValue"
 )
 
-func BenchmarkDecodeMsgPack(b *testing.B) {
+func Benchmark_DecodeMsgPack(b *testing.B) {
 	f, err := os.Open("DataProxy.config.msgPack")
 	if err != nil {
 		fmt.Println("BenchmarkDecodeMsgPack Error:",err)
 		return
 	}
 	defer f.Close()
+	coder := MsgPackDecoder{}
+	coder.r = bufio.NewReader(f)
+	rec := DxValue.NewRecord()
 	for i:=0;i<b.N;i++{
-		if _,err = DecodeMsgPack(f);err!=nil{
-			fmt.Println("BenchmarkDecodeMsgPack Error:",err)
+		if err := coder.Decode(f,&rec.DxBaseValue);err!=nil{
+			return
 		}
 		f.Seek(0,io.SeekStart)
 	}

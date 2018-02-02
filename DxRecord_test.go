@@ -107,17 +107,23 @@ func TestDxRecord_SaveJsonFile(t *testing.T) {
 }
 
 func TestMsgPackDecode(t *testing.T)  {
-	bt, err := ioutil.ReadFile("test.Msgpack")
+	bt, err := ioutil.ReadFile("DataProxy.config.msgPack")
 	if err != nil {
 		fmt.Println("ReadFile Err:",err)
 		return
 	}
-	buf := bytes.NewBuffer(bt)
+	/*buf := bytes.NewBuffer(bt)
 	if rec,err := DecodeMsgPack(buf);err!=nil{
 		fmt.Println("Error；",err)
 	}else{
 		fmt.Println(rec.ToString())
+	}*/
+	coder := DxMsgPackCoder{}
+	rec := NewRecord()
+	if err := coder.Decode(bytes.NewReader(bt),&rec.DxBaseValue);err!=nil{
+		fmt.Println("Error；",err)
 	}
+	fmt.Println(rec.ToString())
 }
 
 func TestDxRecord_LoadMsgPackFile(t *testing.T) {

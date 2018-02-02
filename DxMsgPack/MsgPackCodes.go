@@ -60,26 +60,31 @@ const(
 	CodeExt32    MsgPackCode = 0xc9
 )
 
+
+func (code MsgPackCode)IsExt() bool {
+	return (code >= CodeFixExt1 && code <= CodeFixExt16 && code != CodeFixExt4) || (code >= CodeExt8 && code <= CodeExt32)
+}
+
+func (code MsgPackCode)IsMap()bool  {
+	return code >= CodeFixedMapLow && code <= CodeFixedMapHigh || code==CodeMap16 || code == CodeMap32
+}
+
 func (code MsgPackCode)IsFixedNum()bool  {
 	return code <= PosFixedNumHigh || code >= NegFixedNumLow
 }
 
-func (code MsgPackCode)IsFixedMap() bool {
-	return code >= CodeFixedMapLow && code <= CodeFixedMapHigh
+func (code MsgPackCode)IsInt()bool  {
+	return code <= PosFixedNumHigh || code >= NegFixedNumLow ||  code>=CodeUint8 && code<=CodeUint64 || code>=CodeInt8 && code<=CodeInt64
 }
 
-func (code MsgPackCode)IsFixedArray() bool {
-	return code >= CodeFixedArrayLow && code <= CodeFixedArrayHigh
-}
-
-func (code MsgPackCode)IsFixedString() bool {
-	return code >= CodeFixedStrLow && code <= CodeFixedStrHigh
-}
-
-func (code MsgPackCode)IsExt() bool {
-	return (code >= CodeFixExt1 && code <= CodeFixExt16) || (code >= CodeExt8 && code <= CodeExt32)
+func (code MsgPackCode)IsStr()bool  {
+	return code >= CodeFixedStrLow && code <= CodeFixedStrHigh || code>=CodeStr8 && code<=CodeStr32
 }
 
 func (code MsgPackCode)IsArray()bool  {
-	return code >= FixedArrayLow && code <= FixedArrayHigh || code == Array16 || code == Array32
+	return code >= CodeFixedArrayLow && code <= CodeFixedArrayHigh || code == CodeArray16 || code == CodeArray32
+}
+
+func (code MsgPackCode)IsBin()bool  {
+	return code >= CodeBin8 && code <= CodeBin32
 }

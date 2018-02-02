@@ -612,7 +612,8 @@ func decodeDateTime(r io.Reader,parentValue *DxBaseValue,strkey string,intInfo i
 			var bv DxExtValue
 			bv.fValueType = DVT_Ext
 			mb[0] = b[0]
-			bv.SetExtValue(mb[:])
+			bv.fExtType = b[0]
+			bv.fdata = mb[:]
 			return &bv.DxBaseValue,nil
 		}
 

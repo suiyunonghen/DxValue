@@ -225,11 +225,19 @@ func (r *DxRecord)SetInt64(KeyName string,v int64)  {
 		}
 		value.ClearValue(true)
 	}
-	var m DxInt64Value
-	m.fvalue = v
-	m.fValueType = DVT_Int64
-	m.fParent = &r.DxBaseValue
-	r.fRecords[KeyName] = &m.DxBaseValue
+	if v <= math.MaxInt32 && v >= math.MinInt32{
+		var m DxInt32Value
+		m.fvalue = int32(v)
+		m.fValueType = DVT_Int32
+		m.fParent = &r.DxBaseValue
+		r.fRecords[KeyName] = &m.DxBaseValue
+	}else{
+		var m DxInt64Value
+		m.fvalue = v
+		m.fValueType = DVT_Int64
+		m.fParent = &r.DxBaseValue
+		r.fRecords[KeyName] = &m.DxBaseValue
+	}
 }
 
 func (r *DxRecord)SetBool(KeyName string,v bool)  {
@@ -599,6 +607,21 @@ func (r *DxRecord)SetRecordValue(keyName string,v *DxRecord) {
 	if v != nil {
 		r.fRecords[keyName] = &v.DxBaseValue
 		v.fParent = &r.DxBaseValue
+	}
+}
+
+func (r *DxRecord)SetBaseValue(keyName string,v *DxBaseValue)  {
+	if v != nil{
+		switch v.fValueType {
+		case DVT_Record:
+			r.SetRecordValue(keyName,(*DxRecord)(unsafe.Pointer(v)))
+		case DVT_RecordIntKey:
+			r.SetIntRecordValue(keyName,(*DxIntKeyRecord)(unsafe.Pointer(v)))
+		case DVT_Array:
+			r.SetArray(keyName,(*DxArray)(unsafe.Pointer(v)))
+		}
+	}else {
+		r.SetNull(keyName)
 	}
 }
 
