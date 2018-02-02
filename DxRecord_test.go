@@ -4,8 +4,6 @@ import (
 	"testing"
 	"io/ioutil"
 	"fmt"
-	"encoding/json"
-	//"github.com/json-iterator/go"
 	"github.com/suiyunonghen/DxCommonLib"
 	"unsafe"
 	"time"
@@ -34,47 +32,6 @@ func TestParserTime(t *testing.T)  {
 	fmt.Println(at.ToTime().Format("2006-01-02T15:04:05Z"))
 	at = DxCommonLib.ParserJsonTime("/Date(1224043200000+0800)/")
 	fmt.Println(at.ToTime().Format("2006-01-02T15:04:05Z"))
-}
-
-func BenchmarkDxRecord_JsonParserFromByte(b *testing.B) {
-	buf, err := ioutil.ReadFile("DataProxy.config.json")
-	if err != nil {
-		fmt.Println("ReadFile Err:",err)
-		return
-	}
-	rc := NewRecord()
-	for i := 0;i<b.N;i++{
-		_,err = rc.JsonParserFromByte(buf,false)
-		if err != nil{
-			fmt.Println("Parser Error: ",err)
-			break
-		}
-	}
-}
-
-
-/*func BenchmarkJsoniterParser(b *testing.B){
-	buf, err := ioutil.ReadFile("DataProxy.config.json")
-	if err != nil {
-		fmt.Println("ReadFile Err:",err)
-		return
-	}
-	mp := make(map[string]interface{})
-	for i := 0;i<b.N;i++ {
-		jsoniter.Unmarshal(buf,&mp)
-	}
-}*/
-
-func BenchmarkStandJsonParser(b *testing.B){
-	buf, err := ioutil.ReadFile("DataProxy.config.json")
-	if err != nil {
-		fmt.Println("ReadFile Err:",err)
-		return
-	}
-	mp := make(map[string]interface{})
-	for i := 0;i<b.N;i++ {
-		json.Unmarshal(buf, &mp)
-	}
 }
 
 
@@ -170,7 +127,6 @@ func TestDxRecord_LoadMsgPackFile(t *testing.T) {
 	}else{
 		fmt.Println(rec.ToString())
 	}
-
 }
 
 

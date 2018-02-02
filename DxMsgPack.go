@@ -1692,35 +1692,27 @@ func EncodeMsgPackDateTime(dt DxCommonLib.TDateTime,w io.Writer)(err error)  {
 
 func EncodeMsgPackExtValue(v *DxExtValue,w io.Writer)(err error)  {
 	btlen := 0
-	if v.fdata == nil || len(v.fdata) == 0{
-		return nil
+	var bt []byte
+	if !v.fisDecoded{
+		if v.fdata == nil || len(v.fdata) == 0{
+			return nil
+		}
+		bt = v.fdata
+	}else{
+		bt = v.coder.Encode(v.fvalue)
 	}
-
-	btlen = len(v.fdata)
-	bt := v.fdata
+	btlen = len(bt)
 	switch {
 	case btlen == 1:
 		_,err = w.Write([]byte{0xd4,v.ExtType})
 	case btlen == 2:
 		_,err = w.Write([]byte{0xd5,v.ExtType})
-	case btlen <= 4:
+	case btlen == 4:
 		_,err = w.Write([]byte{0xd6,v.ExtType})
-		if btlen < 4{
-			bt = append(bt,0)
-			btlen = 4
-		}
-	case btlen <= 8:
+	case btlen == 8:
 		_,err = w.Write([]byte{0xd7,v.ExtType})
-		if btlen < 8{
-			bt = append(bt,make([]byte,8-btlen)...)
-			btlen = 8
-		}
 	case btlen <= 16:
 		_,err = w.Write([]byte{0xd8,v.ExtType})
-		if btlen < 16{
-			bt = append(bt,make([]byte,16-btlen)...)
-			btlen = 16
-		}
 	case btlen <= max_str8_len:
 		_,err = w.Write([]byte{0xc7,byte(btlen),v.ExtType})
 	case btlen <= max_str16_len:

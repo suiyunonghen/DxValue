@@ -87,17 +87,16 @@ type(
 
 	//扩展类型的编码解码器
 	IExtTypeCoder  interface{
-		AsInt(data []byte)int
-		AsFloat(data []byte)float32
-		AsDouble(data []byte)float64
-		AsDateTime(data []byte)time.Time
-		AsString(data []byte)string
-		AsInt64(data []byte)int64
+		Encode(v interface{}) []byte
+		Decode(extData []byte)(interface{},error)
 	}
 
 	DxExtValue		struct{
 		DxBaseValue
 		ExtType		byte		//扩展类型
+		coder		IExtTypeCoder
+		fisDecoded	bool
+		fvalue		interface{}
 		fdata		[]byte
 	}
 )
@@ -129,6 +128,7 @@ const(
 var (
 	ErrValueType = errors.New("Value Data Type not Match")
 	ErrInvalidateJson = errors.New("Is not a Validate Json format")
+	ErrHasNoExtTypeCoder = errors.New("ExtValue's Type has No Registered")
 	extTypes map[byte]IExtTypeCoder
 )
 func (v DxBaseValue)ValueType()DxValueType  {
@@ -146,6 +146,249 @@ func RegisterExtType(ExtType byte,extCoder IExtTypeCoder)  {
 	}
 }
 
+func (v *DxExtValue)decodeExt()(error)  {
+	if !v.fisDecoded{
+		if v.coder,v.fisDecoded = extTypes[v.ExtType];v.fisDecoded{
+			if value,err := v.coder.Decode(v.fdata);err!=nil{
+				return err
+			}else{
+				v.fvalue = value
+				v.fdata = nil
+			}
+		}else{
+			v.fisDecoded = true
+			return ErrHasNoExtTypeCoder
+		}
+	}
+	return nil
+}
+
+func (v *DxExtValue)AsInt()(int,error)  {
+	if err := v.decodeExt();err!=nil{
+		return 0,err
+	}
+	if v.fvalue == nil{
+		return 0,nil
+	}
+	switch rvalue := v.fvalue.(type) {
+	case int:	return rvalue,nil
+	case int32: return int(rvalue),nil
+	case int64:	return int(rvalue),nil
+	case int8:	return int(rvalue),nil
+	case int16: return int(rvalue),nil
+	case uint8:	return int(rvalue),nil
+	case uint16:return int(rvalue),nil
+	case uint32: return int(rvalue),nil
+	case uint64: return int(rvalue),nil
+	case float32: return int(rvalue),nil
+	case float64: return int(rvalue),nil
+	case *DxInt32Value:	return int(rvalue.fvalue),nil
+	case *DxIntValue: return rvalue.fvalue,nil
+	case *DxInt64Value: return int(rvalue.fvalue),nil
+	case *DxFloatValue: return int(rvalue.fvalue),nil
+	case *DxDoubleValue: return int(rvalue.fvalue),nil
+	case *DxExtValue:	return rvalue.AsInt()
+	case *DxValue:	return rvalue.AsInt()
+	case *DxBinaryValue: return rvalue.AsInt()
+	default:
+		return 0,ErrValueType
+	}
+}
+
+func (v *DxExtValue)AsInt32()(int32,error)  {
+	if err := v.decodeExt();err!=nil{
+		return 0,err
+	}
+	if v.fvalue == nil{
+		return 0,nil
+	}
+	switch rvalue := v.fvalue.(type) {
+	case int:	return int32(rvalue),nil
+	case int32: return int32(rvalue),nil
+	case int64:	return int32(rvalue),nil
+	case int8:	return int32(rvalue),nil
+	case int16: return int32(rvalue),nil
+	case uint8:	return int32(rvalue),nil
+	case uint16:return int32(rvalue),nil
+	case uint32: return int32(rvalue),nil
+	case uint64: return int32(rvalue),nil
+	case float32: return int32(rvalue),nil
+	case float64: return int32(rvalue),nil
+	case *DxInt32Value:	return rvalue.fvalue,nil
+	case *DxIntValue: return int32(rvalue.fvalue),nil
+	case *DxInt64Value: return int32(rvalue.fvalue),nil
+	case *DxFloatValue: return int32(rvalue.fvalue),nil
+	case *DxDoubleValue: return int32(rvalue.fvalue),nil
+	case *DxExtValue:	return rvalue.AsInt32()
+	case *DxValue:	return rvalue.AsInt32()
+	case *DxBinaryValue: return rvalue.AsInt32()
+	default:
+		return 0,ErrValueType
+	}
+}
+
+func (v *DxExtValue)AsInt64()(int64,error)  {
+	if err := v.decodeExt();err!=nil{
+		return 0,err
+	}
+	if v.fvalue == nil{
+		return 0,nil
+	}
+	switch rvalue := v.fvalue.(type) {
+	case int:	return int64(rvalue),nil
+	case int32: return int64(rvalue),nil
+	case int64:	return int64(rvalue),nil
+	case int8:	return int64(rvalue),nil
+	case int16: return int64(rvalue),nil
+	case uint8:	return int64(rvalue),nil
+	case uint16:return int64(rvalue),nil
+	case uint32: return int64(rvalue),nil
+	case uint64: return int64(rvalue),nil
+	case float32: return int64(rvalue),nil
+	case float64: return int64(rvalue),nil
+	case *DxInt32Value:	return int64(rvalue.fvalue),nil
+	case *DxIntValue: return int64(rvalue.fvalue),nil
+	case *DxInt64Value: return rvalue.fvalue,nil
+	case *DxFloatValue: return int64(rvalue.fvalue),nil
+	case *DxDoubleValue: return int64(rvalue.fvalue),nil
+	case *DxExtValue:	return rvalue.AsInt64()
+	case *DxValue:	return rvalue.AsInt64()
+	case *DxBinaryValue: return rvalue.AsInt64()
+	default:
+		return 0,ErrValueType
+	}
+}
+
+func (v *DxExtValue)AsString()(string)  {
+	if err := v.decodeExt();err!=nil{
+		if v.fdata != nil{
+			return DxCommonLib.FastByte2String(v.fdata)
+		}
+		return ""
+	}
+	if v.fvalue == nil{
+		return ""
+	}
+	switch rvalue := v.fvalue.(type) {
+	case int:	return strconv.Itoa(rvalue)
+	case int32: return strconv.FormatInt(int64(rvalue),10)
+	case int64:	return strconv.FormatInt(int64(rvalue),10)
+	case int8:	return strconv.FormatInt(int64(rvalue),10)
+	case int16: return strconv.FormatInt(int64(rvalue),10)
+	case uint8:	return strconv.FormatInt(int64(rvalue),10)
+	case uint16:return strconv.FormatInt(int64(rvalue),10)
+	case uint32: return strconv.FormatInt(int64(rvalue),10)
+	case uint64: return strconv.FormatInt(int64(rvalue),10)
+	case float32: return strconv.FormatFloat(float64(rvalue),'f','e',32)
+	case float64: return strconv.FormatFloat(rvalue,'f','e',64)
+	case *DxInt32Value:	return rvalue.AsString()
+	case *DxIntValue: return rvalue.AsString()
+	case *DxInt64Value: return rvalue.AsString()
+	case *DxFloatValue: return rvalue.AsString()
+	case *DxDoubleValue: return rvalue.AsString()
+	case *DxExtValue:	return rvalue.AsString()
+	case *DxValue:	return rvalue.AsString()
+	case *DxBinaryValue: return rvalue.AsString()
+	default:
+		return ""
+	}
+}
+
+func (v *DxExtValue)AsFloat()(float32,error)  {
+	if err := v.decodeExt();err!=nil{
+		return 0,err
+	}
+	if v.fvalue == nil{
+		return 0,nil
+	}
+	switch rvalue := v.fvalue.(type) {
+	case int:	return float32(rvalue),nil
+	case int32: return float32(rvalue),nil
+	case int64:	return float32(rvalue),nil
+	case int8:	return float32(rvalue),nil
+	case int16: return float32(rvalue),nil
+	case uint8:	return float32(rvalue),nil
+	case uint16:return float32(rvalue),nil
+	case uint32: return float32(rvalue),nil
+	case uint64: return float32(rvalue),nil
+	case float32: return float32(rvalue),nil
+	case float64: return float32(rvalue),nil
+	case *DxInt32Value:	return float32(rvalue.fvalue),nil
+	case *DxIntValue: return float32(rvalue.fvalue),nil
+	case *DxInt64Value: return float32(rvalue.fvalue),nil
+	case *DxFloatValue: return rvalue.fvalue,nil
+	case *DxDoubleValue: return float32(rvalue.fvalue),nil
+	case *DxExtValue:	return rvalue.AsFloat()
+	case *DxValue:	return rvalue.AsFloat()
+	case *DxBinaryValue: return rvalue.AsFloat()
+	default:
+		return 0,ErrValueType
+	}
+}
+
+func (v *DxExtValue)AsDouble()(float64,error)  {
+	if err := v.decodeExt();err!=nil{
+		return 0,err
+	}
+	if v.fvalue == nil{
+		return 0,nil
+	}
+	switch rvalue := v.fvalue.(type) {
+	case int:	return float64(rvalue),nil
+	case int32: return float64(rvalue),nil
+	case int64:	return float64(rvalue),nil
+	case int8:	return float64(rvalue),nil
+	case int16: return float64(rvalue),nil
+	case uint8:	return float64(rvalue),nil
+	case uint16:return float64(rvalue),nil
+	case uint32: return float64(rvalue),nil
+	case uint64: return float64(rvalue),nil
+	case float32: return float64(rvalue),nil
+	case float64: return float64(rvalue),nil
+	case *DxInt32Value:	return float64(rvalue.fvalue),nil
+	case *DxIntValue: return float64(rvalue.fvalue),nil
+	case *DxInt64Value: return float64(rvalue.fvalue),nil
+	case *DxFloatValue: return float64(rvalue.fvalue),nil
+	case *DxDoubleValue: return rvalue.fvalue,nil
+	case *DxExtValue:	return rvalue.AsDouble()
+	case *DxValue:	return rvalue.AsDouble()
+	case *DxBinaryValue: return rvalue.AsDouble()
+	default:
+		return 0,ErrValueType
+	}
+}
+
+func (v *DxExtValue)AsDateTime()(DxCommonLib.TDateTime,error)  {
+	if err := v.decodeExt();err!=nil{
+		return 0,err
+	}
+	if v.fvalue == nil{
+		return -1,nil
+	}
+	switch rvalue := v.fvalue.(type) {
+	case int:	return DxCommonLib.TDateTime(rvalue),nil
+	case int32: return DxCommonLib.TDateTime(rvalue),nil
+	case int64:	return DxCommonLib.TDateTime(rvalue),nil
+	case int8:	return DxCommonLib.TDateTime(rvalue),nil
+	case int16: return DxCommonLib.TDateTime(rvalue),nil
+	case uint8:	return DxCommonLib.TDateTime(rvalue),nil
+	case uint16:return DxCommonLib.TDateTime(rvalue),nil
+	case uint32: return DxCommonLib.TDateTime(rvalue),nil
+	case uint64: return DxCommonLib.TDateTime(rvalue),nil
+	case float32: return DxCommonLib.TDateTime(rvalue),nil
+	case float64: return DxCommonLib.TDateTime(rvalue),nil
+	case *DxInt32Value:	return DxCommonLib.TDateTime(rvalue.fvalue),nil
+	case *DxIntValue: return DxCommonLib.TDateTime(rvalue.fvalue),nil
+	case *DxInt64Value: return DxCommonLib.TDateTime(rvalue.fvalue),nil
+	case *DxFloatValue: return DxCommonLib.TDateTime(rvalue.fvalue),nil
+	case *DxDoubleValue: return DxCommonLib.TDateTime(rvalue.fvalue),nil
+	case *DxExtValue:	return rvalue.AsDateTime()
+	case *DxValue:	return rvalue.AsDateTime()
+	case *DxBinaryValue: return rvalue.AsDateTime()
+	default:
+		return 0,ErrValueType
+	}
+}
 
 func (v *DxBaseValue)AsInt()(int,error){
 	switch v.fValueType {
@@ -167,12 +410,7 @@ func (v *DxBaseValue)AsInt()(int,error){
 	case DVT_Null:
 		return 0,nil
 	case DVT_Ext:
-		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
-			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
-				return extcoder.AsInt((*DxExtValue)(unsafe.Pointer(v)).fdata),nil
-			}
-		}
-		return 0,ErrValueType
+		return (*DxExtValue)(unsafe.Pointer(v)).AsInt()
 	case DVT_String:
 		return  strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 	default:
@@ -207,13 +445,7 @@ func (v *DxBaseValue)AsDateTime()(DxCommonLib.TDateTime,error){
 		}
 		return -1,err
 	case DVT_Ext:
-		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
-			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
-				t := extcoder.AsDateTime((*DxExtValue)(unsafe.Pointer(v)).fdata)
-				return DxCommonLib.Time2DelphiTime(&t),nil
-			}
-		}
-		return -1,ErrValueType
+		return (*DxExtValue)(unsafe.Pointer(v)).AsDateTime()
 	default:
 		return -1,ErrValueType
 	}
@@ -258,12 +490,7 @@ func (v *DxBaseValue)AsInt32()(int32,error){
 		}
 		return 0,nil
 	case DVT_Ext:
-		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
-			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
-				return int32(extcoder.AsInt((*DxExtValue)(unsafe.Pointer(v)).fdata)),nil
-			}
-		}
-		return 0,ErrValueType
+		return (*DxExtValue)(unsafe.Pointer(v)).AsInt32()
 	case DVT_Null:
 		return 0,nil
 	case DVT_String:
@@ -292,12 +519,7 @@ func (v *DxBaseValue)AsInt64()(int64,error){
 		}
 		return 0,nil
 	case DVT_Ext:
-		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
-			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
-				return extcoder.AsInt64((*DxExtValue)(unsafe.Pointer(v)).fdata),nil
-			}
-		}
-		return 0,ErrValueType
+		return (*DxExtValue)(unsafe.Pointer(v)).AsInt64()
 	case DVT_Null:
 		return 0,nil
 	case DVT_String:
@@ -351,12 +573,7 @@ func (v *DxBaseValue)AsFloat()(float32,error){
 		}
 		return 0,nil
 	case DVT_Ext:
-		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
-			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
-				return extcoder.AsFloat((*DxExtValue)(unsafe.Pointer(v)).fdata),nil
-			}
-		}
-		return 0,ErrValueType
+		return (*DxExtValue)(unsafe.Pointer(v)).AsFloat()
 	case DVT_Null:
 		return 0,nil
 	case DVT_String:
@@ -385,12 +602,7 @@ func (v *DxBaseValue)AsDouble()(float64,error){
 		}
 		return 0,nil
 	case DVT_Ext:
-		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
-			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
-				return extcoder.AsDouble((*DxExtValue)(unsafe.Pointer(v)).fdata),nil
-			}
-		}
-		return 0,ErrValueType
+		return (*DxExtValue)(unsafe.Pointer(v)).AsDouble()
 	case DVT_Null:
 		return 0,nil
 	case DVT_String:
@@ -446,12 +658,7 @@ func (v *DxBaseValue)ToString()string  {
 	case DVT_Array:
 		return (*DxArray)(unsafe.Pointer(v)).ToString()
 	case DVT_Ext:
-		if (*DxExtValue)(unsafe.Pointer(v)).fdata!=nil && extTypes!=nil{
-			if extcoder ,ok := extTypes[(*DxExtValue)(unsafe.Pointer(v)).ExtType];ok{
-				return extcoder.AsString((*DxExtValue)(unsafe.Pointer(v)).fdata)
-			}
-		}
-		return ""
+		return (*DxExtValue)(unsafe.Pointer(v)).AsString()
 	default:
 		return ""
 	}
