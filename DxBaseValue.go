@@ -259,6 +259,14 @@ func (v *DxExtValue)AsInt64()(int64,error)  {
 	}
 }
 
+func (v *DxExtValue)Value()interface{}  {
+	if v.decodeExt()==nil{
+		return v.fvalue
+	}else{
+		return v.fdata
+	}
+}
+
 func (v *DxExtValue)AsString()(string)  {
 	if err := v.decodeExt();err!=nil{
 		if v.fdata != nil{
