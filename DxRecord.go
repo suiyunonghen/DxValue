@@ -423,12 +423,10 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
-func (r *DxRecord)SetExtValue(keyName string,extType byte, extbt []byte)  {
+func (r *DxRecord)SetExtValue(keyName string,extbt []byte)  {
 	if value,ok := r.fRecords[keyName];ok && value != nil{
 		if value.fValueType == DVT_Ext{
-			bv := (*DxExtValue)(unsafe.Pointer(value))
-			bv.ExtType = extType
-			bv.fdata = extbt
+			value.SetExtValue(extbt)
 			return
 		}
 		value.ClearValue(true)
@@ -436,7 +434,9 @@ func (r *DxRecord)SetExtValue(keyName string,extType byte, extbt []byte)  {
 	var m DxExtValue
 	m.fdata = extbt
 	m.fParent = &r.DxBaseValue
-	m.ExtType = extType
+	if extbt != nil && len(extbt) > 0{
+		m.fExtType = extbt[0]
+	}
 	m.fValueType = DVT_Ext
 	r.fRecords[keyName] = &m.DxBaseValue
 }

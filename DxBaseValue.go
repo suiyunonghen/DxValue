@@ -33,7 +33,6 @@ type(
 
 	IDxValueCoder		interface{
 		Encode(v *DxBaseValue,w io.Writer)(err error)
-		DecodeResult(r io.Reader)(*DxBaseValue,error)
 		Decode(r io.Reader,v *DxBaseValue)(err error)
 	}
 
@@ -93,7 +92,7 @@ type(
 
 	DxExtValue		struct{
 		DxBaseValue
-		ExtType		byte		//扩展类型
+		fExtType		byte		//扩展类型
 		coder		IExtTypeCoder
 		fisDecoded	bool
 		fvalue		interface{}
@@ -135,6 +134,101 @@ func (v DxBaseValue)ValueType()DxValueType  {
 	return v.fValueType
 }
 
+func (v *DxBaseValue)SetDateTime(t DxCommonLib.TDateTime)  {
+	switch v.fValueType {
+	case DVT_Double,DVT_DateTime:
+		(*DxDoubleValue)(unsafe.Pointer(v)).fvalue = float64(t)
+		(*DxDoubleValue)(unsafe.Pointer(v)).fValueType = DVT_DateTime
+	case DVT_Float:
+		(*DxFloatValue)(unsafe.Pointer(v)).fvalue = float32(t)
+	case DVT_Int:
+		(*DxIntValue)(unsafe.Pointer(v)).fvalue = int(t)
+	}
+}
+
+func (v *DxBaseValue)SetInt(i int)  {
+	switch v.fValueType {
+	case DVT_Double,DVT_DateTime:
+		(*DxDoubleValue)(unsafe.Pointer(v)).fvalue = float64(i)
+	case DVT_Float:
+		(*DxFloatValue)(unsafe.Pointer(v)).fvalue = float32(i)
+	case DVT_Int:
+		(*DxIntValue)(unsafe.Pointer(v)).fvalue = i
+	case DVT_Int32:
+		(*DxInt32Value)(unsafe.Pointer(v)).fvalue = int32(i)
+	case DVT_Int64:
+		(*DxInt64Value)(unsafe.Pointer(v)).fvalue = int64(i)
+	}
+}
+
+func (v *DxBaseValue)SetInt32(i int32)  {
+	switch v.fValueType {
+	case DVT_Double,DVT_DateTime:
+		(*DxDoubleValue)(unsafe.Pointer(v)).fvalue = float64(i)
+	case DVT_Float:
+		(*DxFloatValue)(unsafe.Pointer(v)).fvalue = float32(i)
+	case DVT_Int:
+		(*DxIntValue)(unsafe.Pointer(v)).fvalue = int(i)
+	case DVT_Int32:
+		(*DxInt32Value)(unsafe.Pointer(v)).fvalue = i
+	case DVT_Int64:
+		(*DxInt64Value)(unsafe.Pointer(v)).fvalue = int64(i)
+	}
+}
+
+func (v *DxBaseValue)SetInt64(i int64)  {
+	switch v.fValueType {
+	case DVT_Double,DVT_DateTime:
+		(*DxDoubleValue)(unsafe.Pointer(v)).fvalue = float64(i)
+	case DVT_Float:
+		(*DxFloatValue)(unsafe.Pointer(v)).fvalue = float32(i)
+	case DVT_Int:
+		(*DxIntValue)(unsafe.Pointer(v)).fvalue = int(i)
+	case DVT_Int32:
+		(*DxInt32Value)(unsafe.Pointer(v)).fvalue = int32(i)
+	case DVT_Int64:
+		(*DxInt64Value)(unsafe.Pointer(v)).fvalue = i
+	}
+}
+
+func (v *DxBaseValue)SetDouble(f float64)  {
+	switch v.fValueType {
+	case DVT_Double,DVT_DateTime:
+		(*DxDoubleValue)(unsafe.Pointer(v)).fvalue = f
+	case DVT_Float:
+		(*DxFloatValue)(unsafe.Pointer(v)).fvalue = float32(f)
+	case DVT_Int:
+		(*DxIntValue)(unsafe.Pointer(v)).fvalue = int(f)
+	case DVT_Int32:
+		(*DxInt32Value)(unsafe.Pointer(v)).fvalue = int32(f)
+	case DVT_Int64:
+		(*DxInt64Value)(unsafe.Pointer(v)).fvalue = int64(f)
+	}
+}
+
+func (v *DxBaseValue)SetBool(vb bool)  {
+	if v.fValueType == DVT_Bool{
+		(*DxBoolValue)(unsafe.Pointer(v)).fvalue = vb
+	}
+}
+
+func (v *DxBaseValue)SetExtValue(data []byte)  {
+	if v.fValueType == DVT_Ext{
+		(*DxExtValue)(unsafe.Pointer(v)).fdata = data
+		(*DxExtValue)(unsafe.Pointer(v)).fisDecoded = false
+		(*DxExtValue)(unsafe.Pointer(v)).fvalue = nil
+		if data!=nil && len(data) > 0{
+			(*DxExtValue)(unsafe.Pointer(v)).fExtType = data[0]
+		}
+	}
+}
+
+func (v *DxBaseValue)SetBinary(b []byte)  {
+	if v.fValueType == DVT_Binary{
+		(*DxBinaryValue)(unsafe.Pointer(v)).fbinary = b
+	}
+}
+
 func RegisterExtType(ExtType byte,extCoder IExtTypeCoder)  {
 	if extTypes == nil{
 		extTypes = make(map[byte]IExtTypeCoder,32)
@@ -146,9 +240,17 @@ func RegisterExtType(ExtType byte,extCoder IExtTypeCoder)  {
 	}
 }
 
+func  (v *DxExtValue)ExtType()byte{
+	if !v.fisDecoded && v.fdata != nil && len(v.fdata) > 0{
+		v.fExtType = v.fdata[0]
+	}
+	return v.fExtType
+}
+
 func (v *DxExtValue)decodeExt()(error)  {
-	if !v.fisDecoded{
-		if v.coder,v.fisDecoded = extTypes[v.ExtType];v.fisDecoded{
+	if !v.fisDecoded && v.fdata != nil && len(v.fdata) > 0{
+		v.fExtType = v.fdata[0]
+		if v.coder,v.fisDecoded = extTypes[v.fExtType];v.fisDecoded{
 			if value,err := v.coder.Decode(v.fdata);err!=nil{
 				return err
 			}else{
@@ -162,6 +264,7 @@ func (v *DxExtValue)decodeExt()(error)  {
 	}
 	return nil
 }
+
 
 func (v *DxExtValue)AsInt()(int,error)  {
 	if err := v.decodeExt();err!=nil{
@@ -858,4 +961,19 @@ func (v *DxBinaryValue)Bytes()[]byte  {
 
 func IsSpace(b byte)bool  {
 	return b == ' ' || b == '\r' || b == '\n' || b == '\t'
+}
+
+func NewDateTimeValue(t DxCommonLib.TDateTime)*DxBaseValue  {
+	var v DxDoubleValue
+	v.fvalue = float64(t)
+	v.fValueType = DVT_DateTime
+	return &v.DxBaseValue
+}
+
+
+func NewGoTimeValue(t *time.Time)*DxBaseValue  {
+	var v DxDoubleValue
+	v.fvalue = float64(DxCommonLib.Time2DelphiTime(t))
+	v.fValueType = DVT_DateTime
+	return &v.DxBaseValue
 }

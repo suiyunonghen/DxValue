@@ -967,12 +967,10 @@ func (r *DxIntKeyRecord)AsFloat(key int64,defavalue float32)float32  {
 	return defavalue
 }
 
-func (r *DxIntKeyRecord)SetExtValue(intKey int64,extType byte,extbt []byte)  {
+func (r *DxIntKeyRecord)SetExtValue(intKey int64,extbt []byte)  {
 	if value,ok := r.fRecords[intKey];ok && value != nil{
 		if value.fValueType == DVT_Ext{
-			bv := (*DxExtValue)(unsafe.Pointer(value))
-			bv.fdata = extbt
-			bv.ExtType = extType
+			value.SetExtValue(extbt)
 			return
 		}
 		value.ClearValue(true)
@@ -981,7 +979,9 @@ func (r *DxIntKeyRecord)SetExtValue(intKey int64,extType byte,extbt []byte)  {
 	m.fdata = extbt
 	m.fParent = &r.DxBaseValue
 	m.fValueType = DVT_Ext
-	m.ExtType = extType
+	if extbt != nil && len(extbt) > 0{
+		m.fExtType = extbt[0]
+	}
 	r.fRecords[intKey] = &m.DxBaseValue
 }
 

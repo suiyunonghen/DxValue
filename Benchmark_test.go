@@ -7,8 +7,27 @@ import (
 	"github.com/json-iterator/go"
 	"gitee.com/johng/gf/g/encoding/gparser"
 	"testing"
+	//"os"
 	"os"
 )
+
+func BenchmarkGparser(b *testing.B){
+	buf, err := ioutil.ReadFile("DataProxy.config.json")
+	if err != nil {
+		fmt.Println("ReadFile Err:",err)
+		return
+	}
+	var gp *gparser.Parser
+	for i := 0;i<b.N;i++ {
+		gp,_ = gparser.LoadContent(buf, "json")
+		if bt,err := gp.ToJson();err!=nil{
+			return
+		}else if file,err := os.OpenFile("Gparser.json",os.O_CREATE | os.O_TRUNC,0644);err == nil{
+			defer file.Close()
+			file.Write(bt)
+		}
+	}
+}
 
 func BenchmarkDxRecord_JsonParserFromByte(b *testing.B) {
 	buf, err := ioutil.ReadFile("DataProxy.config.json")
@@ -23,7 +42,7 @@ func BenchmarkDxRecord_JsonParserFromByte(b *testing.B) {
 			fmt.Println("Parser Error: ",err)
 			break
 		}
-		if file,err := os.OpenFile("Jsoniter.json",os.O_CREATE | os.O_TRUNC,0644);err == nil{
+		if file,err := os.OpenFile("DxRecord.json",os.O_CREATE | os.O_TRUNC,0644);err == nil{
 			defer file.Close()
 			rc.SaveJsonWriter(file)
 		}
@@ -67,21 +86,3 @@ func BenchmarkStandJsonParser(b *testing.B){
 	}
 }
 
-
-func BenchmarkGparser(b *testing.B){
-	buf, err := ioutil.ReadFile("DataProxy.config.json")
-	if err != nil {
-		fmt.Println("ReadFile Err:",err)
-		return
-	}
-	var gp *gparser.Parser
-	for i := 0;i<b.N;i++ {
-		gp,_ = gparser.LoadContent(buf, "json")
-		if bt,err := gp.ToJson();err!=nil{
-			return
-		}else if file,err := os.OpenFile("Gparser.json",os.O_CREATE | os.O_TRUNC,0644);err == nil{
-			defer file.Close()
-			file.Write(bt)
-		}
-	}
-}

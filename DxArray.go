@@ -929,23 +929,23 @@ func (arr *DxArray)SetValue(idx int,value interface{})  {
 }
 
 
-func (arr *DxArray)SetExtValue(idx int,extType byte,extbt []byte)  {
+func (arr *DxArray)SetExtValue(idx int,extbt []byte)  {
 	if idx < 0{
 		return
 	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
 		if arr.fValues[idx].fValueType == DVT_Ext{
-			bv := (*DxExtValue)(unsafe.Pointer(arr.fValues[idx]))
-			bv.ExtType = extType
-			bv.fdata = extbt
+			arr.fValues[idx].SetExtValue(extbt)
 			return
 		}
 		arr.fValues[idx].ClearValue(true)
 	}
 	var bv DxExtValue
 	bv.fdata = extbt
-	bv.ExtType = extType
+	if extbt != nil && len(extbt) > 0{
+		bv.fExtType = extbt[0]
+	}
 	bv.fValueType = DVT_Ext
 	arr.fValues[idx] = &bv.DxBaseValue
 	arr.fValues[idx].fParent = &arr.DxBaseValue

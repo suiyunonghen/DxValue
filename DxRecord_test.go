@@ -22,7 +22,7 @@ func TestDxRecord_JsonParserFromByte(t *testing.T) {
 		fmt.Println("Parser Error: ",err)
 	}
 	fmt.Println(rc.ToString())
-	rc.SaveMsgPackFile("d:\\testMsgPack.bin")
+	rc.SaveMsgPackFile("DataProxy.config.msgPack")
 }
 
 func TestParserTime(t *testing.T)  {
