@@ -6,7 +6,65 @@ import (
 	"unsafe"
 	"time"
 	"github.com/suiyunonghen/DxValue"
+	"io"
+	"bufio"
 )
+
+
+type bufReader interface{
+	io.ByteScanner
+	io.Reader
+}
+
+type MsgPackDecoder   struct{
+	r  					bufReader
+	buffer				[8]byte //内部一个缓存，主要用来做一些数据读取转换
+	OnParserNormalValue	func(v interface{})
+	OnStartMap			func(mapLen int,keyIsStr bool)(mapInterface interface{}) //开始一个字符串键值Map，指定返回的Map结构对象
+	OnParserStrMapKv    func(mapInterface interface{},key string,v interface{})
+	OnParserIntKeyMapKv func(mapInterface interface{},intKey int64,v interface{})
+	OnStartArray		func(arrLen int)(arrInterface interface{}) //开始数组时候触发
+	OnParserArrElement	func(arrInterface interface{},index int,v interface{}) //解析数组元素触发
+}
+
+func setStringsCap(s []string, n int) []string {
+	if n > 256 {
+		n = 256
+	}
+
+	if s == nil {
+		return make([]string, 0, n)
+	}
+
+	if cap(s) >= n {
+		return s[:0]
+	}
+
+	s = s[:cap(s)]
+	s = append(s, make([]string, n-len(s))...)
+	return s[:0]
+}
+
+func (coder *MsgPackDecoder)readBigEnd16()(uint16,error)  {
+	if _,err := coder.r.Read(coder.buffer[:2]);err!=nil{
+		return 0,err
+	}
+	return binary.BigEndian.Uint16(coder.buffer[:2]),nil
+}
+
+func (coder *MsgPackDecoder)readBigEnd32()(uint32,error)  {
+	if _,err := coder.r.Read(coder.buffer[:4]);err!=nil{
+		return 0,err
+	}
+	return binary.BigEndian.Uint32(coder.buffer[:4]),nil
+}
+
+func (coder *MsgPackDecoder)readBigEnd64()(uint64,error)  {
+	if _,err := coder.r.Read(coder.buffer[:]);err!=nil{
+		return 0,err
+	}
+	return binary.BigEndian.Uint64(coder.buffer[:]),nil
+}
 
 func (coder *MsgPackDecoder)readCode()(MsgPackCode,error)  {
 	c, err := coder.r.ReadByte()
@@ -26,37 +84,72 @@ func (coder *MsgPackDecoder)DecodeDateTime(code MsgPackCode)(DxCommonLib.TDateTi
 	}
 	switch code {
 	case CodeFloat:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v32,err := coder.readBigEnd32();err!=nil{
 			return -1,err
+		}else{
+			return DxCommonLib.TDateTime(*(*float32)(unsafe.Pointer(&v32))),nil
 		}
-		v32 := binary.BigEndian.Uint32(b[:])
-		return DxCommonLib.TDateTime(*(*float32)(unsafe.Pointer(&v32))),nil
 	case CodeDouble:
-		var b [8]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v64,err := coder.readBigEnd64();err!=nil{
 			return -1,err
+		}else{
+			return DxCommonLib.TDateTime(*(*float32)(unsafe.Pointer(&v64))),nil
 		}
-		v64 := binary.BigEndian.Uint64(b[:])
-		return DxCommonLib.TDateTime(*(*float32)(unsafe.Pointer(&v64))),nil
 	case CodeFixExt4:
 		var b byte
 		if b,err = coder.r.ReadByte();err!=nil{
 			return -1,err
 		}
 		if int8(b) == -1{
-			var b [4]byte
-			if _,err := coder.r.Read(b[:]);err!=nil{
+			if ms,err := coder.readBigEnd32();err!=nil{
 				return -1,err
+			}else{
+				ntime := time.Now()
+				ns := ntime.Unix()
+				ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+				return DxCommonLib.Time2DelphiTime(&ntime),nil
 			}
-			ms := binary.BigEndian.Uint32(b[:])
-			ntime := time.Now()
-			ns := ntime.Unix()
-			ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
-			return DxCommonLib.Time2DelphiTime(&ntime),nil
 		}
 	}
 	return -1,DxValue.ErrValueType
+}
+
+func (coder *MsgPackDecoder)DecodeDateTime_Go(code MsgPackCode)(time.Time,error)  {
+	var err error
+	if code == CodeUnkonw{
+		if code,err = coder.readCode();err!=nil{
+			return time.Time{},err
+		}
+	}
+	switch code {
+	case CodeFloat:
+		if v32,err := coder.readBigEnd32();err!=nil{
+			return time.Time{},err
+		}else{
+			return DxCommonLib.TDateTime(*(*float32)(unsafe.Pointer(&v32))).ToTime(),nil
+		}
+	case CodeDouble:
+		if v64,err := coder.readBigEnd64();err!=nil{
+			return time.Time{},err
+		}else{
+			return DxCommonLib.TDateTime(*(*float32)(unsafe.Pointer(&v64))).ToTime(),nil
+		}
+	case CodeFixExt4:
+		var b byte
+		if b,err = coder.r.ReadByte();err!=nil{
+			return time.Time{},err
+		}
+		if int8(b) == -1{
+			if ms,err := coder.readBigEnd32();err!=nil{
+				return time.Time{},err
+			}else{
+				ntime := time.Now()
+				ns := ntime.Unix()
+				return ntime.Add((time.Duration(int64(ms) - ns)*time.Second)),nil
+			}
+		}
+	}
+	return time.Time{},DxValue.ErrValueType
 }
 
 func (coder *MsgPackDecoder)DecodeInt(code MsgPackCode)(int64,error)  {
@@ -81,23 +174,19 @@ func (coder *MsgPackDecoder)DecodeInt(code MsgPackCode)(int64,error)  {
 			return int64(bt),nil
 		}
 	case CodeInt16,CodeUint16:
-		var b [2]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if vwrod,err := coder.readBigEnd16();err!=nil{
 			return 0,err
 		}else{
-			vuint16 := binary.BigEndian.Uint16(b[:])
 			if code == CodeInt16{
-				return int64(int16(vuint16)),nil
+				return int64(int16(vwrod)),nil
 			}else{
-				return int64(vuint16),nil
+				return int64(vwrod),nil
 			}
 		}
 	case CodeInt32,CodeUint32:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if vuint32,err := coder.readBigEnd32();err!=nil{
 			return 0,err
-		}else{
-			vuint32 := binary.BigEndian.Uint32(b[:])
+		} else{
 			if code == CodeInt32{
 				return int64(int32(vuint32)),nil
 			}else{
@@ -105,11 +194,9 @@ func (coder *MsgPackDecoder)DecodeInt(code MsgPackCode)(int64,error)  {
 			}
 		}
 	case CodeInt64,CodeUint64:
-		var b [8]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if vuint64,err := coder.readBigEnd64();err!=nil{
 			return 0,err
 		}else{
-			vuint64 := binary.BigEndian.Uint64(b[:])
 			return int64(vuint64),nil
 		}
 	}
@@ -125,19 +212,19 @@ func (coder *MsgPackDecoder)DecodeFloat(code MsgPackCode)(float64,error) {
 	}
 	switch code {
 	case CodeFloat:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v32,err := coder.readBigEnd32();err!=nil{
 			return 0,err
+		}else{
+			return float64(*(*float32)(unsafe.Pointer(&v32))),nil
 		}
-		v32 := binary.BigEndian.Uint32(b[:])
-		return float64(*(*float32)(unsafe.Pointer(&v32))),nil
+
 	case CodeDouble:
-		var b [8]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v64,err := coder.readBigEnd64();err!=nil{
 			return 0,err
+		}else{
+			return *(*float64)(unsafe.Pointer(&v64)),nil
 		}
-		v64 := binary.BigEndian.Uint64(b[:])
-		return *(*float64)(unsafe.Pointer(&v64)),nil
+
 	default:
 		if iv,err := coder.DecodeInt(code);err!=nil{
 			return 0,err
@@ -164,17 +251,17 @@ func (coder *MsgPackDecoder)DecodeBinary(code MsgPackCode)([]byte,error)  {
 			btlen = int(b)
 		}
 	case CodeBin16:
-		var b [2]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v16,err := coder.readBigEnd16();err!=nil{
 			return nil,err
+		}else{
+			btlen = int(v16)
 		}
-		btlen =  int(binary.BigEndian.Uint16(b[:]))
 	case CodeBin32:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v32,err := coder.readBigEnd32();err!=nil{
 			return nil,err
+		}else{
+			btlen = int(v32)
 		}
-		btlen =  int(binary.BigEndian.Uint32(b[:]))
 	default:
 		return nil,DxValue.ErrValueType
 	}
@@ -209,17 +296,17 @@ func (coder *MsgPackDecoder)DecodeExtValue(code MsgPackCode)([]byte,error) {
 			btlen = int(blen)+1
 		}
 	case CodeExt16:
-		var b [2]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v16,err := coder.readBigEnd16();err!=nil{
 			return nil,err
+		}else{
+			btlen = int(v16)+1
 		}
-		btlen =  int(binary.BigEndian.Uint16(b[:]))+1
 	case CodeExt32:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v32,err := coder.readBigEnd32();err!=nil{
 			return nil,err
+		}else{
+			btlen = int(v32) + 1
 		}
-		btlen =  int(binary.BigEndian.Uint32(b[:]))+1
 	}
 	if btlen <= 0{
 		return nil,DxValue.ErrInvalidateMsgPack
@@ -240,17 +327,17 @@ func (coder *MsgPackDecoder)DecodeMapLen(mapcode MsgPackCode)(int,error)  {
 	}
 	switch mapcode {
 	case CodeMap16:
-		var b [2]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v16,err := coder.readBigEnd16();err!=nil{
 			return 0,err
+		} else{
+			return int(v16),nil
 		}
-		return int(binary.BigEndian.Uint16(b[:])),nil
 	case CodeMap32:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v32,err := coder.readBigEnd32();err!=nil{
 			return 0,err
+		} else{
+			return int(v32),nil
 		}
-		return int(binary.BigEndian.Uint32(b[:])),nil
 	default:
 		if mapcode >= CodeFixedMapLow && mapcode<=CodeFixedMapHigh{
 			return int(mapcode & FixedMapMask),nil
@@ -268,23 +355,36 @@ func (coder *MsgPackDecoder)DecodeArrayLen(code MsgPackCode)(int,error)  {
 	}
 	switch code {
 	case CodeArray16:
-		var b [2]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v16,err := coder.readBigEnd16();err!=nil{
 			return 0,err
+		} else{
+			return int(v16),nil
 		}
-		return int(binary.BigEndian.Uint16(b[:])),nil
 	case CodeArray32:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v32,err := coder.readBigEnd32();err!=nil{
 			return 0,err
+		} else{
+			return int(v32),nil
 		}
-		return int(binary.BigEndian.Uint32(b[:])),nil
 	default:
 		if code >= CodeFixedArrayLow && code <= CodeFixedArrayHigh{
 			return int(code & FixedArrayMask),nil
 		}
 	}
 	return 0,ErrInvalidateArrLen
+}
+
+func (coder *MsgPackDecoder)ReSetReader(r io.Reader)  {
+	if bytebf,ok := r.(bufReader);ok {
+		coder.r = bytebf
+	}else {
+		if bf,ok := r.(*bufio.Reader);ok{
+			bf.Reset(r)
+			coder.r = bf
+		}else{
+			coder.r = bufio.NewReader(r)
+		}
+	}
 }
 
 func (coder *MsgPackDecoder)DecodeString(code MsgPackCode)([]byte,error) {
@@ -303,17 +403,17 @@ func (coder *MsgPackDecoder)DecodeString(code MsgPackCode)([]byte,error) {
 			strlen = int(bl)
 		}
 	case CodeStr16:
-		var b [2]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
-			return nil,err
+		if v16,err := coder.readBigEnd16();err!=nil{
+			return nil, err
+		} else{
+			strlen = int(v16)
 		}
-		strlen = int(binary.BigEndian.Uint16(b[:]))
 	case CodeStr32:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
-			return nil,err
+		if v32,err := coder.readBigEnd32();err!=nil{
+			return nil, err
+		} else{
+			strlen = int(v32)
 		}
-		strlen = int(binary.BigEndian.Uint32(b[:]))
 	default:
 		if code < 0xa0 || code> 0xbf {
 			return nil,DxValue.ErrValueType
@@ -329,4 +429,19 @@ func (coder *MsgPackDecoder)DecodeString(code MsgPackCode)([]byte,error) {
 		return mb,err
 	}
 	return nil,nil
+}
+
+func NewDecoder(r io.Reader)*MsgPackDecoder  {
+	var result MsgPackDecoder
+	if bytebf,ok := r.(bufReader);ok {
+		result.r = bytebf
+	}else {
+		if bf,ok := r.(*bufio.Reader);ok{
+			bf.Reset(r)
+			result.r = bf
+		}else{
+			result.r = bufio.NewReader(r)
+		}
+	}
+	return &result
 }

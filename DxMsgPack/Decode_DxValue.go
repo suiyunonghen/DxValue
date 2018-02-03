@@ -1,11 +1,8 @@
 package DxMsgPack
 
 import (
-	"bufio"
 	"github.com/suiyunonghen/DxValue"
-	"io"
 	"github.com/suiyunonghen/DxCommonLib"
-	"encoding/binary"
 	"time"
 	"unsafe"
 	"errors"
@@ -16,16 +13,6 @@ var(
 	ErrInvalidateMapKey	= errors.New("Invalidate Map Key,Key Can Only Int or String")
 	ErrInvalidateArrLen = errors.New("Is not a Array Len Flag")
 )
-
-type bufReader interface{
-	io.ByteScanner
-	io.Reader
-}
-
-type MsgPackDecoder   struct{
-	r  bufReader
-}
-
 
 func (coder *MsgPackDecoder)DecodeStrMapKvRecord(strMap *DxValue.DxRecord,strcode MsgPackCode)(error)  {
 	keybt,err := coder.DecodeString(strcode)
@@ -79,33 +66,32 @@ func (coder *MsgPackDecoder)DecodeStrMapKvRecord(strMap *DxValue.DxRecord,strcod
 		case CodeFalse: strMap.SetBool(keyName,false)
 		case CodeNil:   strMap.SetNull(keyName)
 		case CodeFloat:
-			var b [4]byte
-			if _,err := coder.r.Read(b[:]);err!=nil{
+			if v32,err := coder.readBigEnd32();err!=nil{
 				return err
+			}else{
+				strMap.SetFloat(keyName,*(*float32)(unsafe.Pointer(&v32)))
 			}
-			v32 := binary.BigEndian.Uint32(b[:])
-			strMap.SetFloat(keyName,*(*float32)(unsafe.Pointer(&v32)))
 		case CodeDouble:
-			var b [8]byte
-			if _,err := coder.r.Read(b[:]);err!=nil{
+			if v64,err := coder.readBigEnd64();err!=nil{
 				return err
+			}else{
+				strMap.SetDouble(keyName,*(*float64)(unsafe.Pointer(&v64)))
 			}
-			v64 := binary.BigEndian.Uint64(b[:])
-			strMap.SetDouble(keyName,*(*float64)(unsafe.Pointer(&v64)))
+
 		case CodeFixExt4:
 			if strcode,err = coder.readCode();err!=nil{
 				return err
 			}
 			if int8(strcode) == -1{
-				var b [4]byte
-				if _,err := coder.r.Read(b[:]);err!=nil{
+				if ms,err := coder.readBigEnd32();err!=nil{
 					return err
+				}else{
+					ntime := time.Now()
+					ns := ntime.Unix()
+					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+					strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(&ntime))
 				}
-				ms := binary.BigEndian.Uint32(b[:])
-				ntime := time.Now()
-				ns := ntime.Unix()
-				ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
-				strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(&ntime))
+
 			}else{
 				var mb [5]byte
 				if _,err = coder.r.Read(mb[1:]);err!=nil{
@@ -113,6 +99,98 @@ func (coder *MsgPackDecoder)DecodeStrMapKvRecord(strMap *DxValue.DxRecord,strcod
 				}
 				mb[0] = byte(strcode)
 				strMap.SetExtValue(keyName,mb[:])
+			}
+		}
+	}
+	return nil
+}
+
+
+func (coder *MsgPackDecoder)DecodeIntKeyMapKvRecord(intKeyMap *DxValue.DxIntKeyRecord,keycode MsgPackCode)(error)  {
+	intKey,err := coder.DecodeInt(keycode)
+	if err != nil{
+		return err
+	}
+	if keycode,err = coder.readCode();err!=nil{
+		return err
+	}
+	if keycode.IsStr(){
+		if strbt,err := coder.DecodeString(keycode);err!=nil{
+			return err
+		}else{
+			intKeyMap.SetString(intKey,DxCommonLib.FastByte2String(strbt))
+		}
+	}else if keycode.IsFixedNum(){
+		intKeyMap.SetInt32(intKey,int32(int8(keycode)))
+	}else if keycode.IsInt(){
+		if i64,err := coder.DecodeInt(keycode);err!=nil{
+			return err
+		}else{
+			intKeyMap.SetInt64(intKey,i64)
+		}
+	}else if keycode.IsMap(){
+		if baseV,err := coder.DecodeUnknownMap(keycode);err!=nil{
+			return err
+		}else{
+			intKeyMap.SetBaseValue(intKey,baseV)
+		}
+	}else if keycode.IsArray(){
+		if arr,err := coder.DecodeArray(keycode);err!=nil{
+			return err
+		}else{
+			intKeyMap.SetArray(intKey,arr)
+		}
+	}else if keycode.IsBin(){
+		if bin,err := coder.DecodeBinary(keycode);err!=nil{
+			return err
+		} else{
+			intKeyMap.SetBinary(intKey,bin,true)
+		}
+	}else if keycode.IsExt(){
+		if bin ,err := coder.DecodeExtValue(keycode);err!=nil{
+			return err
+		}else{
+			intKeyMap.SetExtValue(intKey,bin)
+		}
+	}else{
+		switch keycode {
+		case CodeTrue:	intKeyMap.SetBool(intKey,true)
+		case CodeFalse: intKeyMap.SetBool(intKey,false)
+		case CodeNil:   intKeyMap.SetNull(intKey)
+		case CodeFloat:
+			if v32,err := coder.readBigEnd32();err!=nil{
+				return err
+			}else{
+				intKeyMap.SetFloat(intKey,*(*float32)(unsafe.Pointer(&v32)))
+			}
+		case CodeDouble:
+			if v64,err := coder.readBigEnd64();err!=nil{
+				return err
+			}else{
+				intKeyMap.SetDouble(intKey,*(*float64)(unsafe.Pointer(&v64)))
+			}
+
+		case CodeFixExt4:
+			if keycode,err = coder.readCode();err!=nil{
+				return err
+			}
+			if int8(keycode) == -1{
+				if ms,err := coder.readBigEnd32();err!=nil{
+					return err
+				}else{
+					ntime := time.Now()
+					ns := ntime.Unix()
+					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+					intKeyMap.SetDateTime(intKey, DxCommonLib.Time2DelphiTime(&ntime))
+				}
+
+			}else{
+				var mb [5]byte
+				if _,err = coder.r.Read(mb[1:]);err!=nil{
+					return err
+				}
+				mb[0] = byte(keycode)
+				intKeyMap.SetExtValue(intKey,mb[:])
 			}
 		}
 	}
@@ -131,14 +209,14 @@ func (coder *MsgPackDecoder)DecodeArrayElement(arr *DxValue.DxArray,eleIndex int
 		}else{
 			arr.SetString(eleIndex,DxCommonLib.FastByte2String(stbt))
 		}
+	}else if code.IsFixedNum(){
+		arr.SetInt32(eleIndex,int32(int8(code)))
 	}else if code.IsInt(){
 		if i64,err := coder.DecodeInt(code);err!=nil{
 			return err
 		}else{
 			arr.SetInt64(eleIndex,i64)
 		}
-	}else if code.IsFixedNum(){
-		arr.SetInt32(eleIndex,int32(int8(code)))
 	}else if code.IsMap(){
 		if mpbv,err := coder.DecodeUnknownMap(code);err!=nil{
 			return err
@@ -169,33 +247,31 @@ func (coder *MsgPackDecoder)DecodeArrayElement(arr *DxValue.DxArray,eleIndex int
 		case CodeFalse: arr.SetBool(eleIndex,false)
 		case CodeNil:	arr.SetNull(eleIndex)
 		case CodeFloat:
-			var b [4]byte
-			if _,err := coder.r.Read(b[:]);err!=nil{
+			if v32,err := coder.readBigEnd32();err!=nil{
 				return err
+			}else{
+				arr.SetFloat(eleIndex,*(*float32)(unsafe.Pointer(&v32)))
 			}
-			v32 := binary.BigEndian.Uint32(b[:])
-			arr.SetFloat(eleIndex,*(*float32)(unsafe.Pointer(&v32)))
 		case CodeDouble:
-			var b [8]byte
-			if _,err := coder.r.Read(b[:]);err!=nil{
+			if v64,err := coder.readBigEnd64();err!=nil{
 				return err
+			}else{
+				arr.SetDouble(eleIndex,*(*float64)(unsafe.Pointer(&v64)))
 			}
-			v64 := binary.BigEndian.Uint64(b[:])
-			arr.SetDouble(eleIndex,*(*float64)(unsafe.Pointer(&v64)))
+
 		case CodeFixExt4:
 			if code,err = coder.readCode();err!=nil{
 				return err
 			}
 			if int8(code) == -1{
-				var b [4]byte
-				if _,err := coder.r.Read(b[:]);err!=nil{
+				if ms,err := coder.readBigEnd32();err!=nil{
 					return err
+				}else{
+					ntime := time.Now()
+					ns := ntime.Unix()
+					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+					arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(&ntime))
 				}
-				ms := binary.BigEndian.Uint32(b[:])
-				ntime := time.Now()
-				ns := ntime.Unix()
-				ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
-				arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(&ntime))
 			}else{
 				var mb [5]byte
 				if _,err = coder.r.Read(mb[1:]);err!=nil{
@@ -231,6 +307,27 @@ func (coder *MsgPackDecoder)DecodeArray(code MsgPackCode)(*DxValue.DxArray,error
 	return arr,nil
 }
 
+func (coder *MsgPackDecoder)Decode2Array(code MsgPackCode,arr *DxValue.DxArray)(error)  {
+	var (
+		err error
+		arrlen int
+	)
+	if code == CodeUnkonw{
+		if code,err = coder.readCode();err!=nil{
+			return err
+		}
+	}
+	if arrlen,err = coder.DecodeArrayLen(code);err!=nil{
+		return err
+	}
+	for i := 0;i<arrlen;i++{
+		if err = coder.DecodeArrayElement(arr,i);err!=nil{
+			return err
+		}
+	}
+	return nil
+}
+
 func (coder *MsgPackDecoder)DecodeUnknownMap(code MsgPackCode)(*DxValue.DxBaseValue,error)  {
 	if maplen,err := coder.DecodeMapLen(code);err!=nil{
 		return nil, err
@@ -243,6 +340,15 @@ func (coder *MsgPackDecoder)DecodeUnknownMap(code MsgPackCode)(*DxValue.DxBaseVa
 		if code.IsInt(){
 			iMap := DxValue.NewIntKeyRecord()
 			baseV = &iMap.DxBaseValue
+			if err = coder.DecodeIntKeyMapKvRecord(iMap,code);err!=nil{
+				return nil,err
+			}
+			for j := 1;j<maplen;j++{
+				if err = coder.DecodeIntKeyMapKvRecord(iMap,CodeUnkonw);err!=nil{
+					return nil,err
+				}
+			}
+			return baseV,nil
 		}else if code.IsStr(){
 			iMap := DxValue.NewRecord()
 			baseV = &iMap.DxBaseValue
@@ -254,10 +360,9 @@ func (coder *MsgPackDecoder)DecodeUnknownMap(code MsgPackCode)(*DxValue.DxBaseVa
 					return nil,err
 				}
 			}
-		}else{
-			return nil,ErrInvalidateMapKey
+			return baseV,nil
 		}
-		return baseV,nil
+		return nil,ErrInvalidateMapKey
 	}
 }
 
@@ -271,17 +376,17 @@ func (coder *MsgPackDecoder)DecodeStrMap(code MsgPackCode,rec *DxValue.DxRecord)
 	maplen := 0
 	switch code {
 	case CodeMap16:
-		var b [2]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v16,err := coder.readBigEnd16();err!=nil{
 			return err
+		}else {
+			maplen = int(v16)
 		}
-		maplen =  int(binary.BigEndian.Uint16(b[:]))
 	case CodeMap32:
-		var b [4]byte
-		if _,err := coder.r.Read(b[:]);err!=nil{
+		if v32,err := coder.readBigEnd32();err!=nil{
 			return err
+		}else {
+			maplen = int(v32)
 		}
-		maplen =  int(binary.BigEndian.Uint32(b[:]))
 	default:
 		if code >= CodeFixedMapLow && code<= CodeFixedMapHigh{
 			maplen = int(code & 0xf)
@@ -295,17 +400,42 @@ func (coder *MsgPackDecoder)DecodeStrMap(code MsgPackCode,rec *DxValue.DxRecord)
 	return nil
 }
 
-func (coder *MsgPackDecoder)Decode(r io.Reader, v *DxValue.DxBaseValue)(error)  {
-	if bytebf,ok := r.(bufReader);ok {
-		coder.r = bytebf
-	}else {
-		if bf,ok := r.(*bufio.Reader);ok{
-			bf.Reset(r)
-			coder.r = bf
-		}else{
-			coder.r = bufio.NewReader(r)
+
+func (coder *MsgPackDecoder)DecodeIntKeyMap(code MsgPackCode,rec *DxValue.DxIntKeyRecord)error  {
+	var err error
+	if code == CodeUnkonw{
+		if code,err = coder.readCode();err!=nil{
+			return err
 		}
 	}
+	maplen := 0
+	switch code {
+	case CodeMap16:
+		if v16,err := coder.readBigEnd16();err!=nil{
+			return err
+		}else {
+			maplen = int(v16)
+		}
+	case CodeMap32:
+		if v32,err := coder.readBigEnd32();err!=nil{
+			return err
+		}else {
+			maplen = int(v32)
+		}
+	default:
+		if code >= CodeFixedMapLow && code<= CodeFixedMapHigh{
+			maplen = int(code & 0xf)
+		}
+	}
+	for i := 0;i<maplen;i++{
+		if err = coder.DecodeIntKeyMapKvRecord(rec,CodeUnkonw);err!=nil{
+			return err
+		}
+	}
+	return nil
+}
+
+func (coder *MsgPackDecoder)Decode(v *DxValue.DxBaseValue)(error)  {
 	switch v.ValueType() {
 	case DxValue.DVT_Array:
 	case DxValue.DVT_DateTime:
@@ -350,7 +480,8 @@ func (coder *MsgPackDecoder)Decode(r io.Reader, v *DxValue.DxBaseValue)(error)  
 		rec,_ := v.AsRecord()
 		return coder.DecodeStrMap(CodeUnkonw,rec)
 	case DxValue.DVT_RecordIntKey:
-
+		rec,_ := v.AsIntRecord()
+		return coder.DecodeIntKeyMap(CodeUnkonw,rec)
 	}
 	coder.r.UnreadByte()
 	return DxValue.ErrValueType

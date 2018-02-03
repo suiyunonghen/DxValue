@@ -8,7 +8,6 @@ import (
 	"errors"
 	"strings"
 	"time"
-	"io"
 )
 
 
@@ -29,11 +28,6 @@ type(
 		AsDouble()(float64,error)
 		AsBytes()([]byte,error)
 		AsDateTime()(DxCommonLib.TDateTime,error)
-	}
-
-	IDxValueCoder		interface{
-		Encode(v *DxBaseValue,w io.Writer)(err error)
-		Decode(r io.Reader,v *DxBaseValue)(err error)
 	}
 
 	DxBaseValue			struct{
@@ -144,6 +138,10 @@ func (v *DxBaseValue)SetDateTime(t DxCommonLib.TDateTime)  {
 	case DVT_Int:
 		(*DxIntValue)(unsafe.Pointer(v)).fvalue = int(t)
 	}
+}
+
+func (v *DxBaseValue)String()string{
+	return v.ToString()
 }
 
 func (v *DxBaseValue)SetInt(i int)  {
@@ -404,6 +402,7 @@ func (v *DxExtValue)AsString()(string)  {
 		return ""
 	}
 }
+
 
 func (v *DxExtValue)AsFloat()(float32,error)  {
 	if err := v.decodeExt();err!=nil{

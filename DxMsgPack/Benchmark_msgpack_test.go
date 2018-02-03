@@ -7,8 +7,6 @@ import (
 	"github.com/vmihailenco/msgpack"
 	"os"
 	"io"
-	"bufio"
-	"github.com/suiyunonghen/DxValue"
 )
 
 func Benchmark_DecodeMsgPack(b *testing.B) {
@@ -18,12 +16,11 @@ func Benchmark_DecodeMsgPack(b *testing.B) {
 		return
 	}
 	defer f.Close()
-	coder := MsgPackDecoder{}
-	coder.r = bufio.NewReader(f)
-	rec := DxValue.NewRecord()
+	coder := NewDecoder(f)
+	mp := make(map[string]interface{},32)
 	for i:=0;i<b.N;i++{
-		if err := coder.Decode(f,&rec.DxBaseValue);err!=nil{
-			return
+		if err = coder.DecodeStand(&mp);err!=nil{
+			fmt.Println("BenchmarkDecodeMsgPack Error:",err)
 		}
 		f.Seek(0,io.SeekStart)
 	}

@@ -985,6 +985,21 @@ func (r *DxIntKeyRecord)SetExtValue(intKey int64,extbt []byte)  {
 	r.fRecords[intKey] = &m.DxBaseValue
 }
 
+func (r *DxIntKeyRecord)SetBaseValue(intKey int64,v *DxBaseValue)  {
+	if v != nil{
+		switch v.fValueType {
+		case DVT_Record:
+			r.SetRecordValue(intKey,(*DxRecord)(unsafe.Pointer(v)))
+		case DVT_RecordIntKey:
+			r.SetIntRecordValue(intKey,(*DxIntKeyRecord)(unsafe.Pointer(v)))
+		case DVT_Array:
+			r.SetArray(intKey,(*DxArray)(unsafe.Pointer(v)))
+		}
+	}else {
+		r.SetNull(intKey)
+	}
+}
+
 func (r *DxIntKeyRecord)AsExtValue(intKey int64)(*DxExtValue)  {
 	if value,ok := r.fRecords[intKey];ok && value != nil && value.fValueType == DVT_Ext{
 		return (*DxExtValue)(unsafe.Pointer(value))
