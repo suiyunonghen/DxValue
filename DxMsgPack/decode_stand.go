@@ -14,8 +14,6 @@ import (
 var(
 	ErrUnSetOnStartArray  = errors.New("Customer Decode has no ArrayEvent ")
 	ErrCannotSet		= errors.New("Value can't set")
-    interfaceType = reflect.TypeOf((*interface{})(nil)).Elem()
-	stringType = reflect.TypeOf((*string)(nil)).Elem()
 	sliceStringPtrType = reflect.TypeOf((*[]string)(nil))
 )
 
@@ -825,94 +823,11 @@ func (coder *MsgPackDecoder)DecodeStand(v interface{})(error)  {
 		if !v.IsValid() {
 			return fmt.Errorf("msgpack: Decode(nonsettable %T)", value)
 		}
-
 		return coder.DecodeValue(v)
 	}
 	return nil
 }
 
-func (coder *MsgPackDecoder)decodeStruct(v reflect.Value)(err error)  {
-	maplen := 0
-	if maplen,err = coder.DecodeMapLen(CodeUnkonw);err!=nil{
-		return err
-	}
-	strcode := CodeUnkonw
-	//判断键值，是Int还是str
-	if strcode,err = coder.readCode();err!=nil{
-		return err
-	}
-	if !strcode.IsStr(){
-		return errors.New("Struct Can only use String Key")
-	}
-	if k,v,err := coder.decodeStrMapKvRecord(strcode);err!=nil{
-		return nil
-	}else{
-		structs
-		//
-		for j := 1;j<maplen;j++{
-			if k,v,err = coder.decodeStrMapKvRecord(CodeUnkonw);err!=nil{
-				return err
-			}
-			//strMap[k] = v
-		}
-	}
-}
-
-func (coder *MsgPackDecoder)DecodeValue(v reflect.Value)(error)  {
-	typ := v.Type()
-	if !v.CanSet(){
-		return ErrCannotSet
-	}
-	switch typ.Kind() {
-	case reflect.Bool:
-		if code,err := coder.readCode();err!=nil{
-			return err
-		}else if code == CodeFalse{
-			v.SetBool(false)
-		}else if code == CodeTrue{
-			v.SetBool(true)
-		}
-	case reflect.Struct:
-	case reflect.Map:
-	case reflect.Slice:
-		elem := typ.Elem()
-		switch elem.Kind() {
-		case reflect.Uint8:
-			if bt,err := coder.DecodeBinary(CodeUnkonw);err!=nil{
-				return err
-			}else{
-				v.SetBytes(bt)
-				return nil
-			}
-		}
-		switch elem {
-		case stringType:
-			if arrlen,err := coder.DecodeArrayLen(CodeUnkonw);err!=nil{
-				return err
-			}else if arrlen ==-1{
-				return nil
-			}else{
-				ptr := v.Addr().Convert(sliceStringPtrType).Interface().(*[]string)
-				ss := setStringsCap(*ptr,arrlen)
-				for i := 0; i < arrlen; i++ {
-					s, err := coder.DecodeString(CodeUnkonw)
-					if err != nil {
-						return err
-					}
-					ss = append(ss, DxCommonLib.FastByte2String(s))
-				}
-				*ptr = ss
-				return nil
-			}
-		}
-	default:
-		if v.CanInterface(){
-			vt := v.Interface()
-			coder.DecodeStand(vt)
-		}
-	}
-	return DxValue.ErrValueType
-}
 
 func Unmarshal(data []byte, v...interface{}) error {
 	coder := NewDecoder(bytes.NewReader(data))

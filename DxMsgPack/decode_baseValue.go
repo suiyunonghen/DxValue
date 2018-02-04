@@ -18,7 +18,7 @@ type bufReader interface{
 
 type MsgPackDecoder   struct{
 	r  					bufReader
-	buffer				[8]byte //内部一个缓存，主要用来做一些数据读取转换
+	buffer				[64]byte //内部一个缓存，主要用来做一些数据读取转换
 	OnParserNormalValue	func(v interface{})
 	OnStartMap			func(mapLen int,keyIsStr bool)(mapInterface interface{}) //开始一个字符串键值Map，指定返回的Map结构对象
 	OnParserStrMapKv    func(mapInterface interface{},key string,v interface{})
@@ -45,6 +45,7 @@ func setStringsCap(s []string, n int) []string {
 	return s[:0]
 }
 
+
 func (coder *MsgPackDecoder)readBigEnd16()(uint16,error)  {
 	if _,err := coder.r.Read(coder.buffer[:2]);err!=nil{
 		return 0,err
@@ -60,10 +61,10 @@ func (coder *MsgPackDecoder)readBigEnd32()(uint32,error)  {
 }
 
 func (coder *MsgPackDecoder)readBigEnd64()(uint64,error)  {
-	if _,err := coder.r.Read(coder.buffer[:]);err!=nil{
+	if _,err := coder.r.Read(coder.buffer[:8]);err!=nil{
 		return 0,err
 	}
-	return binary.BigEndian.Uint64(coder.buffer[:]),nil
+	return binary.BigEndian.Uint64(coder.buffer[:8]),nil
 }
 
 func (coder *MsgPackDecoder)readCode()(MsgPackCode,error)  {
@@ -74,6 +75,13 @@ func (coder *MsgPackDecoder)readCode()(MsgPackCode,error)  {
 	return MsgPackCode(c), nil
 }
 
+func (coder *MsgPackDecoder) hasNilCode() bool {
+	if code,err := coder.readCode();err==nil{
+		coder.r.UnreadByte()
+		return code == CodeNil
+	}
+	return false
+}
 
 func (coder *MsgPackDecoder)DecodeDateTime(code MsgPackCode)(DxCommonLib.TDateTime,error)  {
 	var err error
@@ -235,44 +243,49 @@ func (coder *MsgPackDecoder)DecodeFloat(code MsgPackCode)(float64,error) {
 	return 0,DxValue.ErrValueType
 }
 
-func (coder *MsgPackDecoder)DecodeBinary(code MsgPackCode)([]byte,error)  {
+func (coder *MsgPackDecoder)BinaryLen(code MsgPackCode)(int,error)  {
 	var err error
 	if code == CodeUnkonw{
 		if code,err = coder.readCode();err!=nil{
-			return nil,err
+			return -1,err
 		}
 	}
 	btlen := 0
 	switch code {
 	case CodeBin8:
 		if b,err := coder.r.ReadByte();err!=nil{
-			return nil,err
+			return -1,err
 		}else{
 			btlen = int(b)
 		}
 	case CodeBin16:
 		if v16,err := coder.readBigEnd16();err!=nil{
-			return nil,err
+			return -1,err
 		}else{
 			btlen = int(v16)
 		}
 	case CodeBin32:
 		if v32,err := coder.readBigEnd32();err!=nil{
-			return nil,err
+			return -1,err
 		}else{
 			btlen = int(v32)
 		}
 	default:
-		return nil,DxValue.ErrValueType
+		return -1,DxValue.ErrValueType
 	}
+	return btlen,nil
+}
+
+func (coder *MsgPackDecoder)DecodeBinary(code MsgPackCode)([]byte,error)  {
+	btlen,err := coder.BinaryLen(code)
 	if btlen > 0{
 		mb := make([]byte,btlen)
-		if _,err := coder.r.Read(mb);err!=nil{
+		if _,err = coder.r.Read(mb);err!=nil{
 			return nil,err
 		}
 		return mb,nil
 	}
-	return nil,nil
+	return nil,err
 }
 
 func (coder *MsgPackDecoder)DecodeExtValue(code MsgPackCode)([]byte,error) {
@@ -385,6 +398,321 @@ func (coder *MsgPackDecoder)ReSetReader(r io.Reader)  {
 			coder.r = bufio.NewReader(r)
 		}
 	}
+}
+
+func (coder *MsgPackDecoder)skipN(nbyte int)(err error)  {
+	if seeker,ok := coder.r.(io.Seeker);ok{
+		_,err = seeker.Seek(int64(nbyte),io.SeekCurrent)
+		return err
+	}
+	var buf []byte
+	if nbyte <= len(coder.buffer){
+		buf = coder.buffer[:nbyte]
+	}else{
+		buf = make([]byte,nbyte)
+	}
+	_,err = coder.r.Read(buf)
+	return err
+}
+
+func (coder *MsgPackDecoder)Skip(code MsgPackCode)(err error)  {
+	if code == CodeUnkonw{
+		if code,err = coder.readCode();err!=nil{
+			return err
+		}
+	}
+	if code.IsStr(){
+		return coder.skipString(code)
+	}else if code.IsArray(){
+		return coder.skipArray(code)
+	}else if code.IsBin(){
+		return coder.skipBinary(code)
+	}else if code.IsExt(){
+		return coder.skipExtValue(code)
+	}else if code.IsInt(){
+		_,err = coder.DecodeInt(code)
+		return err
+	}else if code.IsMap(){
+		return coder.skipMap(code)
+	}else{
+		switch code {
+		case CodeTrue:	return nil
+		case CodeFalse: return nil
+		case CodeNil:   return nil
+		case CodeFloat:
+			_,err = coder.readBigEnd32()
+			return err
+		case CodeDouble:
+			_,err = coder.readBigEnd64()
+			return err
+		case CodeFixExt4:
+			if code,err = coder.readCode();err!=nil{
+				return err
+			}
+			_,err = coder.readBigEnd32()
+			return err
+		}
+	}
+	return nil
+}
+
+func (coder *MsgPackDecoder)skipStrMapKvRecord(strcode MsgPackCode)(error)  {
+	err := coder.skipString(strcode)
+	if err != nil{
+		return err
+	}
+	if strcode,err = coder.readCode();err!=nil{
+		return  err
+	}
+	if strcode.IsStr(){
+		return coder.skipString(strcode)
+	}else if strcode.IsFixedNum(){
+		return nil
+	}else if strcode.IsInt(){
+		_,err = coder.DecodeInt(strcode)
+		return err
+	}else if strcode.IsMap(){
+		return coder.skipMap(strcode)
+	}else if strcode.IsArray(){
+		return coder.skipArray(strcode)
+	}else if strcode.IsBin(){
+		return coder.skipBinary(strcode)
+	}else if strcode.IsExt(){
+		return coder.skipExtValue(strcode)
+	}else{
+		switch strcode {
+		case CodeTrue:	return nil
+		case CodeFalse: return nil
+		case CodeNil:   return nil
+		case CodeFloat:
+			_,err = coder.readBigEnd32()
+			return err
+		case CodeDouble:
+			_,err = coder.readBigEnd64()
+			return err
+		case CodeFixExt4:
+			if strcode,err = coder.readCode();err!=nil{
+				return err
+			}
+			_,err = coder.readBigEnd32()
+			return err
+		}
+	}
+	return err
+}
+
+func (coder *MsgPackDecoder)skipIntKeyMapKvRecord(intkeyCode MsgPackCode)(error)  {
+	_,err := coder.DecodeInt(intkeyCode)
+	if err != nil{
+		return err
+	}
+	if intkeyCode,err = coder.readCode();err!=nil{
+		return err
+	}
+
+	if intkeyCode.IsStr(){
+		return coder.skipString(intkeyCode)
+	}else if intkeyCode.IsFixedNum(){
+		return nil
+	}else if intkeyCode.IsInt(){
+		_,err = coder.DecodeInt(intkeyCode)
+		return err
+	}else if intkeyCode.IsMap(){
+		return coder.skipMap(intkeyCode)
+	}else if intkeyCode.IsArray(){
+		return coder.skipArray(intkeyCode)
+	}else if intkeyCode.IsBin(){
+		return coder.skipBinary(intkeyCode)
+	}else if intkeyCode.IsExt(){
+		return coder.skipExtValue(intkeyCode)
+	}else{
+		switch intkeyCode {
+		case CodeTrue:	return nil
+		case CodeFalse: return nil
+		case CodeNil:   return nil
+		case CodeFloat:
+			_,err = coder.readBigEnd32()
+			return err
+		case CodeDouble:
+			_,err = coder.readBigEnd64()
+			return err
+		case CodeFixExt4:
+			if intkeyCode,err = coder.readCode();err!=nil{
+				return  err
+			}
+			_,err = coder.readBigEnd32()
+			return err
+		}
+	}
+	return err
+}
+
+func (coder *MsgPackDecoder)skipMap(strcode MsgPackCode)(error)  {
+	if maplen,err := coder.DecodeMapLen(strcode);err!=nil{
+		return err
+	}else{
+		//判断键值，是Int还是str
+		if strcode,err = coder.readCode();err!=nil{
+			return err
+		}
+		if strcode.IsInt(){
+			if err = coder.skipIntKeyMapKvRecord(strcode);err!=nil{
+				return err
+			}
+			for j := 1;j<maplen;j++{
+				if err = coder.skipIntKeyMapKvRecord(CodeUnkonw);err!=nil{
+					return err
+				}
+			}
+		}else if strcode.IsStr(){
+			if err = coder.skipStrMapKvRecord(strcode);err!=nil{
+				return err
+			}
+			for j := 1;j<maplen;j++{
+				if err = coder.skipStrMapKvRecord(CodeUnkonw);err!=nil{
+					return err
+				}
+			}
+		}
+		return ErrInvalidateMapKey
+	}
+}
+
+func (coder *MsgPackDecoder)skipExtValue(code MsgPackCode)(error) {
+	btlen := -1
+	var err error
+	if code == CodeUnkonw{
+		if code,err = coder.readCode();err!=nil{
+			return err
+		}
+	}
+	switch code {
+	case CodeFixExt1: btlen = 2
+	case CodeFixExt2: btlen = 3
+	case CodeFixExt4: btlen = 5
+	case CodeFixExt8: btlen = 9
+	case CodeFixExt16: btlen = 17
+	case CodeExt8:
+		if blen,err := coder.r.ReadByte();err!=nil {
+			return err
+		}else{
+			btlen = int(blen)+1
+		}
+	case CodeExt16:
+		if v16,err := coder.readBigEnd16();err!=nil{
+			return err
+		}else{
+			btlen = int(v16)+1
+		}
+	case CodeExt32:
+		if v32,err := coder.readBigEnd32();err!=nil{
+			return err
+		}else{
+			btlen = int(v32) + 1
+		}
+	}
+	if btlen <= 0{
+		return nil
+	}
+	return coder.skipN(btlen)
+}
+
+func (coder *MsgPackDecoder)skipBinary(code MsgPackCode)(error)  {
+	var err error
+	if code == CodeUnkonw{
+		if code,err = coder.readCode();err!=nil{
+			return err
+		}
+	}
+	btlen := 0
+	switch code {
+	case CodeBin8:
+		if b,err := coder.r.ReadByte();err!=nil{
+			return err
+		}else{
+			btlen = int(b)
+		}
+	case CodeBin16:
+		if v16,err := coder.readBigEnd16();err!=nil{
+			return err
+		}else{
+			btlen = int(v16)
+		}
+	case CodeBin32:
+		if v32,err := coder.readBigEnd32();err!=nil{
+			return err
+		}else{
+			btlen = int(v32)
+		}
+	default:
+		return DxValue.ErrValueType
+	}
+	if btlen > 0{
+		return coder.skipN(btlen)
+	}
+	return nil
+}
+
+
+func (coder *MsgPackDecoder)skipArray(code MsgPackCode)(error)  {
+	var (
+		err error
+		arrlen int
+	)
+	if code == CodeUnkonw{
+		if code,err = coder.readCode();err!=nil{
+			return err
+		}
+	}
+	if arrlen,err = coder.DecodeArrayLen(code);err!=nil{
+		return err
+	}
+	for i := 0;i<arrlen;i++{
+		if err = coder.Skip(CodeUnkonw);err!=nil{
+			return err
+		}
+	}
+	return nil
+}
+
+
+func (coder *MsgPackDecoder)skipString(code MsgPackCode)(error) {
+	var err error
+	if code == CodeUnkonw{
+		if code,err = coder.readCode();err!=nil{
+			return err
+		}
+	}
+	strlen := 0
+	switch code {
+	case CodeStr8:
+		if bl,err := coder.r.ReadByte();err!=nil{
+			return err
+		}else{
+			strlen = int(bl)
+		}
+	case CodeStr16:
+		if v16,err := coder.readBigEnd16();err!=nil{
+			return err
+		} else{
+			strlen = int(v16)
+		}
+	case CodeStr32:
+		if v32,err := coder.readBigEnd32();err!=nil{
+			return err
+		} else{
+			strlen = int(v32)
+		}
+	default:
+		if code < 0xa0 || code> 0xbf {
+			return DxValue.ErrValueType
+		}
+		strlen = int(code & FixedStrMask)
+	}
+	if strlen > 0{
+		return coder.skipN(strlen)
+	}
+	return nil
 }
 
 func (coder *MsgPackDecoder)DecodeString(code MsgPackCode)([]byte,error) {
