@@ -86,7 +86,7 @@ type(
 
 	DxExtValue		struct{
 		DxBaseValue
-		fExtType		byte		//扩展类型
+		fExtType	byte		//扩展类型
 		coder		IExtTypeCoder
 		fisDecoded	bool
 		fvalue		interface{}
@@ -243,6 +243,33 @@ func  (v *DxExtValue)ExtType()byte{
 		v.fExtType = v.fdata[0]
 	}
 	return v.fExtType
+}
+
+func (v *DxExtValue)IsDecoded()bool  {
+	return v.fisDecoded
+}
+
+func (v *DxExtValue)Coder()IExtTypeCoder  {
+	if v.coder!=nil{
+		return v.coder
+	}
+	v.coder,_ = extTypes[v.fExtType]
+	return v.coder
+}
+
+func (v *DxExtValue)ExtData()[]byte  {
+	if !v.fisDecoded{
+		if v.fdata == nil || len(v.fdata) == 0{
+			return nil
+		}
+		return v.fdata
+	}else{
+		excoder := v.Coder()
+		if excoder != nil{
+			return excoder.Encode(v.fvalue)
+		}
+	}
+	return v.fdata
 }
 
 func (v *DxExtValue)decodeExt()(error)  {
@@ -816,10 +843,18 @@ func (v *DxInt32Value)Bytes()[]byte  {
 	return mb
 }
 
+func (v *DxInt32Value)Int32()int32  {
+	return v.fvalue
+}
+
 
 
 func (v *DxIntValue)ToString()string  {
 	return strconv.Itoa(v.fvalue)
+}
+
+func (v *DxIntValue)Int()int  {
+	return v.fvalue
 }
 
 func (v *DxIntValue)Bytes()[]byte  {
@@ -832,6 +867,10 @@ func (v *DxInt64Value)ToString()string  {
 	return strconv.FormatInt(int64(v.fvalue),10)
 }
 
+func (v *DxInt64Value)Int64()int64  {
+	return v.fvalue
+}
+
 func (v *DxInt64Value)Bytes()[]byte  {
 	mb := make([]byte,0,unsafe.Sizeof(v.fvalue))
 	*(*int64)(unsafe.Pointer(&mb[0])) = v.fvalue
@@ -839,11 +878,15 @@ func (v *DxInt64Value)Bytes()[]byte  {
 }
 
 
-func (v DxBoolValue)ToString()string  {
+func (v *DxBoolValue)ToString()string  {
 	if v.fvalue {
 		return "true"
 	}
 	return "false"
+}
+
+func (v *DxBoolValue)Bool()bool  {
+	return v.fvalue
 }
 
 func (v *DxBoolValue)Bytes()[]byte  {
@@ -857,6 +900,11 @@ func (v *DxBoolValue)Bytes()[]byte  {
 func (v *DxFloatValue)ToString()string  {
 	return strconv.FormatFloat(float64(v.fvalue),'f','e',32)
 }
+
+func (v *DxFloatValue)Float()float32  {
+	return v.fvalue
+}
+
 
 func (v *DxFloatValue)Bytes()[]byte  {
 	mb := make([]byte,0,unsafe.Sizeof(v.fvalue))
@@ -878,6 +926,11 @@ func (v *DxDoubleValue)Bytes()[]byte  {
 	return mb
 }
 
+
+func (v *DxDoubleValue)Double()float64  {
+	return v.fvalue
+}
+
 func (v *DxDoubleValue)Time()time.Time  {
 	return DxCommonLib.TDateTime(v.fvalue).ToTime()
 }
@@ -892,6 +945,9 @@ func (v *DxStringValue)Bytes()[]byte  {
 	return ([]byte)(v.fvalue)
 }
 
+func (v *DxStringValue)String()string  {
+	return v.fvalue
+}
 
 
 func (v *DxBinaryValue)ValueType()DxValueType  {

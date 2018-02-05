@@ -575,6 +575,13 @@ func (arr *DxArray)AsDouble(idx int,defValue float64)float64  {
 	return defValue
 }
 
+func (arr *DxArray)AsBaseValue(idx int)*DxBaseValue  {
+	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues){
+		return arr.fValues[idx]
+	}
+	return nil
+}
+
 func (arr *DxArray)AsDateTime(idx int,defValue DxCommonLib.TDateTime)DxCommonLib.TDateTime  {
 	if arr.fValues != nil && idx >= 0 && idx < len(arr.fValues) && arr.fValues[idx] != nil{
 		value := arr.fValues[idx]
@@ -595,6 +602,7 @@ func (arr *DxArray)AsDateTime(idx int,defValue DxCommonLib.TDateTime)DxCommonLib
 	}
 	return defValue
 }
+
 
 func (arr *DxArray)SetArray(idx int,value *DxArray)  {
 	if idx < 0{

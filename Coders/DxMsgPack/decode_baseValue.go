@@ -45,6 +45,9 @@ func setStringsCap(s []string, n int) []string {
 	return s[:0]
 }
 
+func (coder *MsgPackDecoder)Name()string  {
+	return "msgpack"
+}
 
 func (coder *MsgPackDecoder)readBigEnd16()(uint16,error)  {
 	if _,err := coder.r.Read(coder.buffer[:2]);err!=nil{
@@ -415,7 +418,11 @@ func (coder *MsgPackDecoder)skipN(nbyte int)(err error)  {
 	return err
 }
 
-func (coder *MsgPackDecoder)Skip(code MsgPackCode)(err error)  {
+func (coder *MsgPackDecoder)Skip()(error)  {
+	return coder.SkipByCode(CodeUnkonw)
+}
+
+func (coder *MsgPackDecoder)SkipByCode(code MsgPackCode)(err error)  {
 	if code == CodeUnkonw{
 		if code,err = coder.readCode();err!=nil{
 			return err
@@ -574,7 +581,7 @@ func (coder *MsgPackDecoder)skipMap(strcode MsgPackCode)(error)  {
 				}
 			}
 		}
-		return ErrInvalidateMapKey
+		return nil
 	}
 }
 
@@ -668,7 +675,7 @@ func (coder *MsgPackDecoder)skipArray(code MsgPackCode)(error)  {
 		return err
 	}
 	for i := 0;i<arrlen;i++{
-		if err = coder.Skip(CodeUnkonw);err!=nil{
+		if err = coder.SkipByCode(CodeUnkonw);err!=nil{
 			return err
 		}
 	}
@@ -773,3 +780,5 @@ func NewDecoder(r io.Reader)*MsgPackDecoder  {
 	}
 	return &result
 }
+
+

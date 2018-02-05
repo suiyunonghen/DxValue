@@ -773,9 +773,9 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 			if len(mapkeys) == 0{
 				return
 			}
-			kv := mapkeys[0]
+			keytype := rv.Type().Key()
 			var rbase *DxBaseValue
-			switch getBaseType(kv.Type()) {
+			switch getBaseType(keytype) {
 			case reflect.String:
 				rbase = &r.NewRecord(keyName).DxBaseValue
 			case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64,reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
@@ -786,7 +786,7 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 			rvalue := rv.MapIndex(mapkeys[0])
 			//获得Value类型
 			valueKind := getBaseType(rvalue.Type())
-			for _,kv = range mapkeys{
+			for _,kv := range mapkeys{
 				rvalue = rv.MapIndex(kv)
 				prvalue := getRealValue(&rvalue)
 				if prvalue != nil{
