@@ -2,7 +2,6 @@ package DxMsgPack
 
 import (
 	"reflect"
-	"github.com/suiyunonghen/DxValue"
 	"errors"
 	"fmt"
 	"github.com/suiyunonghen/DxCommonLib"
@@ -44,19 +43,19 @@ func init() {
 		reflect.Struct:        decodeStructValue,
 		reflect.UnsafePointer: decodeUnsupportedValue,
 	}
-	Coders.RegisterCoderName("msgpack")
+	Coders.RegisterCoderName(msgPackName)
 }
 
 func decodeBoolValue(coder Coders.Decoder, v reflect.Value) error {
 
-	if code,err := coder.(*MsgPackDecoder).readCode();err!=nil{
+	if code,err := coder.(*MsgPackDecoder).ReadCode();err!=nil{
 		return err
 	}else if code == CodeFalse{
 		v.SetBool(false)
 	}else if code == CodeTrue{
 		v.SetBool(true)
 	}else {
-		return DxValue.ErrValueType
+		return Coders.ErrValueType
 	}
 	return nil
 }
@@ -118,7 +117,7 @@ func decodeStructValue(coder Coders.Decoder, v reflect.Value)(err error) {
 	}
 	strcode := CodeUnkonw
 	//判断键值，是Int还是str
-	if strcode,err = decoder.readCode();err!=nil{
+	if strcode,err = decoder.ReadCode();err!=nil{
 		return err
 	}
 	if !strcode.IsStr(){
@@ -288,7 +287,7 @@ func decodeStringSliceValue(coder Coders.Decoder, v reflect.Value) error {
 
 func decodeByteArrayValue(coder Coders.Decoder, v reflect.Value) error {
 	msgdecoder,_ := coder.(*MsgPackDecoder)
-	c, err := msgdecoder.readCode()
+	c, err := msgdecoder.ReadCode()
 	if err != nil {
 		return err
 	}
@@ -338,7 +337,7 @@ func (coder *MsgPackDecoder)GetDecoderFunc(typ reflect.Type) Coders.DecoderFunc 
 			msgdecoder, _ := coder.(*MsgPackDecoder)
 			if msgdecoder.hasNilCode() {
 				v.Set(reflect.Zero(v.Type()))
-				msgdecoder.readCode()
+				msgdecoder.ReadCode()
 			}
 			if v.IsNil() {
 				if !v.CanSet(){
@@ -390,7 +389,11 @@ func (coder *MsgPackDecoder)GetDecoderFunc(typ reflect.Type) Coders.DecoderFunc 
 			}
 		}
 	}
-	return valueDecoders[kind]
+	result := valueDecoders[kind]
+	if result == nil{
+		result = decodeUnsupportedValue
+	}
+	return result
 }
 
 

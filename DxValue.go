@@ -8,6 +8,7 @@ import (
 	"io"
 	"reflect"
 	"os"
+	"github.com/suiyunonghen/DxValue/Coders"
 )
 
 /******************************************************
@@ -181,7 +182,7 @@ func (v *DxValue)AsExtValue()(*DxExtValue,error){
 		return nil,nil
 	}
 	if v.fValue.fValueType != DVT_Ext{
-		return nil,ErrValueType
+		return nil,Coders.ErrValueType
 	}
 	return (*DxExtValue)(unsafe.Pointer(v.fValue)),nil
 }
@@ -321,7 +322,7 @@ func (v *DxValue)SaveJsonFile(fileName string,BOMFile bool)error  {
 }
 
 func (v *DxValue)LoadMsgPackReader(reader io.Reader)error  {
-	if vbase,err := DecodeMsgPack(reader);err!=nil{
+	if vbase,err := NewDecoder(reader).DecodeUnkown();err!=nil{
 		return err
 	}else{
 		v.fValue = vbase
@@ -335,7 +336,7 @@ func (v *DxValue)LoadMsgPackFile(fileName string)error  {
 		return err
 	}
 	defer f.Close()
-	if vbase,err := DecodeMsgPack(f);err!=nil{
+	if vbase,err := NewDecoder(f).DecodeUnkown();err!=nil{
 		return err
 	}else{
 		v.fValue = vbase
@@ -347,7 +348,7 @@ func (v *DxValue)SaveMsgPackFile(fileName string)error  {
 	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
 		defer file.Close()
 		if v.fValue!=nil{
-			return EncodeMsgPackBaseValue(v.fValue,file)
+			return NewEncoder(file).Encode(v.fValue)
 		}else{
 			_,err = file.Write([]byte{0xc0}) //null
 			return err

@@ -15,9 +15,7 @@ import (
 type structField struct{
 	name      string
 	index     []int
-	//encoder encoderFunc
 	fieldtype	reflect.Type
-	//decoderFuncs  []DecoderFunc
 	mashNames	  map[string]string		//序列化的CoderName对应的建值，比如msgpack:"", json:""
 }
 
@@ -64,6 +62,17 @@ func (f *structField) value(v reflect.Value) reflect.Value {
 
 func (f *structField) DecodeValue(coder Decoder, strct reflect.Value) error {
 	return coder.GetDecoderFunc(f.fieldtype)(coder,f.value(strct))
+}
+
+func (f *structField)EncodeValue(coder Encoder,strct reflect.Value)error  {
+	return coder.GetEncoderFunc(f.fieldtype)(coder,f.value(strct))
+}
+
+func (f *structField)MarshalName(coderName string)string  {
+	if coderName != ""{
+		return f.mashNames[coderName]
+	}
+	return f.name
 }
 
 func indirectNew(v reflect.Value) (reflect.Value, bool) {
@@ -134,8 +143,45 @@ type structFields struct {
 	List  []*structField
 }
 
-func (fs *structFields) Len() int {
-	return len(fs.List)
+func (fs *structFields) Len(coderName string) int {
+	if coderName == ""{
+		return len(fs.List)
+	}
+	mapLen := 0
+	for _,field := range fs.List{
+		if mname,ok := field.mashNames[coderName];ok && mname != "-"{
+			mapLen++
+		}
+	}
+	return mapLen
+}
+
+func (fs *structFields)Field(idx int)*structField  {
+	if idx>=0 && idx < len(fs.List){
+		return fs.List[idx]
+	}
+	return nil
+}
+
+func (fs *structFields)Range(coderName string,fieldIteaFunc func(field *structField)bool)  {
+	if fieldIteaFunc == nil{
+		return
+	}
+	if coderName == ""{
+		for _,field := range fs.List{
+			if !fieldIteaFunc(field){
+				return
+			}
+		}
+	}else{
+		for _,field := range fs.List{
+			if mname,ok := field.mashNames[coderName];ok && mname != "-"{
+				if !fieldIteaFunc(field){
+					return
+				}
+			}
+		}
+	}
 }
 
 func (fs *structFields) Add(field *structField) {

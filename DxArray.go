@@ -1216,8 +1216,7 @@ func (arr *DxArray)LoadJsonReader(reader io.Reader)error  {
 
 
 func (arr *DxArray)LoadMsgPackReader(reader io.Reader)error  {
-	coder := DxMsgPackCoder{}
-	return coder.Decode(reader,&arr.DxBaseValue)
+	return NewDecoder(reader).Decode(&arr.DxBaseValue)
 }
 
 func (arr *DxArray)LoadMsgPackFile(fileName string)error  {
@@ -1226,14 +1225,13 @@ func (arr *DxArray)LoadMsgPackFile(fileName string)error  {
 		return err
 	}
 	defer f.Close()
-	coder := DxMsgPackCoder{}
-	return coder.Decode(f,&arr.DxBaseValue)
+	return NewDecoder(f).Decode(&arr.DxBaseValue)
 }
 
 func (arr *DxArray)SaveMsgPackFile(fileName string)error  {
 	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
 		defer file.Close()
-		return EncodeMsgPackArray(arr,file)
+		return NewEncoder(file).EncodeArray(arr)
 	}else{
 		return err
 	}

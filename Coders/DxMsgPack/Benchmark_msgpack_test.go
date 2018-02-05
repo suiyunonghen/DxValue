@@ -11,13 +11,23 @@ import (
 )
 
 
-type testPkg struct{
-	Age			int
-	Name		string
-	Double		float64
-	Float		float32
-	Now			time.Time
-}
+type (
+	inputObj   struct{
+		ObjType			string 	`msgpack:"type"`
+		Host			string  `msgpack:"host"`
+		Port			int 	`msgpack:"port"`
+		Remark			string 	`msgpack:"remark"`
+		TestDateTime	time.Time	`msgpack:"testDateTime"`
+	}
+	testlistObj	struct{
+		ID			string `msgpack:"id"`
+		Input		inputObj `msgpack:"input"`
+
+	}
+	testConfig struct{
+		List		[]*testlistObj `msgpack:"list"`
+	}
+)
 
 func Benchmark_DecodeMsgPack(b *testing.B) {
 	f, err := os.Open("DataProxy.config.msgPack")
@@ -27,9 +37,7 @@ func Benchmark_DecodeMsgPack(b *testing.B) {
 	}
 	defer f.Close()
 	coder := NewDecoder(f)
-	mp := make(map[string]interface{},32)
-	//mp := testPkg{}
-	//Coders.RegisterType(reflect.TypeOf(mp))
+	mp := testConfig{}
 	for i:=0;i<b.N;i++{
 		if err = coder.DecodeStand(&mp);err!=nil{
 			fmt.Println("BenchmarkDecodeMsgPack Error:",err)
@@ -44,8 +52,7 @@ func Benchmark_vmihailenco_decode(b *testing.B)  {
 		fmt.Println("BenchmarkDecodeMsgPack Error:",err)
 		return
 	}else{
-		mp := make(map[string]interface{},32)
-		//mp := testPkg{}
+		mp := testConfig{}
 		for i:=0;i<b.N;i++{
 			if err = msgpack.Unmarshal(databytes,&mp);err!=nil{
 				fmt.Println("Benchmark_vmihailenco_decode Error:",err)

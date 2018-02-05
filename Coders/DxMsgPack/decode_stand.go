@@ -1,7 +1,6 @@
 package DxMsgPack
 
 import (
-	"github.com/suiyunonghen/DxValue"
 	"time"
 	"github.com/suiyunonghen/DxCommonLib"
 	"unsafe"
@@ -22,19 +21,19 @@ func (coder *MsgPackDecoder)decodeStrMapFunc(mp *map[string]interface{})(error) 
 		code MsgPackCode
 		err  error
 	)
-	if code,err = coder.readCode();err!=nil{
+	if code,err = coder.ReadCode();err!=nil{
 		return err
 	}
 	maplen := 0
 	switch code {
 	case CodeMap16:
-		if v16,err := coder.readBigEnd16();err!=nil{
+		if v16,err := coder.ReadBigEnd16();err!=nil{
 			return err
 		}else{
 			maplen = int(v16)
 		}
 	case CodeMap32:
-		if v32,err := coder.readBigEnd32();err!=nil{
+		if v32,err := coder.ReadBigEnd32();err!=nil{
 			return err
 		}else{
 			maplen = int(v32)
@@ -60,19 +59,19 @@ func (coder *MsgPackDecoder)decodeStrValueMapFunc(mp *map[string]string)(error) 
 		code MsgPackCode
 		err  error
 	)
-	if code,err = coder.readCode();err!=nil{
+	if code,err = coder.ReadCode();err!=nil{
 		return err
 	}
 	maplen := 0
 	switch code {
 	case CodeMap16:
-		if v16,err := coder.readBigEnd16();err!=nil{
+		if v16,err := coder.ReadBigEnd16();err!=nil{
 			return err
 		}else{
 			maplen = int(v16)
 		}
 	case CodeMap32:
-		if v32,err := coder.readBigEnd32();err!=nil{
+		if v32,err := coder.ReadBigEnd32();err!=nil{
 			return err
 		}else{
 			maplen = int(v32)
@@ -97,19 +96,19 @@ func (coder *MsgPackDecoder)decodeIntKeyMapFunc(mp *map[int]interface{})(error) 
 		code MsgPackCode
 		err  error
 	)
-	if code,err = coder.readCode();err!=nil{
+	if code,err = coder.ReadCode();err!=nil{
 		return err
 	}
 	maplen := 0
 	switch code {
 	case CodeMap16:
-		if v16,err := coder.readBigEnd16();err!=nil{
+		if v16,err := coder.ReadBigEnd16();err!=nil{
 			return err
 		}else{
 			maplen = int(v16)
 		}
 	case CodeMap32:
-		if v32,err := coder.readBigEnd32();err!=nil{
+		if v32,err := coder.ReadBigEnd32();err!=nil{
 			return err
 		}else{
 			maplen = int(v32)
@@ -134,19 +133,19 @@ func (coder *MsgPackDecoder)decodeIntKeyMapFunc64(mp *map[int64]interface{})(err
 		code MsgPackCode
 		err  error
 	)
-	if code,err = coder.readCode();err!=nil{
+	if code,err = coder.ReadCode();err!=nil{
 		return err
 	}
 	maplen := 0
 	switch code {
 	case CodeMap16:
-		if v16,err := coder.readBigEnd16();err!=nil{
+		if v16,err := coder.ReadBigEnd16();err!=nil{
 			return err
 		}else{
 			maplen = int(v16)
 		}
 	case CodeMap32:
-		if v32,err := coder.readBigEnd32();err!=nil{
+		if v32,err := coder.ReadBigEnd32();err!=nil{
 			return err
 		}else{
 			maplen = int(v32)
@@ -171,7 +170,7 @@ func (coder *MsgPackDecoder)DecodeUnknownMapStd(strcode MsgPackCode)(interface{}
 		return nil, err
 	}else{
 		//判断键值，是Int还是str
-		if strcode,err = coder.readCode();err!=nil{
+		if strcode,err = coder.ReadCode();err!=nil{
 			return nil,err
 		}
 		if strcode.IsInt(){
@@ -209,7 +208,7 @@ func (coder *MsgPackDecoder)DecodeUnknownMapStd(strcode MsgPackCode)(interface{}
 
 
 func (coder *MsgPackDecoder)Decode2Interface()(interface{},error)  {
-	code,err := coder.readCode()
+	code,err := coder.ReadCode()
 	if err!=nil{
 		return nil,err
 	}
@@ -249,24 +248,24 @@ func (coder *MsgPackDecoder)Decode2Interface()(interface{},error)  {
 		case CodeFalse: return false,nil
 		case CodeNil:	return nil,nil
 		case CodeFloat:
-			if v32,err := coder.readBigEnd32();err!=nil{
+			if v32,err := coder.ReadBigEnd32();err!=nil{
 				return nil,err
 			}else{
 				return *(*float32)(unsafe.Pointer(&v32)),nil
 			}
 		case CodeDouble:
-			if v64,err := coder.readBigEnd64();err!=nil{
+			if v64,err := coder.ReadBigEnd64();err!=nil{
 				return nil,err
 			}else{
 				return *(*float64)(unsafe.Pointer(&v64)),nil
 			}
 
 		case CodeFixExt4:
-			if code,err = coder.readCode();err!=nil{
+			if code,err = coder.ReadCode();err!=nil{
 				return nil,err
 			}
 			if int8(code) == -1{
-				if ms,err := coder.readBigEnd32();err!=nil{
+				if ms,err := coder.ReadBigEnd32();err!=nil{
 					return nil,err
 				}else{
 					ntime := time.Now()
@@ -294,7 +293,7 @@ func (coder *MsgPackDecoder)DecodeArrayStd(code MsgPackCode)([]interface{},error
 		arrlen int
 	)
 	if code == CodeUnkonw{
-		if code,err = coder.readCode();err!=nil{
+		if code,err = coder.ReadCode();err!=nil{
 			return nil,err
 		}
 	}
@@ -321,7 +320,7 @@ func (coder *MsgPackDecoder)DecodeArrayCustomer(code MsgPackCode)(error)  {
 		arrlen int
 	)
 	if code == CodeUnkonw{
-		if code,err = coder.readCode();err!=nil{
+		if code,err = coder.ReadCode();err!=nil{
 			return err
 		}
 	}
@@ -347,7 +346,7 @@ func (coder *MsgPackDecoder)DecodeArray2StdSlice(code MsgPackCode,arr *[]interfa
 		arrlen int
 	)
 	if code == CodeUnkonw{
-		if code,err = coder.readCode();err!=nil{
+		if code,err = coder.ReadCode();err!=nil{
 			return err
 		}
 	}
@@ -369,7 +368,7 @@ func (coder *MsgPackDecoder)decodeStrMapKvRecord(strcode MsgPackCode)(string,int
 	if err != nil{
 		return "",nil,err
 	}
-	if strcode,err = coder.readCode();err!=nil{
+	if strcode,err = coder.ReadCode();err!=nil{
 		return "",nil,err
 	}
 	keyName := DxCommonLib.FastByte2String(keybt)
@@ -416,23 +415,23 @@ func (coder *MsgPackDecoder)decodeStrMapKvRecord(strcode MsgPackCode)(string,int
 		case CodeFalse: return keyName,false,nil
 		case CodeNil:   return keyName,nil,nil
 		case CodeFloat:
-			if v32,err := coder.readBigEnd32();err!=nil{
+			if v32,err := coder.ReadBigEnd32();err!=nil{
 				return "",nil,err
 			}else{
 				return keyName,*(*float32)(unsafe.Pointer(&v32)),nil
 			}
 		case CodeDouble:
-			if v64,err := coder.readBigEnd64();err!=nil{
+			if v64,err := coder.ReadBigEnd64();err!=nil{
 				return "",nil,err
 			}else{
 				return keyName,*(*float64)(unsafe.Pointer(&v64)),nil
 			}
 		case CodeFixExt4:
-			if strcode,err = coder.readCode();err!=nil{
+			if strcode,err = coder.ReadCode();err!=nil{
 				return "",nil,err
 			}
 			if int8(strcode) == -1{
-				if ms,err := coder.readBigEnd32();err!=nil{
+				if ms,err := coder.ReadBigEnd32();err!=nil{
 					return "",nil,err
 				}else{
 					ntime := time.Now()
@@ -458,7 +457,7 @@ func (coder *MsgPackDecoder)decodeIntKeyMapKvRecord(intkeyCode MsgPackCode)(int6
 	if err != nil{
 		return -1,nil,err
 	}
-	if intkeyCode,err = coder.readCode();err!=nil{
+	if intkeyCode,err = coder.ReadCode();err!=nil{
 		return -1,nil,err
 	}
 
@@ -506,24 +505,24 @@ func (coder *MsgPackDecoder)decodeIntKeyMapKvRecord(intkeyCode MsgPackCode)(int6
 		case CodeFalse: return intKey,false,nil
 		case CodeNil:   return intKey,nil,nil
 		case CodeFloat:
-			if v32,err := coder.readBigEnd32();err!=nil{
+			if v32,err := coder.ReadBigEnd32();err!=nil{
 				return -1,nil,err
 			}else{
 				return intKey,*(*float32)(unsafe.Pointer(&v32)),nil
 			}
 		case CodeDouble:
-			if v64,err := coder.readBigEnd64();err!=nil{
+			if v64,err := coder.ReadBigEnd64();err!=nil{
 				return -1,nil,err
 			}else{
 				return intKey,*(*float64)(unsafe.Pointer(&v64)),nil
 			}
 
 		case CodeFixExt4:
-			if intkeyCode,err = coder.readCode();err!=nil{
+			if intkeyCode,err = coder.ReadCode();err!=nil{
 				return -1,nil,err
 			}
 			if int8(intkeyCode) == -1{
-				if ms,err := coder.readBigEnd32();err!=nil{
+				if ms,err := coder.ReadBigEnd32();err!=nil{
 					return -1,nil,err
 				}else{
 					ntime := time.Now()
@@ -550,7 +549,7 @@ func (coder *MsgPackDecoder)DecodeUnknownMapCustom(strcode MsgPackCode)(error)  
 		return  err
 	}else{
 		//判断键值，是Int还是str
-		if strcode,err = coder.readCode();err!=nil{
+		if strcode,err = coder.ReadCode();err!=nil{
 			return err
 		}
 		if strcode.IsInt(){
@@ -595,7 +594,7 @@ func (coder *MsgPackDecoder)DecodeUnknownMapCustom(strcode MsgPackCode)(error)  
 }
 
 func (coder *MsgPackDecoder)DecodeCustom()(error)  {
-	code,err := coder.readCode()
+	code,err := coder.ReadCode()
 	if err!=nil{
 		return err
 	}
@@ -654,25 +653,25 @@ func (coder *MsgPackDecoder)DecodeCustom()(error)  {
 			}
 			return nil
 		case CodeFloat:
-			if v32,err := coder.readBigEnd32();err!=nil{
+			if v32,err := coder.ReadBigEnd32();err!=nil{
 				return err
 			}else if coder.OnParserNormalValue!=nil{
 				coder.OnParserNormalValue(*(*float32)(unsafe.Pointer(&v32)))
 			}
 			return nil
 		case CodeDouble:
-			if v64,err := coder.readBigEnd64();err!=nil{
+			if v64,err := coder.ReadBigEnd64();err!=nil{
 				return err
 			}else if coder.OnParserNormalValue!=nil{
 				coder.OnParserNormalValue(*(*float64)(unsafe.Pointer(&v64)))
 			}
 			return nil
 		case CodeFixExt4:
-			if code,err = coder.readCode();err!=nil{
+			if code,err = coder.ReadCode();err!=nil{
 				return err
 			}
 			if int8(code) == -1{
-				if ms,err := coder.readBigEnd32();err!=nil{
+				if ms,err := coder.ReadBigEnd32();err!=nil{
 					return err
 				}else if coder.OnParserNormalValue!=nil{
 					ntime := time.Now()
@@ -705,7 +704,7 @@ func (coder *MsgPackDecoder)DecodeStand(v interface{})(error)  {
 		}
 	case *[]interface{}:
 		return coder.DecodeArray2StdSlice(CodeUnkonw,value)
-	case *DxValue.DxBaseValue:
+	/*case *DxValue.DxBaseValue:
 		switch value.ValueType() {
 		case DxValue.DVT_Record:
 			rec,_ := value.AsRecord()
@@ -716,7 +715,7 @@ func (coder *MsgPackDecoder)DecodeStand(v interface{})(error)  {
 		case DxValue.DVT_Array:
 			arr,_ := value.AsArray()
 			return coder.Decode2Array(CodeUnkonw,arr)
-		}
+		}*/
 	case *time.Time:
 		if dt,err := coder.DecodeDateTime_Go(CodeUnkonw);err !=nil{
 			return err
@@ -784,7 +783,7 @@ func (coder *MsgPackDecoder)DecodeStand(v interface{})(error)  {
 			*value = vf
 		}
 	case *bool:
-		if code,err := coder.readCode();err!=nil{
+		if code,err := coder.ReadCode();err!=nil{
 			return err
 		}else if code == CodeFalse{
 			*value = false

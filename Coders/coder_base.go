@@ -1,17 +1,17 @@
 package Coders
 
 import (
-	"github.com/suiyunonghen/DxValue"
 	"reflect"
+	"errors"
 )
 
 type DecoderFunc func(Decoder, reflect.Value) error
-//type EncoderFunc func(Encoder)
+type EncoderFunc func(Encoder,reflect.Value) error
 
 type  Decoder  interface{
 	DecodeStand(v interface{})(error)
 	DecodeCustom()(error)
-	Decode(v *DxValue.DxBaseValue)(error)
+	//Decode(v *DxValue.DxBaseValue)(error)
 	GetDecoderFunc(typ reflect.Type) DecoderFunc
 	Skip()(error)
 	Name()string
@@ -20,14 +20,16 @@ type  Decoder  interface{
 type  Encoder   interface{
 	EncodeStand(v interface{})(error)
 	EncodeCustom()(error)
-	Encode(v *DxValue.DxBaseValue)(error)
+	//Encode(v *DxValue.DxBaseValue)(error)
 	Name()string
+	GetEncoderFunc(typ reflect.Type)EncoderFunc
 }
 
 
 
 var(
 	coders	[]string
+	ErrValueType = errors.New("Value Data Type not Match")
 )
 
 func init()  {

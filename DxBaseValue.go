@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"github.com/suiyunonghen/DxValue/Coders"
 )
 
 
@@ -119,7 +120,6 @@ const(
 )
 
 var (
-	ErrValueType = errors.New("Value Data Type not Match")
 	ErrInvalidateJson = errors.New("Is not a Validate Json format")
 	ErrHasNoExtTypeCoder = errors.New("ExtValue's Type has No Registered")
 	extTypes map[byte]IExtTypeCoder
@@ -319,7 +319,7 @@ func (v *DxExtValue)AsInt()(int,error)  {
 	case *DxValue:	return rvalue.AsInt()
 	case *DxBinaryValue: return rvalue.AsInt()
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -351,7 +351,7 @@ func (v *DxExtValue)AsInt32()(int32,error)  {
 	case *DxValue:	return rvalue.AsInt32()
 	case *DxBinaryValue: return rvalue.AsInt32()
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -383,7 +383,7 @@ func (v *DxExtValue)AsInt64()(int64,error)  {
 	case *DxValue:	return rvalue.AsInt64()
 	case *DxBinaryValue: return rvalue.AsInt64()
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -459,7 +459,7 @@ func (v *DxExtValue)AsFloat()(float32,error)  {
 	case *DxValue:	return rvalue.AsFloat()
 	case *DxBinaryValue: return rvalue.AsFloat()
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -491,7 +491,7 @@ func (v *DxExtValue)AsDouble()(float64,error)  {
 	case *DxValue:	return rvalue.AsDouble()
 	case *DxBinaryValue: return rvalue.AsDouble()
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -523,7 +523,7 @@ func (v *DxExtValue)AsDateTime()(DxCommonLib.TDateTime,error)  {
 	case *DxValue:	return rvalue.AsDateTime()
 	case *DxBinaryValue: return rvalue.AsDateTime()
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -551,7 +551,7 @@ func (v *DxBaseValue)AsInt()(int,error){
 	case DVT_String:
 		return  strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -584,7 +584,7 @@ func (v *DxBaseValue)AsDateTime()(DxCommonLib.TDateTime,error){
 	case DVT_Ext:
 		return (*DxExtValue)(unsafe.Pointer(v)).AsDateTime()
 	default:
-		return -1,ErrValueType
+		return -1,Coders.ErrValueType
 	}
 }
 
@@ -605,7 +605,7 @@ func (v *DxBaseValue)AsBool()(bool,error){
 	case DVT_String:
 		return strings.ToUpper((*DxStringValue)(unsafe.Pointer(v)).fvalue)== "TRUE",nil
 	default:
-		return false,ErrValueType
+		return false,Coders.ErrValueType
 	}
 }
 
@@ -634,7 +634,7 @@ func (v *DxBaseValue)AsInt32()(int32,error){
 		rv,err := strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 		return int32(rv),err
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -663,7 +663,7 @@ func (v *DxBaseValue)AsInt64()(int64,error){
 		rv,err := strconv.Atoi((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 		return int64(rv),err
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -671,21 +671,21 @@ func (v *DxBaseValue)AsArray()(*DxArray,error){
 	if v.fValueType == DVT_Array{
 		return (*DxArray)(unsafe.Pointer(v)),nil
 	}
-	return nil,ErrValueType
+	return nil,Coders.ErrValueType
 }
 
 func (v *DxBaseValue)AsRecord()(*DxRecord,error){
 	if v.fValueType == DVT_Record{
 		return (*DxRecord)(unsafe.Pointer(v)),nil
 	}
-	return nil,ErrValueType
+	return nil,Coders.ErrValueType
 }
 
 func (v *DxBaseValue)AsIntRecord()(*DxIntKeyRecord,error){
 	if v.fValueType == DVT_RecordIntKey{
 		return (*DxIntKeyRecord)(unsafe.Pointer(v)),nil
 	}
-	return nil,ErrValueType
+	return nil,Coders.ErrValueType
 }
 
 func (v *DxBaseValue)AsString()string{
@@ -717,7 +717,7 @@ func (v *DxBaseValue)AsFloat()(float32,error){
 		rv,err := strconv.ParseFloat((*DxStringValue)(unsafe.Pointer(v)).fvalue,32)
 		return float32(rv),err
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 
@@ -746,7 +746,7 @@ func (v *DxBaseValue)AsDouble()(float64,error){
 		rv,err := strconv.ParseFloat((*DxStringValue)(unsafe.Pointer(v)).fvalue,64)
 		return rv,err
 	default:
-		return 0,ErrValueType
+		return 0,Coders.ErrValueType
 	}
 }
 

@@ -1511,8 +1511,7 @@ func (r *DxIntKeyRecord)LoadJsonReader(reader io.Reader)error  {
 }
 
 func (r *DxIntKeyRecord)LoadMsgPackReader(reader io.Reader)error  {
-	coder := DxMsgPackCoder{}
-	return coder.Decode(reader,&r.DxBaseValue)
+	return NewDecoder(reader).Decode(&r.DxBaseValue)
 }
 
 func (r *DxIntKeyRecord)LoadMsgPackFile(fileName string)error  {
@@ -1521,14 +1520,13 @@ func (r *DxIntKeyRecord)LoadMsgPackFile(fileName string)error  {
 		return err
 	}
 	defer f.Close()
-	coder := DxMsgPackCoder{}
-	return coder.Decode(f,&r.DxBaseValue)
+	return NewDecoder(f).Decode(&r.DxBaseValue)
 }
 
 func (r *DxIntKeyRecord)SaveMsgPackFile(fileName string)error  {
 	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
 		defer file.Close()
-		return EncodeMsgPackRecordIntKey(r,file)
+		return NewEncoder(file).EncodeRecordIntKey(r)
 	}else{
 		return err
 	}

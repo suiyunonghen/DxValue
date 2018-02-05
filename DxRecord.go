@@ -1653,15 +1653,14 @@ func (r *DxRecord)LoadJsonReader(reader io.Reader)error  {
 func (r *DxRecord)SaveMsgPackFile(fileName string)error  {
 	if file,err := os.OpenFile(fileName,os.O_CREATE | os.O_TRUNC,0644);err == nil{
 		defer file.Close()
-		return EncodeMsgPackRecord(r,file)
+		return NewEncoder(file).EncodeRecord(r)
 	}else{
 		return err
 	}
 }
 
 func (r *DxRecord)LoadMsgPackReader(reader io.Reader)error  {
-	coder := DxMsgPackCoder{}
-	return coder.Decode(reader,&r.DxBaseValue)
+	return NewDecoder (reader).Decode(&r.DxBaseValue)
 }
 
 func (r *DxRecord)LoadMsgPackFile(fileName string)error  {
@@ -1670,8 +1669,7 @@ func (r *DxRecord)LoadMsgPackFile(fileName string)error  {
 		return err
 	}
 	defer f.Close()
-	coder := DxMsgPackCoder{}
-	return coder.Decode(f,&r.DxBaseValue)
+	return NewDecoder (f).Decode(&r.DxBaseValue)
 }
 
 func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
