@@ -283,9 +283,8 @@ func (encoder *MsgPackEncoder)EncodeInt(vint int64)(err error)  {
 		encoder.buf[0] = byte(vint)
 		_,err = encoder.w.Write(encoder.buf[:1])
 	case vint >= -32 && vint < 0:  // 111YYYYY is 8-bit 5-bit negative integer
-		encoder.buf[0] = byte(NegFixedNumLow)
-		encoder.buf[1] = byte(vint)
-		_,err = encoder.w.Write(encoder.buf[:2])
+		encoder.buf[0] = byte(NegFixedNumLow) | byte(vint)
+		_,err = encoder.w.Write(encoder.buf[:1])
 	case vint >= 0 && vint <= 0xff:
 		encoder.buf[0] = byte(CodeUint8)
 		encoder.buf[1] = byte(vint)

@@ -25,7 +25,10 @@ type MsgPackDecoder   struct{
 	OnParserStrMapKv    func(mapInterface interface{},key string,v interface{})
 	OnParserIntKeyMapKv func(mapInterface interface{},intKey int64,v interface{})
 	OnStartArray		func(arrLen int)(arrInterface interface{}) //开始数组时候触发
+	OnStartStrMapArray	func(arrLen int,Key string,mapInterface interface{})(arrInterface interface{}) //开始数组时候触发
+	OnStartIntMapArray	func(arrLen int,Key int64,mapInterface interface{})(arrInterface interface{}) //开始数组时候触发
 	OnParserArrElement	func(arrInterface interface{},index int,v interface{}) //解析数组元素触发
+	OnParserArrObject   func(arrInterface interface{},index int)(object interface{}) //数组中是复杂对象
 }
 
 var(

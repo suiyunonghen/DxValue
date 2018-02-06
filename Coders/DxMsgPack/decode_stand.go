@@ -287,6 +287,119 @@ func (coder *MsgPackDecoder)Decode2Interface()(interface{},error)  {
 }
 
 
+func (coder *MsgPackDecoder)DecodeArrayElementCustom(arrinterface interface{},index int)(error)  {
+	code,err := coder.ReadCode()
+	if err!=nil{
+		return err
+	}
+	if code.IsStr(){
+		if stbt,err := coder.DecodeString(code);err!=nil{
+			return err
+		}else{
+			coder.OnParserArrElement(arrinterface,index,DxCommonLib.FastByte2String(stbt))
+			return nil
+		}
+	}else if code.IsFixedNum(){
+		coder.OnParserArrElement(arrinterface,index,int8(code))
+		return nil
+	}else if code.IsInt(){
+		if i64,err := coder.DecodeInt(code);err!=nil{
+			return err
+		}else{
+			coder.OnParserArrElement(arrinterface,index,i64)
+			return nil
+		}
+	}else if code.IsMap(){
+		if coder.OnParserArrObject!=nil{
+			mapInterface := coder.OnParserArrObject(arrinterface,index)
+			coder.UnreadByte()
+			return coder.DecodeStand(mapInterface)
+		}
+		return coder.DecodeUnknownMapCustom(code)
+	}else if code.IsArray(){
+		if coder.OnParserArrObject != nil{
+			mapInterface := coder.OnParserArrObject(arrinterface,index)
+			arrlen,err := coder.DecodeArrayLen(code)
+			if err!=nil{
+				return err
+			}
+			for i := 0;i<arrlen;i++{
+				if err = coder.DecodeArrayElementCustom(mapInterface,i);err!=nil{
+					return err
+				}
+			}
+			return nil
+		}
+		return coder.DecodeArrayCustomer(code)
+	}else if code.IsBin(){
+		if bin,err := coder.DecodeBinary(code);err!=nil{
+			return err
+		}else{
+			coder.OnParserArrElement(arrinterface,index,bin)
+			return nil
+		}
+	}else if code.IsExt(){
+		if bin,err := coder.DecodeExtValue(code);err!=nil{
+			return err
+		}else {
+			coder.OnParserArrElement(arrinterface,index,bin)
+			return nil
+		}
+	} else{
+		switch code {
+		case CodeTrue:
+			coder.OnParserArrElement(arrinterface,index,true)
+			return nil
+		case CodeFalse:
+			coder.OnParserArrElement(arrinterface,index,false)
+			return nil
+		case CodeNil:
+			coder.OnParserArrElement(arrinterface,index,nil)
+			return nil
+		case CodeFloat:
+			if v32,err := coder.ReadBigEnd32();err!=nil{
+				return err
+			}else{
+				coder.OnParserArrElement(arrinterface,index,*(*float32)(unsafe.Pointer(&v32)))
+				return nil
+			}
+		case CodeDouble:
+			if v64,err := coder.ReadBigEnd64();err!=nil{
+				return err
+			}else{
+				coder.OnParserArrElement(arrinterface,index,*(*float64)(unsafe.Pointer(&v64)))
+				return nil
+			}
+
+		case CodeFixExt4:
+			if code,err = coder.ReadCode();err!=nil{
+				return err
+			}
+			if int8(code) == -1{
+				if ms,err := coder.ReadBigEnd32();err!=nil{
+					return err
+				}else{
+					ntime := time.Now()
+					ns := ntime.Unix()
+					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+					coder.OnParserArrElement(arrinterface,index,ntime)
+					return nil
+				}
+			}else{
+				var mb [5]byte
+				if _,err = coder.r.Read(mb[1:]);err!=nil{
+					return err
+				}
+				mb[0] = byte(code)
+				coder.OnParserArrElement(arrinterface,index,mb[:])
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+
 func (coder *MsgPackDecoder)DecodeArrayStd(code MsgPackCode)([]interface{},error)  {
 	var (
 		err error
@@ -330,10 +443,8 @@ func (coder *MsgPackDecoder)DecodeArrayCustomer(code MsgPackCode)(error)  {
 	arr := coder.OnStartArray(arrlen)
 	if arr!=nil && coder.OnParserArrElement != nil{
 		for i := 0;i<arrlen;i++{
-			if v,err := coder.Decode2Interface();err != nil{
+			if err := coder.DecodeArrayElementCustom(arr,i);err!=nil{
 				return err
-			}else{
-				coder.OnParserArrElement(arr,i,v)
 			}
 		}
 	}
@@ -361,6 +472,118 @@ func (coder *MsgPackDecoder)DecodeArray2StdSlice(code MsgPackCode,arr *[]interfa
 		}
 	}
 	return nil
+}
+
+
+func (coder *MsgPackDecoder)decodeStrMapKvRecordCustom(strcode MsgPackCode,mapInterface interface{})(error)  {
+	keybt,err := coder.DecodeString(strcode)
+	if err != nil{
+		return err
+	}
+	if strcode,err = coder.ReadCode();err!=nil{
+		return err
+	}
+	keyName := DxCommonLib.FastByte2String(keybt)
+	if strcode.IsStr(){
+		if keybt,err = coder.DecodeString(strcode);err!=nil{
+			return err
+		}
+		coder.OnParserStrMapKv(mapInterface,keyName,DxCommonLib.FastByte2String(keybt))
+		return nil
+	}else if strcode.IsFixedNum(){
+		coder.OnParserStrMapKv(mapInterface,keyName,int8(strcode))
+		return nil
+	}else if strcode.IsInt(){
+		if i64,err := coder.DecodeInt(strcode);err!=nil{
+			return  err
+		}else{
+			coder.OnParserStrMapKv(mapInterface,keyName,int(i64))
+			return nil
+		}
+	}else if strcode.IsMap(){
+		if baseV,err := coder.DecodeUnknownMapStd(strcode);err!=nil{
+			return err
+		}else{
+			coder.OnParserStrMapKv(mapInterface,keyName,baseV)
+			return nil
+		}
+	}else if strcode.IsArray(){
+		if arrlen ,err := coder.DecodeArrayLen(strcode);err!=nil{
+			return err
+		}else{
+			arr := coder.OnStartStrMapArray(arrlen,keyName,mapInterface)
+			for i := 0;i<arrlen;i++{
+				if err := coder.DecodeArrayElementCustom(arr,i);err != nil{
+					return err
+				}
+			}
+			return nil
+		}
+	}else if strcode.IsBin(){
+		if bin,err := coder.DecodeBinary(strcode);err!=nil{
+			return err
+		} else{
+			coder.OnParserStrMapKv(mapInterface,keyName,bin)
+			return nil
+		}
+	}else if strcode.IsExt(){
+		if bin ,err := coder.DecodeExtValue(strcode);err!=nil{
+			return err
+		}else{
+			coder.OnParserStrMapKv(mapInterface,keyName,bin)
+			return nil
+		}
+	}else{
+		switch strcode {
+		case CodeTrue:
+			coder.OnParserStrMapKv(mapInterface,keyName,true)
+			return nil
+		case CodeFalse:
+			coder.OnParserStrMapKv(mapInterface,keyName,false)
+			return nil
+		case CodeNil:
+			coder.OnParserStrMapKv(mapInterface,keyName,nil)
+			return nil
+		case CodeFloat:
+			if v32,err := coder.ReadBigEnd32();err!=nil{
+				return err
+			}else{
+				coder.OnParserStrMapKv(mapInterface,keyName,*(*float32)(unsafe.Pointer(&v32)))
+				return nil
+			}
+		case CodeDouble:
+			if v64,err := coder.ReadBigEnd64();err!=nil{
+				return err
+			}else{
+				coder.OnParserStrMapKv(mapInterface,keyName,*(*float64)(unsafe.Pointer(&v64)))
+				return nil
+			}
+		case CodeFixExt4:
+			if strcode,err = coder.ReadCode();err!=nil{
+				return err
+			}
+			if int8(strcode) == -1{
+				if ms,err := coder.ReadBigEnd32();err!=nil{
+					return err
+				}else{
+					ntime := time.Now()
+					ns := ntime.Unix()
+					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+					coder.OnParserStrMapKv(mapInterface,keyName,ntime)
+					return nil
+				}
+			}else{
+				var mb [5]byte
+				if _,err = coder.r.Read(mb[1:]);err!=nil{
+					return err
+				}
+				mb[0] = byte(strcode)
+				coder.OnParserStrMapKv(mapInterface,keyName,mb)
+				return nil
+			}
+		}
+	}
+	return err
 }
 
 func (coder *MsgPackDecoder)decodeStrMapKvRecord(strcode MsgPackCode)(string,interface{}, error)  {
@@ -543,6 +766,120 @@ func (coder *MsgPackDecoder)decodeIntKeyMapKvRecord(intkeyCode MsgPackCode)(int6
 	return -1,nil,err
 }
 
+func (coder *MsgPackDecoder)decodeIntKeyMapKvRecordCutom(intkeyCode MsgPackCode,mapInterface interface{})(error)  {
+	intKey,err := coder.DecodeInt(intkeyCode)
+	if err != nil{
+		return err
+	}
+	if intkeyCode,err = coder.ReadCode();err!=nil{
+		return err
+	}
+
+	if intkeyCode.IsStr(){
+		if keybt,err := coder.DecodeString(intkeyCode);err!=nil{
+			return err
+		}else{
+			coder.OnParserIntKeyMapKv(mapInterface,intKey,DxCommonLib.FastByte2String(keybt))
+			return nil
+		}
+	}else if intkeyCode.IsFixedNum(){
+		coder.OnParserIntKeyMapKv(mapInterface,intKey,int8(intkeyCode))
+		return nil
+	}else if intkeyCode.IsInt(){
+		if i64,err := coder.DecodeInt(intkeyCode);err!=nil{
+			return err
+		}else{
+			coder.OnParserIntKeyMapKv(mapInterface,intKey,int(i64))
+			return nil
+		}
+	}else if intkeyCode.IsMap(){
+		if baseV,err := coder.DecodeUnknownMapStd(intkeyCode);err!=nil{
+			return err
+		}else{
+			coder.OnParserIntKeyMapKv(mapInterface,intKey,baseV)
+			return nil
+		}
+	}else if intkeyCode.IsArray(){
+		if arrlen ,err := coder.DecodeArrayLen(intkeyCode);err!=nil{
+			return err
+		}else{
+			arr := coder.OnStartIntMapArray(arrlen,intKey,mapInterface)
+			for i := 0;i<arrlen;i++{
+				if v,err := coder.Decode2Interface();err != nil{
+					return err
+				}else{
+					coder.OnParserArrElement(arr,i,v)
+				}
+			}
+			return nil
+		}
+	}else if intkeyCode.IsBin(){
+		if bin,err := coder.DecodeBinary(intkeyCode);err!=nil{
+			return err
+		} else{
+			coder.OnParserIntKeyMapKv(mapInterface,intKey,bin)
+			return nil
+		}
+	}else if intkeyCode.IsExt(){
+		if bin ,err := coder.DecodeExtValue(intkeyCode);err!=nil{
+			return err
+		}else{
+			coder.OnParserIntKeyMapKv(mapInterface,intKey,bin)
+			return nil
+		}
+	}else{
+		switch intkeyCode {
+		case CodeTrue:
+			coder.OnParserIntKeyMapKv(mapInterface,intKey,true)
+			return nil
+		case CodeFalse:
+			coder.OnParserIntKeyMapKv(mapInterface,intKey,false)
+			return nil
+		case CodeNil:
+			coder.OnParserIntKeyMapKv(mapInterface,intKey,nil)
+			return nil
+		case CodeFloat:
+			if v32,err := coder.ReadBigEnd32();err!=nil{
+				return err
+			}else{
+				coder.OnParserIntKeyMapKv(mapInterface,intKey,*(*float32)(unsafe.Pointer(&v32)))
+				return nil
+			}
+		case CodeDouble:
+			if v64,err := coder.ReadBigEnd64();err!=nil{
+				return err
+			}else{
+				coder.OnParserIntKeyMapKv(mapInterface,intKey,*(*float64)(unsafe.Pointer(&v64)))
+				return nil
+			}
+
+		case CodeFixExt4:
+			if intkeyCode,err = coder.ReadCode();err!=nil{
+				return err
+			}
+			if int8(intkeyCode) == -1{
+				if ms,err := coder.ReadBigEnd32();err!=nil{
+					return err
+				}else{
+					ntime := time.Now()
+					ns := ntime.Unix()
+					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
+					coder.OnParserIntKeyMapKv(mapInterface,intKey,ntime)
+					return nil
+				}
+			}else{
+				var mb [5]byte
+				if _,err = coder.r.Read(mb[1:]);err!=nil{
+					return err
+				}
+				mb[0] = byte(intkeyCode)
+				coder.OnParserIntKeyMapKv(mapInterface,intKey,mb[:])
+				return nil
+			}
+		}
+	}
+	return err
+}
 
 func (coder *MsgPackDecoder)DecodeUnknownMapCustom(strcode MsgPackCode)(error)  {
 	if maplen,err := coder.DecodeMapLen(strcode);err!=nil{
@@ -553,38 +890,26 @@ func (coder *MsgPackDecoder)DecodeUnknownMapCustom(strcode MsgPackCode)(error)  
 			return err
 		}
 		if strcode.IsInt(){
-			if k,v,err := coder.decodeIntKeyMapKvRecord(strcode);err!=nil{
+			intMap := coder.OnStartMap(maplen,false)
+			if err := coder.decodeIntKeyMapKvRecordCutom(strcode,intMap);err!=nil{
 				return err
 			}else if coder.OnStartMap!=nil{
-				intMap := coder.OnStartMap(maplen,false)
-				if intMap!=nil && coder.OnParserIntKeyMapKv!=nil{
-					coder.OnParserIntKeyMapKv(intMap,k,v)
-				}else{
-					return nil
-				}
 				for j := 1;j<maplen;j++{
-					if k,v,err = coder.decodeIntKeyMapKvRecord(CodeUnkonw);err!=nil{
+					if err = coder.decodeIntKeyMapKvRecordCutom(CodeUnkonw,intMap);err!=nil{
 						return err
 					}
-					coder.OnParserIntKeyMapKv(intMap,k,v)
 				}
 				return nil
 			}
 		}else if strcode.IsStr(){
-			if k,v,err := coder.decodeStrMapKvRecord(strcode);err!=nil{
+			strMap := coder.OnStartMap(maplen,true)
+			if err := coder.decodeStrMapKvRecordCustom(strcode,strMap);err!=nil{
 				return err
 			}else if coder.OnStartMap!=nil{
-				strMap := coder.OnStartMap(maplen,true)
-				if strMap!=nil && coder.OnParserStrMapKv!=nil{
-					coder.OnParserStrMapKv(strMap,k,v)
-				}else{
-					return nil
-				}
 				for j := 1;j<maplen;j++{
-					if k,v,err = coder.decodeStrMapKvRecord(CodeUnkonw);err!=nil{
+					if err = coder.decodeStrMapKvRecordCustom(CodeUnkonw,strMap);err!=nil{
 						return err
 					}
-					coder.OnParserStrMapKv(strMap,k,v)
 				}
 				return nil
 			}
@@ -704,18 +1029,6 @@ func (coder *MsgPackDecoder)DecodeStand(v interface{})(error)  {
 		}
 	case *[]interface{}:
 		return coder.DecodeArray2StdSlice(CodeUnkonw,value)
-	/*case *DxValue.DxBaseValue:
-		switch value.ValueType() {
-		case DxValue.DVT_Record:
-			rec,_ := value.AsRecord()
-			return coder.DecodeStrMap(CodeUnkonw,rec)
-		case DxValue.DVT_RecordIntKey:
-			rec,_ := value.AsIntRecord()
-			return coder.DecodeIntKeyMap(CodeUnkonw,rec)
-		case DxValue.DVT_Array:
-			arr,_ := value.AsArray()
-			return coder.Decode2Array(CodeUnkonw,arr)
-		}*/
 	case *time.Time:
 		if dt,err := coder.DecodeDateTime_Go(CodeUnkonw);err !=nil{
 			return err

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"github.com/suiyunonghen/DxValue/Coders"
 	"fmt"
+	"bytes"
 )
 
 var(
@@ -122,10 +123,14 @@ func encodeArrayValue(encoder Coders.Encoder,v reflect.Value)(err error)  {
 	for i := 0;i< arlen;i++ {
 		av := v.Index(i)
 		arrvalue := Coders.GetRealValue(&av)
-		if encodeFunc := msgEncoder.GetEncoderFunc(arrvalue.Type());encodeFunc !=nil{
-			err = encodeFunc(encoder,*arrvalue)
-		}else if arrvalue.CanInterface(){
-			err = encoder.EncodeStand(arrvalue.Interface())
+		if arrvalue == nil {
+			err = msgEncoder.WriteByte(byte(CodeNil))
+		}else{
+			if encodeFunc := msgEncoder.GetEncoderFunc(arrvalue.Type());encodeFunc !=nil{
+				err = encodeFunc(encoder,*arrvalue)
+			}else if arrvalue.CanInterface(){
+				err = encoder.EncodeStand(arrvalue.Interface())
+			}
 		}
 		if err!=nil{
 			return
@@ -406,20 +411,37 @@ func (coder *MsgPackEncoder)GetEncoderFunc(typ reflect.Type) Coders.EncoderFunc 
 	return result
 }
 
+func (encoder *MsgPackEncoder)EncodeArrLen(arrLen int)(arlen int,err error)  {
+	switch {
+	case arrLen < 16: //1001XXXX|    N objects
+		err = encoder.WriteByte(byte(CodeFixedArrayLow) | byte(arrLen))
+	case arrLen <= Max_map16_len:  //0xdc  |YYYYYYYY|YYYYYYYY|    N objects
+		err = encoder.WriteUint16(uint16(arrLen),CodeArray16)
+	default:
+		if arrLen > Max_map32_len{
+			arrLen = Max_map32_len
+		}
+		err = encoder.WriteUint32(uint32(arrLen),CodeArray32)
+	}
+	return arlen,err
+}
+
 func (encoder *MsgPackEncoder)encodeInterfaceArr(arr []interface{})(err error)  {
 	arlen := len(arr)
 	switch {
 	case arlen < 16: //1001XXXX|    N objects
 		err = encoder.WriteByte(byte(CodeFixedArrayLow) | byte(arlen))
 	case arlen <= Max_map16_len:  //0xdc  |YYYYYYYY|YYYYYYYY|    N objects
-		encoder.WriteUint16(uint16(arlen),CodeArray16)
+		err = encoder.WriteUint16(uint16(arlen),CodeArray16)
 	default:
 		if arlen > Max_map32_len{
 			arlen = Max_map32_len
 		}
-		encoder.WriteUint32(uint32(arlen),CodeArray32)
+		err = encoder.WriteUint32(uint32(arlen),CodeArray32)
 	}
-
+	if err!=nil{
+		return err
+	}
 	for i := 0;i <= arlen - 1;i++{
 		if arr[i] == nil{
 			err = encoder.WriteByte(0xc0) //null
@@ -450,6 +472,32 @@ func (encoder *MsgPackEncoder)EncodeStand(v interface{})(error)  {
 		return encoder.encodeInterfaceArr(value)
 	case *time.Time:
 		return encoder.EncodeTime(*value)
+	case []string:
+		if value == nil{
+			return encoder.WriteByte(byte(CodeNil))
+		}
+		arlen,err := encoder.EncodeArrLen(len(value))
+		if err !=nil{
+			return err
+		}
+		for i := 0;i<arlen;i++{
+			if err = encoder.EncodeString(value[i]);err!=nil{
+				return err
+			}
+		}
+	case *[]string:
+		if value == nil{
+			return encoder.WriteByte(byte(CodeNil))
+		}
+		arlen,err := encoder.EncodeArrLen(len(*value))
+		if err !=nil{
+			return err
+		}
+		for i := 0;i<arlen;i++{
+			if err = encoder.EncodeString((*value)[i]);err!=nil{
+				return err
+			}
+		}
 	case time.Time:
 		return encoder.EncodeTime(value)
 	case *int8:
@@ -546,10 +594,20 @@ func (encoder *MsgPackEncoder)EncodeStand(v interface{})(error)  {
 
 				}
 			}
-		case reflect.Map:
-		case reflect.Slice,reflect.Array:
-
+		default:
+			return encoder.GetEncoderFunc(rv.Type())(encoder,*rv)
 		}
 	}
 	return nil
+}
+
+func Marshal(v...interface{})([]byte,error) {
+	var buf bytes.Buffer
+	coder := NewEncoder(&buf)
+	for _,value := range v{
+		if err := coder.EncodeStand(value);err!=nil{
+			return nil,err
+		}
+	}
+	return buf.Bytes(),nil
 }

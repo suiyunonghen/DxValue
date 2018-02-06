@@ -44,7 +44,6 @@ func Benchmark_DecodeMsgPack(b *testing.B) {
 		}
 		f.Seek(0,io.SeekStart)
 	}
-	//fmt.Println(mp)
 }
 
 func Benchmark_vmihailenco_decode(b *testing.B)  {

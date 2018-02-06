@@ -113,12 +113,6 @@ func TestMsgPackDecode(t *testing.T)  {
 		fmt.Println("ReadFile Err:",err)
 		return
 	}
-	/*buf := bytes.NewBuffer(bt)
-	if rec,err := DecodeMsgPack(buf);err!=nil{
-		fmt.Println("Error；",err)
-	}else{
-		fmt.Println(rec.ToString())
-	}*/
 	coder := NewDecoder(bytes.NewReader(bt))
 	rec := NewRecord()
 	if err := coder.Decode(&rec.DxBaseValue);err!=nil{

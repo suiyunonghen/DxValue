@@ -557,6 +557,18 @@ func (coder *DxMsgPackDecoder)DecodeIntKeyMap(code DxMsgPack.MsgPackCode,rec *Dx
 func (coder *DxMsgPackDecoder)Decode(v *DxBaseValue)(error)  {
 	switch v.ValueType() {
 	case DVT_Array:
+		arrlen,err  := coder.DecodeArrayLen(DxMsgPack.CodeUnkonw)
+		if err !=nil{
+			return err
+		}
+		arr := (*DxArray)(unsafe.Pointer(v))
+		arr.TruncateArray(arrlen)
+		for i := 0;i<arrlen;i++{
+			if err = coder.DecodeArrayElement(arr,i);err!=nil{
+				return err
+			}
+
+		}
 	case DVT_DateTime:
 		if dt,err := coder.DecodeDateTime(DxMsgPack.CodeUnkonw);err !=nil{
 			return err
@@ -616,7 +628,6 @@ func NewDecoder(r io.Reader)*DxMsgPackDecoder  {
 
 type  DxMsgPackEncoder struct{
 	DxMsgPack.MsgPackEncoder
-	curErr  error
 }
 
 
@@ -667,32 +678,6 @@ func (encoder *DxMsgPackEncoder)EncodeExtValue(v *DxExtValue)(err error)  {
 	return
 }
 
-func (encoder *DxMsgPackEncoder)rangeDxRecord(keyName string,value *DxBaseValue)bool  {
-	if encoder.curErr = encoder.EncodeString(keyName);encoder.curErr != nil{
-		return false
-	}
-	//写入v
-	if value != nil{
-		encoder.curErr = encoder.Encode(value)
-	}else{
-		encoder.curErr = encoder.WriteByte(0xc0) //null
-	}
-
-	return encoder.curErr == nil
-}
-
-func (encoder *DxMsgPackEncoder)rangeDxIntRecord(key int64,value *DxBaseValue)bool  {
-	if encoder.curErr = encoder.EncodeInt(key);encoder.curErr != nil{
-		return false
-	}
-	//写入v
-	if value != nil{
-		encoder.curErr = encoder.Encode(value)
-	}else{
-		encoder.curErr = encoder.WriteByte(0xc0) //null
-	}
-	return encoder.curErr == nil
-}
 
 func (encoder *DxMsgPackEncoder)EncodeRecord(r *DxRecord)(err error)  {
 	maplen := r.Length()
@@ -711,11 +696,22 @@ func (encoder *DxMsgPackEncoder)EncodeRecord(r *DxRecord)(err error)  {
 		return
 	}
 	//写入对象信息,Kv对
-	encoder.curErr = nil
-	r.Range(encoder.rangeDxRecord)
-	err = encoder.curErr
-	encoder.curErr = nil
-	return err
+
+	for k,v := range r.fRecords{
+		if err = encoder.EncodeString(k);err!=nil{
+			return err
+		}
+		if v != nil{
+			err = encoder.Encode(v)
+		}else{
+			err = encoder.WriteByte(0xc0) //null
+		}
+		if err!=nil{
+			return err
+		}
+	}
+
+	return nil
 }
 
 
@@ -736,13 +732,21 @@ func (encoder *DxMsgPackEncoder)EncodeRecordIntKey(r *DxIntKeyRecord)(err error)
 		return
 	}
 	//写入对象信息,Kv对
-	//写入对象信息,Kv对
-	encoder.curErr = nil
-	r.Range(encoder.rangeDxIntRecord)
-	err = encoder.curErr
-	encoder.curErr = nil
-	return err
-	return err
+	for k,v := range r.fRecords{
+		if err = encoder.EncodeInt(k);err!=nil{
+			return err
+		}
+		if v != nil{
+			err = encoder.Encode(v)
+		}else{
+			err = encoder.WriteByte(0xc0) //null
+		}
+		if err!=nil{
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (encoder *DxMsgPackEncoder)Encode(v *DxBaseValue)(err error)  {
