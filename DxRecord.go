@@ -53,6 +53,16 @@ func (r *DxRecord)splitPathFields(charrune rune) bool {
 	return charrune == rune(r.PathSplitChar)
 }
 
+func (r *DxRecord)getSize()int  {
+	result := 0
+	if r.fRecords != nil {
+		for k,v := range r.fRecords{
+			result += len(k)+v.Size()
+		}
+	}
+	return result
+}
+
 func (r *DxRecord)NewRecord(keyName string)(rec *DxRecord)  {
 	if value,ok := r.fRecords[keyName];ok && value != nil{
 		if value.fValueType == DVT_Record{

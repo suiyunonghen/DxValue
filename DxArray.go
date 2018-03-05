@@ -40,6 +40,16 @@ func (arr *DxArray)ClearValue(clearInner bool)  {
 	}
 }
 
+func (arr *DxArray)getSize() int {
+	result := 0
+	if arr.fValues != nil{
+		for _,v := range arr.fValues{
+			result += v.Size()
+		}
+	}
+	return result
+}
+
 func (arr *DxArray)TruncateArray(ArrLen int)  {
 	if arr.fValues == nil{
 		caplen := ArrLen

@@ -140,6 +140,31 @@ func (v *DxBaseValue)SetDateTime(t DxCommonLib.TDateTime)  {
 	}
 }
 
+func (v *DxBaseValue)Size()int  {
+	switch v.fValueType{
+	case DVT_Bool,DVT_Null:	return 1
+	case DVT_DateTime,DVT_Double,DVT_Int64: return 8
+	case DVT_Float,DVT_Int32: return 4
+	case DVT_Int:	return int(unsafe.Sizeof(int(0)))
+	case DVT_Ext:
+		if bt := (*DxExtValue)(unsafe.Pointer(v)).ExtData();bt!=nil{
+			return len(bt)
+		}
+	case DVT_String: return len((*DxStringValue)(unsafe.Pointer(v)).fvalue)
+	case DVT_Binary:
+		if bt := (*DxBinaryValue)(unsafe.Pointer(v)).fbinary;bt!=nil{
+			return len(bt)
+		}
+	case DVT_Record:
+		return (*DxRecord)(unsafe.Pointer(v)).getSize()
+	case DVT_RecordIntKey:
+		return (*DxIntKeyRecord)(unsafe.Pointer(v)).getSize()
+	case DVT_Array:
+		return (*DxArray)(unsafe.Pointer(v)).getSize()
+	}
+	return 0
+}
+
 func (v *DxBaseValue)String()string{
 	return v.ToString()
 }

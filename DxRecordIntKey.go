@@ -49,6 +49,16 @@ func (r *DxIntKeyRecord)ClearValue(clearInner bool)  {
 	}
 }
 
+func (r *DxIntKeyRecord)getSize() int {
+	result := 0
+	if r.fRecords != nil {
+		for _,v := range r.fRecords{
+			result += v.Size() + 8
+		}
+	}
+	return result
+}
+
 func (r *DxIntKeyRecord)splitPathFields(charrune rune) bool {
 	return charrune == rune(r.PathSplitChar)
 }
