@@ -249,7 +249,7 @@ func (v *DxValue)NewArray()*DxArray  {
 	return arr
 }
 
-func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
+func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {
 	v.ClearValue()
 	for i := 0; i < len(JsonByte) ; i++  {
 		if !IsSpace(JsonByte[i]){
@@ -264,7 +264,7 @@ func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserle
 				}else{
 					rec = (*DxRecord)(unsafe.Pointer(v.fValue))
 				}
-				parserlen, err = rec.JsonParserFromByte(JsonByte[i:],ConvertEscape)
+				parserlen, err = rec.JsonParserFromByte(JsonByte[i:],ConvertEscape,structRest)
 				if err == nil {
 					v.fValue = &rec.DxBaseValue
 				}
@@ -277,7 +277,7 @@ func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserle
 				}else{
 					arr = (*DxArray)(unsafe.Pointer(v.fValue))
 				}
-				parserlen, err = arr.JsonParserFromByte(JsonByte[i:],ConvertEscape)
+				parserlen, err = arr.JsonParserFromByte(JsonByte[i:],ConvertEscape,structRest)
 				if err == nil {
 					v.fValue = &arr.DxBaseValue
 				}
@@ -295,7 +295,7 @@ func (r *DxValue)LoadJsonReader(reader io.Reader)error  {
 }
 
 
-func (v *DxValue)LoadJsonFile(fileName string,ConvertEscape bool)error  {
+func (v *DxValue)LoadJsonFile(fileName string,ConvertEscape,structRest bool)error  {
 	databytes, err := ioutil.ReadFile("DataProxy.config.json")
 	if err != nil {
 		return err
@@ -303,7 +303,7 @@ func (v *DxValue)LoadJsonFile(fileName string,ConvertEscape bool)error  {
 	if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF{//BOM
 		databytes = databytes[3:]
 	}
-	_,err = v.JsonParserFromByte(databytes,ConvertEscape)
+	_,err = v.JsonParserFromByte(databytes,ConvertEscape,structRest)
 	return err
 }
 

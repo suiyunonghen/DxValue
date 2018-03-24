@@ -1348,7 +1348,7 @@ func (r *DxIntKeyRecord)ToString()string  {
 	return DxCommonLib.FastByte2String(r.Bytes())
 }
 
-func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape bool)(parserlen int, err error)  {
+func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {
 	blen := len(b)
 	i := 0
 	valuestart := -1
@@ -1365,7 +1365,7 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape bool)(pars
 				rec.PathSplitChar = r.PathSplitChar
 				rec.fValueType = DVT_Record
 				rec.fRecords = make(map[string]*DxBaseValue,32)
-				if parserlen,err = rec.JsonParserFromByte(b[i:blen],ConvertEscape);err == nil{
+				if parserlen,err = rec.JsonParserFromByte(b[i:blen],ConvertEscape,structRest);err == nil{
 					r.SetRecordValue(key,&rec)
 				}
 				parserlen+=2 //会多解析一个{
@@ -1373,7 +1373,7 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape bool)(pars
 			case '[':
 				var arr DxArray
 				arr.fValueType = DVT_Array
-				if parserlen,err = arr.JsonParserFromByte(b[i:],ConvertEscape);err == nil{
+				if parserlen,err = arr.JsonParserFromByte(b[i:],ConvertEscape,structRest);err == nil{
 					r.SetArray(key,&arr)
 				}
 				parserlen+=2
@@ -1443,7 +1443,7 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape bool)(pars
 	return blen,ErrInvalidateJson
 }
 
-func (r *DxIntKeyRecord)LoadJsonFile(fileName string,ConvertEscape bool)error  {
+func (r *DxIntKeyRecord)LoadJsonFile(fileName string,ConvertEscape,structRest bool)error  {
 	databytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
@@ -1451,7 +1451,7 @@ func (r *DxIntKeyRecord)LoadJsonFile(fileName string,ConvertEscape bool)error  {
 	if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF{//BOM
 		databytes = databytes[3:]
 	}
-	_,err = r.JsonParserFromByte(databytes,ConvertEscape)
+	_,err = r.JsonParserFromByte(databytes,ConvertEscape,structRest)
 	return err
 }
 
@@ -1542,9 +1542,11 @@ func (r *DxIntKeyRecord)SaveMsgPackFile(fileName string)error  {
 	}
 }
 
-func (r *DxIntKeyRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
+func (r *DxIntKeyRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {
 	i := 0
-	r.ClearValue(false)
+	if structRest{
+		r.ClearValue(false)
+	}
 	objStart := false
 	keyStart := false
 	btlen := len(JsonByte)
@@ -1582,7 +1584,7 @@ func (r *DxIntKeyRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(p
 				if err != nil{
 					return i,err
 				}
-				if ilen,err := r.parserValue(intkey,JsonByte[i:btlen],ConvertEscape);err!=nil{
+				if ilen,err := r.parserValue(intkey,JsonByte[i:btlen],ConvertEscape,structRest);err!=nil{
 					return ilen + i,err
 				}else{
 					i += ilen

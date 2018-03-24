@@ -14,7 +14,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"fmt"
 	"io/ioutil"
 	"io"
 	"bufio"
@@ -1027,7 +1026,7 @@ func (arr *DxArray)Delete(idx int)  {
 	}
 }
 
-func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape bool)(parserlen int, err error)  {
+func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {
 	i := 0;
 	btlen := len(b)
 	validCharIndex := -1
@@ -1036,7 +1035,7 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape bool)(parserlen i
 			switch b[i] {
 			case '[':
 				narr := NewArray()
-				if parserlen,err = narr.JsonParserFromByte(b[i:],ConvertEscape);err!=nil{
+				if parserlen,err = narr.JsonParserFromByte(b[i:],ConvertEscape,structRest);err!=nil{
 					return
 				}
 				arr.SetArray(idx,narr)
@@ -1044,7 +1043,7 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape bool)(parserlen i
 				return
 			case '{':
 				rec := NewRecord()
-				if parserlen,err = rec.JsonParserFromByte(b[i:],ConvertEscape);err != nil{
+				if parserlen,err = rec.JsonParserFromByte(b[i:],ConvertEscape,structRest);err != nil{
 					return
 				}
 				arr.SetRecord(idx,rec)
@@ -1103,7 +1102,7 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape bool)(parserlen i
 	return btlen,ErrInvalidateJson
 }
 
-func (arr *DxArray)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parserlen int, err error)  {
+func (arr *DxArray)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {
 	btlen := len(JsonByte)
 	i := 0
 	idx := 0
@@ -1120,7 +1119,7 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parser
 		switch JsonByte[i]{
 		case '[':
 			if arrStart{
-				if parserlen,err = arr.parserValue(idx,JsonByte[i:],ConvertEscape);err!=nil{
+				if parserlen,err = arr.parserValue(idx,JsonByte[i:],ConvertEscape,structRest);err!=nil{
 					return parserlen + i,err
 				}
 				idx++
@@ -1136,14 +1135,13 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte,ConvertEscape bool)(parser
 		default:
 			if valuestart {
 				valuestart = false
-				if parserlen,err = arr.parserValue(idx,JsonByte[i:],ConvertEscape);err!=nil{
+				if parserlen,err = arr.parserValue(idx,JsonByte[i:],ConvertEscape,structRest);err!=nil{
 					return parserlen + i,err
 				}
 				idx++
 				i += parserlen
 				continue
 			}else{
-				fmt.Println(JsonByte[i])
 				return i,ErrInvalidateJson
 			}
 		}
@@ -1156,7 +1154,7 @@ func (arr *DxArray)ToString()string  {
 	return DxCommonLib.FastByte2String(arr.Bytes())
 }
 
-func (arr *DxArray)LoadJsonFile(fileName string,ConvertEscape bool)error  {
+func (arr *DxArray)LoadJsonFile(fileName string,ConvertEscape,structRest bool)error  {
 	databytes, err := ioutil.ReadFile("DataProxy.config.json")
 	if err != nil {
 		return err
@@ -1164,7 +1162,7 @@ func (arr *DxArray)LoadJsonFile(fileName string,ConvertEscape bool)error  {
 	if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF{//BOM
 		databytes = databytes[3:]
 	}
-	_,err = arr.JsonParserFromByte(databytes,ConvertEscape)
+	_,err = arr.JsonParserFromByte(databytes,ConvertEscape,structRest)
 	return err
 }
 
