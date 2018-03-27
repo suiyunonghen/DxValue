@@ -1511,8 +1511,12 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 				parserlen+=2
 				return
 			case ',','}':
-				//bvalue := bytes.Trim(b[valuestart + 1:i]," \r\n\t")
-				bvalue := b[valuestart: validCharIndex+1]
+				var bvalue []byte
+				if validCharIndex == -1 {
+					bvalue = bytes.Trim(b[valuestart:i]," \r\n\t")
+				}else{
+					bvalue = b[valuestart: validCharIndex+1]
+				}
 				if len(bvalue) == 0{
 					return i,ErrInvalidateJson
 				}
