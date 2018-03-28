@@ -487,7 +487,7 @@ func (r *DxRecord)EncodeJson2Writer(w io.Writer)  {
 	isFirst := true
 	for k,v := range r.fRecords{
 		if !isFirst{
-			w.WriteString(`,"`)
+			buffer.WriteString(`,"`)
 		}else{
 			isFirst = false
 			buffer.WriteByte('"')
@@ -748,8 +748,8 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 	case *uint16: r.SetInt(keyName,int(*value))
 	case *uint32: r.SetInt(keyName,int(*value))
 	case string: r.SetString(keyName,value)
-	case []byte: r.SetBinary(keyName,value,true)
-	case *[]byte: r.SetBinary(keyName,*value,true)
+	case []byte: r.SetBinary(keyName,value,true,BET_Base64)
+	case *[]byte: r.SetBinary(keyName,*value,true,BET_Base64)
 	case bool: r.SetBool(keyName,value)
 	case *bool: r.SetBool(keyName,*value)
 	case *string: r.SetString(keyName,*value)
@@ -779,8 +779,8 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 	case *DxIntValue: r.SetInt(keyName,value.fvalue)
 	case DxStringValue: r.SetString(keyName,value.fvalue)
 	case *DxStringValue: r.SetString(keyName,value.fvalue)
-	case DxBinaryValue:  r.SetBinary(keyName,value.Bytes(),true)
-	case *DxBinaryValue:  r.SetBinary(keyName,value.Bytes(),true)
+	case DxBinaryValue:  r.SetBinary(keyName,value.Bytes(),true,BET_Base64)
+	case *DxBinaryValue:  r.SetBinary(keyName,value.Bytes(),true,BET_Base64)
 	default:
 		reflectv := reflect.ValueOf(v)
 		rv := getRealValue(&reflectv)

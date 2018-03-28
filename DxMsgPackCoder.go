@@ -53,7 +53,7 @@ func (coder *DxMsgPackDecoder)DecodeStrMapKvRecord(strMap *DxRecord,strcode DxMs
 		if bin,err := coder.DecodeBinary(strcode);err!=nil{
 			return err
 		} else{
-			strMap.SetBinary(keyName,bin,true)
+			strMap.SetBinary(keyName,bin,true,BET_Base64)
 		}
 	}else if strcode.IsExt(){
 		if bin ,err := coder.DecodeExtValue(strcode);err!=nil{
