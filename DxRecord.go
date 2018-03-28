@@ -421,10 +421,11 @@ func (r *DxRecord)SetString(KeyName string,v string)  {
 }
 
 
-func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
+func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool,encodeType DxBinaryEncodeType)  {
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		if value.fValueType == DVT_Binary{
 			bv := (*DxBinaryValue)(unsafe.Pointer(value))
+			bv.EncodeType = encodeType
 			if reWrite{
 				bv.SetBinary(v,true)
 			}else{
@@ -438,6 +439,7 @@ func (r *DxRecord)SetBinary(KeyName string,v []byte,reWrite bool)  {
 	m.fbinary = v
 	m.fParent = &r.DxBaseValue
 	m.fValueType = DVT_Binary
+	m.EncodeType = encodeType
 	r.fRecords[KeyName] = &m.DxBaseValue
 }
 
@@ -472,6 +474,47 @@ func (r *DxRecord)AsBytes(keyName string)[]byte  {
 		return bt
 	}
 	return nil
+}
+
+func (r *DxRecord)EncodeJson2Writer(w io.Writer)  {
+	var buffer *bufio.Writer
+	if buf,ok := w.(*bufio.Writer);!ok{
+		buffer = buf
+	} else {
+		buffer = bufio.NewWriter(w)
+	}
+	buffer.WriteByte('{')
+	isFirst := true
+	for k,v := range r.fRecords{
+		if !isFirst{
+			w.WriteString(`,"`)
+		}else{
+			isFirst = false
+			buffer.WriteByte('"')
+		}
+		buffer.WriteString(k)
+		buffer.WriteString(`":`)
+		if v != nil{
+			vt := v.fValueType
+			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
+				buffer.WriteByte('"')
+			}
+			if vt == DVT_DateTime{
+				buffer.WriteString("/Date(")
+				buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
+				buffer.WriteString(")/")
+			}else{
+				buffer.WriteString(v.ToString())
+			}
+
+			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
+				buffer.WriteByte('"')
+			}
+		}else{
+			buffer.WriteString("null")
+		}
+	}
+	buffer.WriteByte('}')
 }
 
 func (r *DxRecord)Bytes()[]byte  {
