@@ -476,9 +476,14 @@ func (r *DxRecord)AsBytes(keyName string)[]byte  {
 	return nil
 }
 
+type targetBuffer interface {
+	WriteString(string)(int, error)
+	WriteByte(c byte) error
+}
+
 func (r *DxRecord)EncodeJson2Writer(w io.Writer)  {
-	var buffer *bufio.Writer
-	if buf,ok := w.(*bufio.Writer);!ok{
+	var buffer targetBuffer
+	if buf,ok := w.(targetBuffer);ok{
 		buffer = buf
 	} else {
 		buffer = bufio.NewWriter(w)
@@ -518,7 +523,7 @@ func (r *DxRecord)EncodeJson2Writer(w io.Writer)  {
 }
 
 func (r *DxRecord)Bytes()[]byte  {
-	var buffer bytes.Buffer
+	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
 	isFirst := true
 	for k,v := range r.fRecords{

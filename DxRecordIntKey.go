@@ -328,7 +328,7 @@ func (r *DxIntKeyRecord)AsBytes(key int64)[]byte  {
 }
 
 func (r *DxIntKeyRecord)Bytes()[]byte  {
-	var buffer bytes.Buffer
+	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
 	isFirst := true
 	for k,v := range r.fRecords{
