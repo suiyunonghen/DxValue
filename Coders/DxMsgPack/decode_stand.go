@@ -168,7 +168,7 @@ func (coder *MsgPackDecoder)decodeIntKeyMapFunc64(mp *map[int64]interface{})(err
 func (coder *MsgPackDecoder)DecodeUnknownMapStd(strcode MsgPackCode)(interface{},error)  {
 	if maplen,err := coder.DecodeMapLen(strcode);err!=nil{
 		return nil, err
-	}else{
+	}else if maplen > 0{
 		//判断键值，是Int还是str
 		if strcode,err = coder.ReadCode();err!=nil{
 			return nil,err
@@ -204,6 +204,7 @@ func (coder *MsgPackDecoder)DecodeUnknownMapStd(strcode MsgPackCode)(interface{}
 		}
 		return nil,ErrInvalidateMapKey
 	}
+	return nil,nil
 }
 
 

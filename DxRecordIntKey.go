@@ -36,8 +36,10 @@ type(
 func (r *DxIntKeyRecord)ClearValue(clearInner bool)  {
 	if r.fRecords != nil{
 		for _,v := range r.fRecords{
-			v.ClearValue(clearInner)
-			v.fParent = nil
+			if v != nil{
+				v.ClearValue(clearInner)
+				v.fParent = nil
+			}
 		}
 	}
 	if clearInner{

@@ -450,7 +450,7 @@ func (coder *DxMsgPackDecoder)Decode2Array(code DxMsgPack.MsgPackCode,arr *DxArr
 func (coder *DxMsgPackDecoder)DecodeUnknownMap(code DxMsgPack.MsgPackCode)(*DxBaseValue,error)  {
 	if maplen,err := coder.DecodeMapLen(code);err!=nil{
 		return nil, err
-	}else{
+	}else if maplen > 0{
 		//判断键值，是Int还是str
 		var baseV *DxBaseValue
 		if code,err = coder.ReadCode();err!=nil{
@@ -482,6 +482,8 @@ func (coder *DxMsgPackDecoder)DecodeUnknownMap(code DxMsgPack.MsgPackCode)(*DxBa
 			return baseV,nil
 		}
 		return nil,DxMsgPack.ErrInvalidateMapKey
+	}else{
+		return nil, nil
 	}
 }
 

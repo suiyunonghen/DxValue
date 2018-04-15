@@ -266,7 +266,7 @@ func (r *DxRecord)SetBool(KeyName string,v bool)  {
 }
 
 func (r *DxRecord)SetNull(KeyName string)  {
-	if v,ok := r.fRecords[KeyName];ok{
+	if v,ok := r.fRecords[KeyName];ok && v != nil{
 		v.ClearValue(true)
 	}
 	r.fRecords[KeyName] = nil
