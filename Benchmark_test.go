@@ -23,8 +23,8 @@ func BenchmarkGparser(b *testing.B){
 		if bt,err := gp.ToJson();err!=nil{
 			return
 		}else if file,err := os.OpenFile("Gparser.json",os.O_CREATE | os.O_TRUNC,0644);err == nil{
-			defer file.Close()
 			file.Write(bt)
+			file.Close()
 		}
 	}
 }
@@ -37,14 +37,14 @@ func BenchmarkDxRecord_JsonParserFromByte(b *testing.B) {
 	}
 	rc := NewRecord()
 	for i := 0;i<b.N;i++{
-		_,err := rc.JsonParserFromByte(buf,false)
+		_,err := rc.JsonParserFromByte(buf,false,false)
 		if err != nil{
 			fmt.Println("Parser Error: ",err)
 			break
 		}
 		if file,err := os.OpenFile("DxRecord.json",os.O_CREATE | os.O_TRUNC,0644);err == nil{
-			defer file.Close()
 			rc.SaveJsonWriter(file)
+			file.Close()
 		}
 	}
 }
@@ -62,8 +62,8 @@ func BenchmarkJsoniterParser(b *testing.B){
 		if bt,err := jsoniter.Marshal(&mp);err!=nil{
 			return
 		}else if file,err := os.OpenFile("Jsoniter.json",os.O_CREATE | os.O_TRUNC,0644);err == nil{
-			defer file.Close()
 			file.Write(bt)
+			file.Close()
 		}
 	}
 }
@@ -80,8 +80,8 @@ func BenchmarkStandJsonParser(b *testing.B){
 		if bt,err := json.Marshal(&mp);err!=nil{
 			return
 		}else if file,err := os.OpenFile("StandJson.json",os.O_CREATE | os.O_TRUNC,0644);err == nil{
-			defer file.Close()
 			file.Write(bt)
+			file.Close()
 		}
 	}
 }

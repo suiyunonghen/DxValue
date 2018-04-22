@@ -220,6 +220,7 @@ func (r *DxIntKeyRecord)SetBool(key int64,v bool)  {
 func (r *DxIntKeyRecord)SetNull(key int64)  {
 	if v,ok := r.fRecords[key];ok{
 		v.ClearValue(true)
+		v.fParent = nil
 	}
 	r.fRecords[key] = nil
 }
@@ -431,18 +432,14 @@ func (r *DxIntKeyRecord)SetIntRecordValue(key int64,v *DxIntKeyRecord) {
 		panic("Must Set A Single Record(no Parent)")
 	}
 	if value, ok := r.fRecords[key]; ok && value != nil {
-		if  value.fValueType == DVT_RecordIntKey {
-			nrec := (*DxIntKeyRecord)(unsafe.Pointer(value))
-			nrec.fParent = nil
-			*nrec = *v
-			nrec.fParent = &r.DxBaseValue
-			return
-		}
 		value.ClearValue(true)
+		value.fParent = nil
 	}
 	if v != nil {
 		r.fRecords[key] = &v.DxBaseValue
 		v.fParent = &r.DxBaseValue
+	}else {
+		r.fRecords[key] = nil
 	}
 }
 
@@ -451,18 +448,14 @@ func (r *DxIntKeyRecord)SetRecordValue(key int64,v *DxRecord) {
 		panic("Must Set A Single Record(no Parent)")
 	}
 	if value, ok := r.fRecords[key]; ok && value != nil {
-		if  value.fValueType == DVT_Record {
-			nrec := (*DxRecord)(unsafe.Pointer(value))
-			nrec.fParent = nil
-			*nrec = *v
-			nrec.fParent = &r.DxBaseValue
-			return
-		}
 		value.ClearValue(true)
+		value.fParent = nil
 	}
 	if v != nil {
 		r.fRecords[key] = &v.DxBaseValue
 		v.fParent = &r.DxBaseValue
+	}else{
+		r.fRecords[key] = nil
 	}
 }
 
@@ -471,18 +464,14 @@ func (r *DxIntKeyRecord)SetArray(key int64,v *DxArray)  {
 		panic("Must Set A Single Array(no Parent)")
 	}
 	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Array{
-			arr := (*DxArray)(unsafe.Pointer(value))
-			arr.fParent = nil
-			*arr = *v
-			arr.fParent = &r.DxBaseValue
-			return
-		}
 		value.ClearValue(true)
+		value.fParent = nil
 	}
 	if v!=nil{
 		r.fRecords[key] = &v.DxBaseValue
 		v.fParent = &r.DxBaseValue
+	}else{
+		r.fRecords[key] = nil
 	}
 }
 
@@ -1006,6 +995,12 @@ func (r *DxIntKeyRecord)SetBaseValue(intKey int64,v *DxBaseValue)  {
 			r.SetIntRecordValue(intKey,(*DxIntKeyRecord)(unsafe.Pointer(v)))
 		case DVT_Array:
 			r.SetArray(intKey,(*DxArray)(unsafe.Pointer(v)))
+		case DVT_Int:
+			r.SetInt(intKey,(*DxIntValue)(unsafe.Pointer(v)).fvalue)
+		case DVT_Int32:
+			r.SetInt32(intKey,(*DxInt32Value)(unsafe.Pointer(v)).fvalue)
+		case DVT_Int64:
+			r.SetInt64(intKey,(*DxInt64Value)(unsafe.Pointer(v)).fvalue)
 		}
 	}else {
 		r.SetNull(intKey)

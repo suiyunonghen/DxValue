@@ -186,6 +186,7 @@ func (arr *DxArray)SetNull(idx int)  {
 	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
+		arr.fValues[idx].fParent = nil
 		arr.fValues[idx].ClearValue(true)
 	}
 	arr.fValues[idx] = nil
@@ -622,14 +623,8 @@ func (arr *DxArray)SetArray(idx int,value *DxArray)  {
 	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
-		if arr.fValues[idx].fValueType == DVT_Array{
-			arr := (*DxArray)(unsafe.Pointer(arr.fValues[idx]))
-			arr.fParent = nil
-			*arr=*value
-			arr.fParent = &arr.DxBaseValue
-			return
-		}
 		arr.fValues[idx].ClearValue(true)
+		arr.fValues[idx].fParent = nil
 	}
 	arr.fValues[idx] = &value.DxBaseValue
 	arr.fValues[idx].fParent = &arr.DxBaseValue
@@ -655,17 +650,35 @@ func (arr *DxArray)SetRecord(idx int,value *DxRecord)  {
 	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
-		if arr.fValues[idx].fValueType == DVT_Record{
-			rec := (*DxRecord)(unsafe.Pointer(arr.fValues[idx]))
-			rec.fParent = nil
-			*rec = *value
-			rec.fParent = &arr.DxBaseValue
-			return
-		}
 		arr.fValues[idx].ClearValue(true)
+		arr.fValues[idx].fParent = nil
 	}
-	arr.fValues[idx] = &value.DxBaseValue
-	arr.fValues[idx].fParent = &arr.DxBaseValue
+	if value!=nil{
+		arr.fValues[idx] = &value.DxBaseValue
+		arr.fValues[idx].fParent = &arr.DxBaseValue
+	}else{
+		arr.fValues[idx] = nil
+	}
+}
+
+func (arr *DxArray)SetIntRecord(idx int,value *DxIntKeyRecord)  {
+	if idx < 0{
+		return
+	}
+	if value != nil && value.fParent != nil {
+		panic("Must Set A Single Record(no Parent)")
+	}
+	arr.ifNilInitArr2idx(idx)
+	if arr.fValues[idx] != nil{
+		arr.fValues[idx].ClearValue(true)
+		arr.fValues[idx].fParent = nil
+	}
+	if value!=nil{
+		arr.fValues[idx] = &value.DxBaseValue
+		arr.fValues[idx].fParent = &arr.DxBaseValue
+	}else{
+		arr.fValues[idx] = nil
+	}
 }
 
 func (arr *DxArray)AsRecord(idx int)(*DxRecord)  {
@@ -717,6 +730,7 @@ func (arr *DxArray)SetBaseValue(idx int,v *DxBaseValue)  {
 		return
 	}
 	arr.fValues[idx] = v
+	v.fParent = &arr.DxBaseValue
 }
 
 func (arr *DxArray)SetValue(idx int,value interface{})  {
@@ -1020,6 +1034,7 @@ func (arr *DxArray)Delete(idx int)  {
 		if idx >= 0 && idx < len(arr.fValues){
 			if arr.fValues[idx] != nil{
 				arr.fValues[idx].ClearValue(true)
+				arr.fValues[idx].fParent = nil
 			}
 			arr.fValues = append(arr.fValues[:idx],arr.fValues[idx+1:]...)
 		}

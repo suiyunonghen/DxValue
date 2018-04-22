@@ -7,7 +7,7 @@ import (
 
 func TestDxArray_JsonParserFromByte(t *testing.T) {
 	arr := NewArray()
-	_,err := arr.JsonParserFromByte([]byte(`[  32  ,  "2342"  ,[ 2 , true , false  ,{ "Name" : "DxSoft" , "Age"  :  32 } ] ]`),false)
+	_,err := arr.JsonParserFromByte([]byte(`[  32  ,  "2342"  ,[ 2 , true , false  ,{ "Name" : "DxSoft" , "Age"  :  32 } ] ]`),false,false)
 	if err == nil {
 		fmt.Println(arr.ToString())
 	}else{
@@ -17,13 +17,13 @@ func TestDxArray_JsonParserFromByte(t *testing.T) {
 
 func TestDxArray_LoadJsonFile(t *testing.T) {
 	var v DxValue
-	v.LoadJsonFile("DataProxy.config.json",true)
+	v.LoadJsonFile("DataProxy.config.json",true,false)
 	fmt.Println(v.AsString())
 }
 
 func TestDxArray_SaveJsonFile(t *testing.T) {
 	var v DxValue
-	v.LoadJsonFile("DataProxy.config.json",true)
+	v.LoadJsonFile("DataProxy.config.json",true,false)
 	if rec,_ := v.AsRecord();rec != nil{
 		if arr := rec.AsArray("list");arr!=nil{
 			arr.SaveJsonFile("d:\\1.json",true)

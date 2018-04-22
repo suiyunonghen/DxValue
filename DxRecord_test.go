@@ -10,6 +10,41 @@ import (
 	"bytes"
 )
 
+
+type mTest struct{
+	bB	string
+	bMstr bool
+}
+
+type ATest struct {
+	A  int
+	B  int
+	mc map[string]int
+}
+
+func Test_Record(t *testing.T)  {
+	mA := &ATest{A:123,B:234}
+	mA.mc = make(map[string]int)
+	mA.mc["saf"]=23443
+	fmt.Println(mA)
+	fmt.Println(uintptr(unsafe.Pointer(mA)) )
+	mB := &ATest{A:3423,B:23434}
+	*mA = *mB
+	fmt.Println(uintptr(unsafe.Pointer(mA)) )
+	fmt.Println(mA)
+}
+
+func TestDxRecord_SetRecordValue(t *testing.T) {
+	vc := NewRecord()
+	vcc := vc.NewRecord("testc")
+	vcc.SetString("BB","Asdf")
+	fmt.Println(vc.String())
+	mb := NewRecord()
+	mb.SetInt("gg",123)
+	vc.SetRecordValue("testc",mb)
+	fmt.Println(vc.String())
+}
+
 func TestDxRecord_JsonParserFromByte(t *testing.T) {
 	buf, err := ioutil.ReadFile("DataProxy.config.json")
 	if err != nil {
@@ -17,7 +52,7 @@ func TestDxRecord_JsonParserFromByte(t *testing.T) {
 		return
 	}
 	rc := NewRecord()
-	_,err = rc.JsonParserFromByte(buf,true)
+	_,err = rc.JsonParserFromByte(buf,true,false)
 	if err != nil{
 		fmt.Println("Parser Error: ",err)
 	}
@@ -37,7 +72,7 @@ func TestParserTime(t *testing.T)  {
 
 func TestDxRecord_AsBool(t *testing.T) {
 	rc := NewRecord()
-	rc.JsonParserFromByte([]byte(`{"BoolValue":  true  ,"object":{"objBool":  false  }}`),false)
+	rc.JsonParserFromByte([]byte(`{"BoolValue":  true  ,"object":{"objBool":  false  }}`),false,false)
 	fmt.Println("BoolValue=",rc.AsBool("BoolValue",false))
 	fmt.Println("object.objBool=",rc.AsBoolByPath("object.objBool",true))
 }
@@ -49,7 +84,7 @@ func TestDxRecord_AsArray(t *testing.T) {
 		return
 	}
 	rc := NewRecord()
-	_,err = rc.JsonParserFromByte(buf,true)
+	_,err = rc.JsonParserFromByte(buf,true,false)
 	if err != nil{
 		fmt.Println("Parser Error: ",err)
 	}
@@ -77,7 +112,7 @@ func TestDxValue_JsonParserFromByte(t *testing.T) {
 		fmt.Println("ReadFile Err:",err)
 		return
 	}
-	_,err = v.JsonParserFromByte(buf,false)
+	_,err = v.JsonParserFromByte(buf,false,false)
 	if err != nil{
 		fmt.Println("Parser Error: ",err)
 	}else{
@@ -133,7 +168,7 @@ func TestDxRecord_LoadMsgPackFile(t *testing.T) {
 
 func TestDxRecord_AsString(t *testing.T) {
 	rc := NewRecord()
-	rc.JsonParserFromByte([]byte(`{"StringValue":   "String    3"  ,  "object":  {"objStr":"  ObjStr1  ",  "ObjName"  :  "   I  nnerObje  ct  "}}`),false)
+	rc.JsonParserFromByte([]byte(`{"StringValue":   "String    3"  ,  "object":  {"objStr":"  ObjStr1  ",  "ObjName"  :  "   I  nnerObje  ct  "}}`),false,false)
 	fmt.Println("StringValue=",rc.AsString("StringValue",""))
 	fmt.Println("object.objStr=",rc.AsStringByPath("object.objStr",""))
 	fmt.Println("object.ObjName=",rc.AsStringByPath("object.ObjName",""))

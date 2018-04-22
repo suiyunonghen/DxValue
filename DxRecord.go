@@ -267,6 +267,7 @@ func (r *DxRecord)SetBool(KeyName string,v bool)  {
 
 func (r *DxRecord)SetNull(KeyName string)  {
 	if v,ok := r.fRecords[KeyName];ok && v != nil{
+		v.fParent = nil
 		v.ClearValue(true)
 	}
 	r.fRecords[KeyName] = nil
@@ -654,17 +655,13 @@ func (r *DxRecord)SetRecordValue(keyName string,v *DxRecord) {
 	}
 	if value, ok := r.fRecords[keyName]; ok && value != nil {
 		value.ClearValue(true)
-		if  value.fValueType == DVT_Record {
-			nrec := (*DxRecord)(unsafe.Pointer(value))
-			nrec.fParent = nil
-			*nrec = *v
-			nrec.fParent = &r.DxBaseValue
-			return
-		}
+		value.fParent = nil
 	}
 	if v != nil {
 		r.fRecords[keyName] = &v.DxBaseValue
 		v.fParent = &r.DxBaseValue
+	}else{
+		r.fRecords[keyName] = nil
 	}
 }
 
@@ -689,17 +686,13 @@ func (r *DxRecord)SetIntRecordValue(keyName string,v *DxIntKeyRecord) {
 	}
 	if value, ok := r.fRecords[keyName]; ok && value != nil {
 		value.ClearValue(true)
-		if  value.fValueType == DVT_RecordIntKey {
-			nrec := (*DxIntKeyRecord)(unsafe.Pointer(value))
-			nrec.fParent = nil
-			*nrec = *v
-			nrec.fParent = &r.DxBaseValue
-			return
-		}
+		value.fParent = nil
 	}
 	if v != nil {
 		r.fRecords[keyName] = &v.DxBaseValue
 		v.fParent = &r.DxBaseValue
+	}else{
+		r.fRecords[keyName] = nil
 	}
 }
 
@@ -709,17 +702,13 @@ func (r *DxRecord)SetArray(KeyName string,v *DxArray)  {
 	}
 	if value,ok := r.fRecords[KeyName];ok && value != nil{
 		value.ClearValue(true)
-		if value.fValueType == DVT_Array{
-			arr := (*DxArray)(unsafe.Pointer(value))
-			arr.fParent = nil
-			*arr = *v
-			arr.fParent = &r.DxBaseValue
-			return
-		}
+		value.fParent = nil
 	}
 	if v!=nil{
 		r.fRecords[KeyName] = &v.DxBaseValue
 		v.fParent = &r.DxBaseValue
+	}else{
+		r.fRecords[KeyName] = nil
 	}
 }
 
@@ -1486,6 +1475,7 @@ func (r *DxRecord)Remove(keyOrPath string)  {
 			case DVT_Record:
 				if v,ok := (*DxRecord)(unsafe.Pointer(vr)).fRecords[vk];ok{
 					v.ClearValue(true)
+					v.fParent = nil
 					delete((*DxRecord)(unsafe.Pointer(vr)).fRecords,vk)
 				}
 			case DVT_RecordIntKey:
@@ -1493,6 +1483,7 @@ func (r *DxRecord)Remove(keyOrPath string)  {
 					panic(err)
 				}else if v,ok := (*DxIntKeyRecord)(unsafe.Pointer(vr)).fRecords[intkey];ok{
 					v.ClearValue(true)
+					v.fParent = nil
 					delete((*DxIntKeyRecord)(unsafe.Pointer(vr)).fRecords,intkey)
 				}
 			case DVT_Array:
@@ -1510,6 +1501,7 @@ func (r *DxRecord)Remove(keyOrPath string)  {
 func (r *DxRecord)Delete(key string)  {
 	if v,ok := r.fRecords[key];ok{
 		v.ClearValue(true)
+		v.fParent = nil
 		delete(r.fRecords,key)
 	}
 }
