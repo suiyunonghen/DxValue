@@ -729,6 +729,10 @@ func (arr *DxArray)SetBaseValue(idx int,v *DxBaseValue)  {
 		arr.SetNull(idx)
 		return
 	}
+	if arr.fValues[idx] != nil{
+		arr.fValues[idx].ClearValue(true)
+		arr.fValues[idx].fParent = nil
+	}
 	arr.fValues[idx] = v
 	v.fParent = &arr.DxBaseValue
 }

@@ -668,12 +668,30 @@ func (r *DxRecord)SetRecordValue(keyName string,v *DxRecord) {
 func (r *DxRecord)SetBaseValue(keyName string,v *DxBaseValue)  {
 	if v != nil{
 		switch v.fValueType {
-		case DVT_Record:
-			r.SetRecordValue(keyName,(*DxRecord)(unsafe.Pointer(v)))
-		case DVT_RecordIntKey:
-			r.SetIntRecordValue(keyName,(*DxIntKeyRecord)(unsafe.Pointer(v)))
-		case DVT_Array:
-			r.SetArray(keyName,(*DxArray)(unsafe.Pointer(v)))
+		case DVT_RecordIntKey,DVT_Record,DVT_Array:
+			if v != nil && v.fParent != nil {
+				panic("Must Set A Single Record(no Parent)")
+			}
+			if value, ok := r.fRecords[keyName]; ok && value != nil {
+				value.ClearValue(true)
+				value.fParent = nil
+			}
+			if v != nil {
+				r.fRecords[keyName] = v
+				v.fParent = &r.DxBaseValue
+			}else{
+				r.fRecords[keyName] = nil
+			}
+		case DVT_Int:
+			r.SetInt(keyName,(*DxIntValue)(unsafe.Pointer(v)).fvalue)
+		case DVT_Int32:
+			r.SetInt32(keyName,(*DxInt32Value)(unsafe.Pointer(v)).fvalue)
+		case DVT_Int64:
+			r.SetInt64(keyName,(*DxInt64Value)(unsafe.Pointer(v)).fvalue)
+		case DVT_Binary:
+			r.SetBinary(keyName,(*DxBinaryValue)(unsafe.Pointer(v)).fbinary,true,(*DxBinaryValue)(unsafe.Pointer(v)).EncodeType)
+		case DVT_Ext:
+			r.SetExtValue(keyName,(*DxExtValue)(unsafe.Pointer(v)).ExtData())
 		}
 	}else {
 		r.SetNull(keyName)
