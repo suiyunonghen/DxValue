@@ -1524,10 +1524,10 @@ func (r *DxRecord)Delete(key string)  {
 	}
 }
 
-func (r *DxRecord)Range(iteafunc func(keyName string,value *DxBaseValue)bool){
+func (r *DxRecord)Range(iteafunc func(keyName string,value *DxBaseValue,params ...interface{})bool,params ...interface{}){
 	if r.fRecords != nil && iteafunc!=nil{
 		for k,v := range r.fRecords{
-			if !iteafunc(k,v){
+			if !iteafunc(k,v,params){
 				return
 			}
 		}

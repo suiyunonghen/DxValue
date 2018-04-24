@@ -1343,10 +1343,10 @@ func (r *DxIntKeyRecord)Delete(key int64)  {
 	}
 }
 
-func (r *DxIntKeyRecord)Range(iteafunc func(key int64,value *DxBaseValue)bool){
+func (r *DxIntKeyRecord)Range(iteafunc func(key int64,value *DxBaseValue,params ...interface{})bool,params ...interface{}){
 	if r.fRecords != nil && iteafunc!=nil{
 		for k,v := range r.fRecords{
-			if !iteafunc(k,v){
+			if !iteafunc(k,v,params){
 				return
 			}
 		}
