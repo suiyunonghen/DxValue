@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 	"github.com/suiyunonghen/DxValue/Coders"
+	"github.com/suiyunonghen/DxValue/Coders/DxMsgPack"
+	"encoding/binary"
 )
 
 
@@ -124,8 +126,55 @@ var (
 	ErrHasNoExtTypeCoder = errors.New("ExtValue's Type has No Registered")
 	extTypes map[byte]IExtTypeCoder
 )
+
 func (v DxBaseValue)ValueType()DxValueType  {
 	return v.fValueType
+}
+
+func (v *DxBaseValue)Encode(valuecoder Coders.Encoder) (err error)  {
+	switch valuecoder.Name() {
+	case "msgpack":
+		if msgpackencoder,ok := valuecoder.(*DxMsgPackEncoder);ok{
+			return msgpackencoder.Encode(v)
+		}
+		encoder := valuecoder.(*DxMsgPack.MsgPackEncoder)
+		switch v.ValueType() {
+		case DVT_Record:
+			err = (*DxRecord)(unsafe.Pointer(v)).Encode(encoder)
+		case DVT_RecordIntKey:
+			err = (*DxIntKeyRecord)(unsafe.Pointer(v)).Encode(encoder)
+		case DVT_Int:
+			return encoder.EncodeInt(int64((*DxIntValue)(unsafe.Pointer(v)).fvalue))
+		case DVT_Int32:
+			return encoder.EncodeInt(int64((*DxInt32Value)(unsafe.Pointer(v)).fvalue))
+		case DVT_Int64:
+			return encoder.EncodeInt((*DxInt64Value)(unsafe.Pointer(v)).fvalue)
+		case DVT_Bool:
+			return encoder.EncodeBool((*DxBoolValue)(unsafe.Pointer(v)).fvalue)
+		case DVT_String:
+			return encoder.EncodeString((*DxStringValue)(unsafe.Pointer(v)).fvalue)
+		case DVT_Float:
+			return encoder.EncodeFloat((*DxFloatValue)(unsafe.Pointer(v)).fvalue)
+		case DVT_Double:
+			return encoder.EncodeDouble((*DxDoubleValue)(unsafe.Pointer(v)).fvalue)
+		case DVT_Binary:
+			bt := (*DxBinaryValue)(unsafe.Pointer(v)).fbinary
+			if bt != nil{
+				return encoder.EncodeBinary(bt)
+			}else{
+				return encoder.WriteByte(0xc0)
+			}
+		case DVT_Ext:
+			return (*DxExtValue)(unsafe.Pointer(v)).Encode(encoder)
+		case DVT_Array:
+			return (*DxArray)(unsafe.Pointer(v)).Encode(encoder)
+		case DVT_DateTime:
+			return encoder.EncodeDateTime(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue))
+		default:
+			return encoder.WriteByte(0xc0) //null
+		}
+		return nil
+	}
 }
 
 func (v *DxBaseValue)SetDateTime(t DxCommonLib.TDateTime)  {
@@ -518,6 +567,62 @@ func (v *DxExtValue)AsDouble()(float64,error)  {
 	default:
 		return 0,Coders.ErrValueType
 	}
+}
+
+func (v *DxExtValue)Encode(valuecoder Coders.Encoder) error{
+	var err error
+	switch valuecoder.Name() {
+	case "msgpack":
+		if msgpacker, ok := valuecoder.(*DxMsgPackEncoder); ok {
+			return msgpacker.EncodeExtValue(v)
+		}
+		encoder := valuecoder.(*DxMsgPack.MsgPackEncoder)
+		btlen := 0
+		bt := v.ExtData()
+		btlen = len(bt)
+		buf := encoder.Buffer()
+		buf[1] = v.ExtType()
+		switch {
+		case btlen == 1:
+			buf[0] = byte(DxMsgPack.CodeFixExt1)
+			err = encoder.Write(buf[:1])
+		case btlen == 2:
+			buf[0] = byte(DxMsgPack.CodeFixExt2)
+			err = encoder.Write(buf[:1])
+		case btlen == 4:
+			buf[0] = byte(DxMsgPack.CodeFixExt4)
+			err = encoder.Write(buf[:1])
+		case btlen == 8:
+			buf[0] = byte(DxMsgPack.CodeFixExt8)
+			err = encoder.Write(buf[:1])
+		case btlen <= 16:
+			buf[0] = byte(DxMsgPack.CodeFixExt16)
+			err = encoder.Write(buf[:1])
+		case btlen <= DxMsgPack.Max_str8_len:
+			buf[0] = byte(DxMsgPack.CodeExt8)
+			buf[1] = byte(btlen)
+			buf[2] = v.ExtType()
+			err = encoder.Write(buf[:3])
+		case btlen <= DxMsgPack.Max_str16_len:
+			buf[0] = byte(DxMsgPack.CodeExt16)
+			binary.BigEndian.PutUint16(buf[1:3],uint16(btlen))
+			buf[3] = v.ExtType()
+			err = encoder.Write(buf[:4])
+		default:
+			if btlen > DxMsgPack.Max_str32_len{
+				btlen = DxMsgPack.Max_str32_len
+			}
+			buf[0] = 0xc6
+			binary.BigEndian.PutUint32(buf[1:5],uint32(btlen))
+			buf[5] = v.ExtType()
+			err = encoder.Write(buf[:6])
+		}
+		if err == nil && btlen > 0{
+			err = encoder.Write(bt[:btlen])
+		}
+		return err
+	}
+	return nil
 }
 
 func (v *DxExtValue)AsDateTime()(DxCommonLib.TDateTime,error)  {

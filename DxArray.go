@@ -19,6 +19,8 @@ import (
 	"bufio"
 	"os"
 	"time"
+	"github.com/suiyunonghen/DxValue/Coders/DxMsgPack"
+	"github.com/suiyunonghen/DxValue/Coders"
 )
 
 /******************************************************
@@ -1262,6 +1264,43 @@ func (arr *DxArray)SaveMsgPackFile(fileName string)error  {
 	}else{
 		return err
 	}
+}
+
+func (arr *DxArray)Encode(valuecoder Coders.Encoder) error{
+	var err error
+	switch valuecoder.Name() {
+	case "msgpack":
+		if msgpacker,ok := valuecoder.(*DxMsgPackEncoder);ok{
+			return msgpacker.EncodeArray(arr)
+		}
+		encoder := valuecoder.(*DxMsgPack.MsgPackEncoder)
+		arlen := arr.Length()
+		switch {
+		case arlen < 16: //1001XXXX|    N objects
+			err = encoder.WriteByte(byte(DxMsgPack.CodeFixedArrayLow) | byte(arlen))
+		case arlen <= DxMsgPack.Max_map16_len:  //0xdc  |YYYYYYYY|YYYYYYYY|    N objects
+			encoder.WriteUint16(uint16(arlen),DxMsgPack.CodeArray16)
+		default:
+			if arlen > DxMsgPack.Max_map32_len{
+				arlen = DxMsgPack.Max_map32_len
+			}
+			encoder.WriteUint32(uint32(arlen),DxMsgPack.CodeArray32)
+		}
+
+		for i := 0;i <= arlen - 1;i++{
+			vbase := arr.AsBaseValue(i)
+			if vbase == nil{
+				err = encoder.WriteByte(0xc0) //null
+			}else{
+				err = vbase.Encode(encoder)
+			}
+			if err != nil{
+				return err
+			}
+		}
+		return err
+	}
+	return nil
 }
 
 func NewArray()*DxArray  {

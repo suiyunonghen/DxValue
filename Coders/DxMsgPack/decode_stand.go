@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"reflect"
+	"github.com/suiyunonghen/DxValue/Coders"
 )
 
 var(
@@ -1132,6 +1133,11 @@ func (coder *MsgPackDecoder)DecodeStand(v interface{})(error)  {
 		if v.Kind() != reflect.Ptr {
 			return fmt.Errorf("msgpack: Decode(nonsettable %T)", value)
 		}
+
+		if v.Type().Implements(Coders.ValueCoderType){
+			return customValueDecoder(coder,v)
+		}
+
 		v = v.Elem()
 		if !v.IsValid() {
 			return fmt.Errorf("msgpack: Decode(nonsettable %T)", value)

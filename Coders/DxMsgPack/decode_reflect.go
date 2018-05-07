@@ -328,7 +328,18 @@ func decodeMapInt64InterfaceValue(coder Coders.Decoder, v reflect.Value) error {
 	return coder.(*MsgPackDecoder).decodeIntKeyMapFunc64(ptr)
 }
 
+func customValueDecoder(coder Coders.Decoder, v reflect.Value) error {
+	if v.IsNil() {
+		v.Set(reflect.New(v.Type().Elem()))
+	}
+	decoder := v.Interface().(Coders.ValueCoder)
+	return decoder.Decode(coder)
+}
+
 func (coder *MsgPackDecoder)GetDecoderFunc(typ reflect.Type) Coders.DecoderFunc {
+	if typ.Implements(Coders.ValueCoderType){
+		return customValueDecoder
+	}
 	kind := typ.Kind()
 	switch kind {
 	case reflect.Ptr:

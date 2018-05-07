@@ -25,7 +25,11 @@ type  Encoder   interface{
 	GetEncoderFunc(typ reflect.Type)EncoderFunc
 }
 
-
+//值编码器
+type  ValueCoder interface {
+	Encode(encoder Encoder) error
+	Decode(decoder Decoder) error
+}
 
 var(
 	coders	[]string

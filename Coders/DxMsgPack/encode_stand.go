@@ -566,10 +566,26 @@ func (encoder *MsgPackEncoder)EncodeStand(v interface{})(error)  {
 		return encoder.EncodeInt(int64(*value))
 	default:
 		v := reflect.ValueOf(value)
+
+
 		rv := Coders.GetRealValue(&v)
 		if rv == nil{
 			return encoder.WriteByte(0xc0) //null
 		}
+		//首先判断这个V是否具备值编码器接口
+		if v.Type().Implements(Coders.ValueCoderType){
+			switch rv.Kind() {
+			case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+				if rv.IsNil() {
+					return encoder.WriteByte(0xc0) //null
+				}
+			default:
+				vcoder := v.Interface().(Coders.ValueCoder)
+				return vcoder.Encode(encoder)
+			}
+		}
+
+
 		switch rv.Kind(){
 		case reflect.Struct:
 			if rv.Type() == Coders.TimeType{

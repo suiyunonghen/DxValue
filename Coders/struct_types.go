@@ -38,6 +38,7 @@ var(
 
 	TimePtrType = reflect.TypeOf((*time.Time)(nil))
 	TimeType = TimePtrType.Elem()
+	ValueCoderType = reflect.TypeOf((*ValueCoder)(nil)).Elem()
 )
 
 

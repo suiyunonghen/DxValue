@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"bytes"
+	"github.com/suiyunonghen/DxValue/Coders"
 )
 
 
@@ -34,6 +35,66 @@ type(
 	}
 )
 
+
+
+func (p *people)Encode(c Coders.Encoder) error  {
+	switch c.Name() {
+	case "msgpack":
+		encoder :=c.(*MsgPackEncoder)
+		encoder.EncodeMapLen(3)
+		encoder.EncodeString("sex")
+		encoder.EncodeString(p.sex)
+
+		encoder.EncodeString("Name")
+		encoder.EncodeString(p.Name)
+
+		encoder.EncodeString("Age")
+		encoder.EncodeInt(int64(p.Age))
+	}
+	return nil
+}
+
+func (p *people)Decode(d Coders.Decoder) error  {
+	switch d.Name() {
+	case "msgpack":
+		decoder := d.(*MsgPackDecoder)
+		maplen,_ := decoder.DecodeMapLen(CodeUnkonw)
+
+
+
+		if maplen == 3{
+			fmt.Println(decoder.DecodeString(CodeUnkonw))
+			b,_ := decoder.DecodeString(CodeUnkonw)
+			p.sex = string(b)
+
+			fmt.Println(decoder.DecodeString(CodeUnkonw))
+			b,_ = decoder.DecodeString(CodeUnkonw)
+			p.Name = string(b)
+
+
+			fmt.Println(decoder.DecodeString(CodeUnkonw))
+			v,_ := decoder.DecodeInt(CodeUnkonw)
+			p.Age = int(v)
+
+			fmt.Println(p)
+		}
+	}
+	return nil
+}
+
+func TestMsgPackCode_ValueCocer(t *testing.T)  {
+	b, err := Marshal(&people{sex: "男", Name: "DxSoft456456",Age:23})
+	if err != nil {
+		panic(err)
+	}
+
+	var v *people
+	err = Unmarshal(b, &v)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v", v)
+}
 
 func TestMsgpackCoder_Stand(t *testing.T)  {
 	myclass := new(classes)

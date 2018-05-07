@@ -19,6 +19,8 @@ import (
 	"bufio"
 	"os"
 	"time"
+	"github.com/suiyunonghen/DxValue/Coders"
+	"github.com/suiyunonghen/DxValue/Coders/DxMsgPack"
 )
 
 /******************************************************
@@ -663,6 +665,50 @@ func (r *DxRecord)SetRecordValue(keyName string,v *DxRecord) {
 	}else{
 		r.fRecords[keyName] = nil
 	}
+}
+
+//增加值编码器
+func (r *DxRecord) Encode(valuecoder Coders.Encoder) error{
+	//NewEncoder(file).EncodeRecord(r)
+	var err error
+	switch valuecoder.Name() {
+	case "msgpack":
+		if msgpacker,ok := valuecoder.(*DxMsgPackEncoder);ok{
+			return msgpacker.EncodeRecord(r)
+		}
+		encoder := valuecoder.(*DxMsgPack.MsgPackEncoder)
+		maplen := r.Length()
+		if maplen <= DxMsgPack.Max_fixmap_len{   //fixmap
+			err = encoder.WriteByte(0x80 | byte(maplen))
+		}else if maplen <= DxMsgPack.Max_map16_len{
+			//写入长度
+			err = encoder.WriteUint16(uint16(maplen),DxMsgPack.CodeMap16)
+		}else{
+			if maplen > DxMsgPack.Max_map32_len{
+				maplen = DxMsgPack.Max_map32_len
+			}
+			err = encoder.WriteUint32(uint32(maplen),DxMsgPack.CodeMap32)
+		}
+		if err != nil{
+			return err
+		}
+		//写入对象信息,Kv对
+		for k,v := range r.fRecords{
+			if err = encoder.EncodeString(k);err!=nil{
+				return err
+			}
+			if v != nil{
+				err = v.Encode(encoder)
+			}else{
+				err = encoder.WriteByte(0xc0) //null
+			}
+			if err!=nil{
+				return err
+			}
+		}
+	case "json":
+	}
+	return nil
 }
 
 func (r *DxRecord)SetBaseValue(keyName string,v *DxBaseValue)  {
