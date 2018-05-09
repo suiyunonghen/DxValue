@@ -31,3 +31,9 @@ func TestDxArray_SaveJsonFile(t *testing.T) {
 		}
 	}
 }
+
+func TestDxArray_Append(t *testing.T) {
+	arr := NewArray()
+	arr.Append(2,"@3423",23,"asdfasdf")
+	fmt.Println(arr.String())
+}

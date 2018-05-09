@@ -8,6 +8,8 @@ import (
 	"io"
 	"github.com/suiyunonghen/DxValue/Coders"
 	"encoding/binary"
+	"bytes"
+	"errors"
 )
 
 type  DxMsgPackDecoder  struct{
@@ -620,6 +622,35 @@ func (coder *DxMsgPackDecoder)Decode(v *DxBaseValue)(error)  {
 	return Coders.ErrValueType
 }
 
+func (dcoder *DxMsgPackDecoder)DecodeStand(v interface{})(error)  {
+	switch value := v.(type) {
+	case *DxRecord:
+		return dcoder.DecodeStrMap(DxMsgPack.CodeUnkonw,value)
+	case DxRecord:
+		return errors.New("must pointer value")
+	case *DxArray:
+		arrlen,err  := dcoder.DecodeArrayLen(DxMsgPack.CodeUnkonw)
+		if err !=nil{
+			return err
+		}
+		value.TruncateArray(arrlen)
+		for i := 0;i<arrlen;i++{
+			if err = dcoder.DecodeArrayElement(value,i);err!=nil{
+				return err
+			}
+		}
+		return nil
+	case DxArray:
+		return errors.New("must pointer value")
+	case *DxIntKeyRecord:
+		return dcoder.DecodeIntKeyMap(DxMsgPack.CodeUnkonw,value)
+	case DxIntKeyRecord:
+		return errors.New("must pointer value")
+	default:
+		return dcoder.MsgPackDecoder.DecodeStand(v)
+	}
+}
+
 func NewDecoder(r io.Reader)*DxMsgPackDecoder  {
 	var result DxMsgPackDecoder
 	result.ReSetReader(r)
@@ -819,9 +850,52 @@ func (encoder *DxMsgPackEncoder)EncodeArray(arr *DxArray)(err error)  {
 	return err
 }
 
+func (encoder *DxMsgPackEncoder)EncodeStand(v interface{})(error)  {
+	switch value := v.(type) {
+	case *DxRecord:
+		return encoder.EncodeRecord(value)
+	case DxRecord:
+		return encoder.EncodeRecord(&value)
+	case *DxArray:
+		return encoder.EncodeArray(value)
+	case DxArray:
+		return encoder.EncodeArray(&value)
+	case *DxIntKeyRecord:
+		return encoder.EncodeRecordIntKey(value)
+	case DxIntKeyRecord:
+		return encoder.EncodeRecordIntKey(&value)
+	default:
+		return encoder.MsgPackEncoder.EncodeStand(v)
+	}
+}
+
+
 func NewEncoder(w io.Writer) *DxMsgPackEncoder {
 	var result DxMsgPackEncoder
 	result.Buffer()
 	result.ReSet(w)
 	return &result
+}
+
+
+func Marshal(v...interface{})([]byte,error) {
+	var buf bytes.Buffer
+	coder := NewEncoder(&buf)
+	for _,value := range v{
+
+		if err := coder.EncodeStand(value);err!=nil{
+			return nil,err
+		}
+	}
+	return buf.Bytes(),nil
+}
+
+func Unmarshal(data []byte, v...interface{}) error {
+	coder := NewDecoder(bytes.NewReader(data))
+	for _,vdst := range v{
+		if err := coder.DecodeStand(vdst);err!=nil{
+			return err
+		}
+	}
+	return nil
 }

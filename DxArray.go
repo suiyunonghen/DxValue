@@ -739,6 +739,13 @@ func (arr *DxArray)SetBaseValue(idx int,v *DxBaseValue)  {
 	v.fParent = &arr.DxBaseValue
 }
 
+func (arr *DxArray)Append(value ...interface{})  {
+	arrlen := arr.Length()
+	for i := 0;i<len(value);i++{
+		arr.SetValue(i+arrlen,value[i])
+	}
+}
+
 func (arr *DxArray)SetValue(idx int,value interface{})  {
 	if idx < 0{
 		return

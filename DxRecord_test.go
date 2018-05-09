@@ -45,6 +45,20 @@ func TestDxRecord_SetRecordValue(t *testing.T) {
 	fmt.Println(vc.String())
 }
 
+func TestDxRecord_Masharl(t *testing.T)  {
+	vc := NewRecord()
+	arr := NewArray()
+	fmt.Println(arr)
+	vcc := vc.NewRecord("testc")
+	vcc.SetString("BB","Asdf")
+	bt,err := Marshal(vc)
+	if err == nil{
+		mr := NewRecord()
+		Unmarshal(bt,mr)
+		fmt.Println(mr.ToString())
+	}
+}
+
 func TestDxRecord_JsonParserFromByte(t *testing.T) {
 	buf, err := ioutil.ReadFile("DataProxy.config.json")
 	if err != nil {

@@ -173,8 +173,8 @@ func (v *DxBaseValue)Encode(valuecoder Coders.Encoder) (err error)  {
 		default:
 			return encoder.WriteByte(0xc0) //null
 		}
-		return nil
 	}
+	return nil
 }
 
 func (v *DxBaseValue)SetDateTime(t DxCommonLib.TDateTime)  {
