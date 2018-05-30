@@ -71,7 +71,7 @@ func (encoder *MsgPackEncoder)WriteUint64(u64 uint64,bytecode MsgPackCode)(err e
 
 func (encoder *MsgPackEncoder)EncodeString(str string)(err error)  {
 	strbt := DxCommonLib.FastString2Byte(str)
-	strlen := len(strbt)
+	strlen := uint(len(strbt))
 	switch {
 	case strlen <= Max_fixstr_len:
 		encoder.buf[0] = byte(CodeFixedStrLow) | byte(strlen)
@@ -113,7 +113,7 @@ func (encoder *MsgPackEncoder)encodeIntMapFunc(vmap *map[int]interface{})(err er
 	if vmap == nil{
 		return encoder.WriteByte(byte(CodeNil))
 	}
-	maplen := len(*vmap)
+	maplen := uint(len(*vmap))
 	if maplen <= Max_fixmap_len{   //fixmap
 		err = encoder.WriteByte(0x80 | byte(maplen))
 	}else if maplen <= Max_map16_len{
@@ -150,7 +150,7 @@ func (encoder *MsgPackEncoder)encodeInt64MapFunc(vmap *map[int64]interface{})(er
 	if vmap == nil{
 		return encoder.WriteByte(byte(CodeNil))
 	}
-	maplen := len(*vmap)
+	maplen := uint(len(*vmap))
 	if maplen <= Max_fixmap_len{   //fixmap
 		err = encoder.WriteByte(0x80 | byte(maplen))
 	}else if maplen <= Max_map16_len{
@@ -187,7 +187,7 @@ func (encoder *MsgPackEncoder)encodeStrMapFunc(vmap *map[string]interface{})(err
 	if vmap == nil{
 		return encoder.WriteByte(byte(CodeNil))
 	}
-	maplen := len(*vmap)
+	maplen := uint(len(*vmap))
 	if maplen <= Max_fixmap_len{   //fixmap
 		err = encoder.WriteByte(0x80 | byte(maplen))
 	}else if maplen <= Max_map16_len{
@@ -224,7 +224,7 @@ func (encoder *MsgPackEncoder)encodeStrStrMapFunc(vmap *map[string]string)(err e
 	if vmap == nil{
 		return encoder.WriteByte(byte(CodeNil))
 	}
-	maplen := len(*vmap)
+	maplen := uint(len(*vmap))
 	if maplen <= Max_fixmap_len{   //fixmap
 		err = encoder.WriteByte(0x80 | byte(maplen))
 	}else if maplen <= Max_map16_len{
@@ -254,9 +254,9 @@ func (encoder *MsgPackEncoder)encodeStrStrMapFunc(vmap *map[string]string)(err e
 }
 
 func (encoder *MsgPackEncoder)EncodeBinary(bt []byte)(err error) {
-	btlen := 0
+	btlen := uint(0)
 	if bt != nil{
-		btlen = len(bt)
+		btlen = uint(len(bt))
 	}
 	switch {
 	case btlen <= Max_str8_len:

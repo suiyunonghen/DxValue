@@ -104,7 +104,7 @@ func encodeStructValue(encoder Coders.Encoder, strct reflect.Value) error {
 }
 
 func encodeArrayValue(encoder Coders.Encoder,v reflect.Value)(err error)  {
-	arlen := v.Len()
+	arlen := uint(v.Len())
 	msgEncoder := encoder.(*MsgPackEncoder)
 	switch {
 	case arlen < 16: //1001XXXX|    N objects
@@ -120,8 +120,8 @@ func encodeArrayValue(encoder Coders.Encoder,v reflect.Value)(err error)  {
 	if err!=nil{
 		return
 	}
-	for i := 0;i< arlen;i++ {
-		av := v.Index(i)
+	for i := uint(0);i< arlen;i++ {
+		av := v.Index(int(i))
 		arrvalue := Coders.GetRealValue(&av)
 		if arrvalue == nil {
 			err = msgEncoder.WriteByte(byte(CodeNil))
@@ -168,7 +168,7 @@ func grow(b []byte, n int) []byte {
 }
 
 func encodeByteArrayValue(e Coders.Encoder, v reflect.Value)(err error) {
-	btlen := v.Len()
+	btlen := uint(v.Len())
 	encoder := e.(*MsgPackEncoder)
 	switch {
 	case btlen <= Max_str8_len:
@@ -188,12 +188,12 @@ func encodeByteArrayValue(e Coders.Encoder, v reflect.Value)(err error) {
 	}
 
 	if v.CanAddr() {
-		b := v.Slice(0, btlen).Bytes()
+		b := v.Slice(0, int(btlen)).Bytes()
 		_,err = encoder.w.Write(b)
 		return
 	}
 
-	encoder.buf = grow(encoder.buf, btlen)
+	encoder.buf = grow(encoder.buf, int(btlen))
 	reflect.Copy(reflect.ValueOf(encoder.buf), v)
 	_,err = encoder.w.Write(encoder.buf)
 	return
@@ -338,16 +338,17 @@ func encodeMapInt64InterfaceValue(e Coders.Encoder, v reflect.Value) error {
 }
 
 func (encoder *MsgPackEncoder)EncodeMapLen(maplen int)(err error){
-	if maplen <= Max_fixmap_len{   //fixmap
-		err = encoder.WriteByte(0x80 | byte(maplen))
-	}else if maplen <= Max_map16_len{
+	mpl := uint32(maplen)
+	if mpl <= Max_fixmap_len{   //fixmap
+		err = encoder.WriteByte(0x80 | byte(mpl))
+	}else if mpl <= Max_map16_len{
 		//写入长度
-		err = encoder.WriteUint16(uint16(maplen),CodeMap16)
+		err = encoder.WriteUint16(uint16(mpl),CodeMap16)
 	}else{
-		if maplen > Max_map32_len{
-			maplen = Max_map32_len
+		if mpl > Max_map32_len{
+			mpl = Max_map32_len
 		}
-		err = encoder.WriteUint32(uint32(maplen),CodeMap32)
+		err = encoder.WriteUint32(mpl,CodeMap32)
 	}
 	return
 }
@@ -412,22 +413,23 @@ func (coder *MsgPackEncoder)GetEncoderFunc(typ reflect.Type) Coders.EncoderFunc 
 }
 
 func (encoder *MsgPackEncoder)EncodeArrLen(arrLen int)(arlen int,err error)  {
+	arl := uint32(arlen)
 	switch {
-	case arrLen < 16: //1001XXXX|    N objects
-		err = encoder.WriteByte(byte(CodeFixedArrayLow) | byte(arrLen))
-	case arrLen <= Max_map16_len:  //0xdc  |YYYYYYYY|YYYYYYYY|    N objects
-		err = encoder.WriteUint16(uint16(arrLen),CodeArray16)
+	case arl < 16: //1001XXXX|    N objects
+		err = encoder.WriteByte(byte(CodeFixedArrayLow) | byte(arl))
+	case arl <= Max_map16_len:  //0xdc  |YYYYYYYY|YYYYYYYY|    N objects
+		err = encoder.WriteUint16(uint16(arl),CodeArray16)
 	default:
-		if arrLen > Max_map32_len{
-			arrLen = Max_map32_len
+		if arl > Max_map32_len{
+			arl = Max_map32_len
 		}
-		err = encoder.WriteUint32(uint32(arrLen),CodeArray32)
+		err = encoder.WriteUint32(arl,CodeArray32)
 	}
 	return arlen,err
 }
 
 func (encoder *MsgPackEncoder)encodeInterfaceArr(arr []interface{})(err error)  {
-	arlen := len(arr)
+	arlen := uint32(len(arr))
 	switch {
 	case arlen < 16: //1001XXXX|    N objects
 		err = encoder.WriteByte(byte(CodeFixedArrayLow) | byte(arlen))
@@ -442,7 +444,7 @@ func (encoder *MsgPackEncoder)encodeInterfaceArr(arr []interface{})(err error)  
 	if err!=nil{
 		return err
 	}
-	for i := 0;i <= arlen - 1;i++{
+	for i := uint32(0);i <= arlen - 1;i++{
 		if arr[i] == nil{
 			err = encoder.WriteByte(0xc0) //null
 		}else{
