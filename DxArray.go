@@ -1067,7 +1067,7 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(
 					return
 				}
 				arr.SetArray(idx,narr)
-				parserlen += 1
+				parserlen += 1+i
 				return
 			case '{':
 				rec := NewRecord()
@@ -1075,7 +1075,7 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(
 					return
 				}
 				arr.SetRecord(idx,rec)
-				parserlen += 1
+				parserlen += 1+i
 				return
 			case ',',']':
 				//bvalue := bytes.Trim(b[:i]," \r\n\t")

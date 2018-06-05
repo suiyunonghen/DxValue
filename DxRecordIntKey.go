@@ -1348,7 +1348,7 @@ func (r *DxIntKeyRecord)Delete(key int64)  {
 func (r *DxIntKeyRecord)Range(iteafunc func(key int64,value *DxBaseValue,params ...interface{})bool,params ...interface{}){
 	if r.fRecords != nil && iteafunc!=nil{
 		for k,v := range r.fRecords{
-			if !iteafunc(k,v,params){
+			if !iteafunc(k,v,params...){
 				return
 			}
 		}
@@ -1379,7 +1379,7 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 				if parserlen,err = rec.JsonParserFromByte(b[i:blen],ConvertEscape,structRest);err == nil{
 					r.SetRecordValue(key,&rec)
 				}
-				parserlen+=2 //会多解析一个{
+				parserlen+=i+1
 				return
 			case '[':
 				var arr DxArray
@@ -1387,7 +1387,7 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 				if parserlen,err = arr.JsonParserFromByte(b[i:],ConvertEscape,structRest);err == nil{
 					r.SetArray(key,&arr)
 				}
-				parserlen+=2
+				parserlen+=i+1
 				return
 			case ',','}':
 				//bvalue := bytes.Trim(b[valuestart + 1:i]," \r\n\t")

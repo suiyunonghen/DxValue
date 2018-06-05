@@ -1632,7 +1632,7 @@ func (r *DxRecord)Delete(key string)  {
 func (r *DxRecord)Range(iteafunc func(keyName string,value *DxBaseValue,params ...interface{})bool,params ...interface{}){
 	if r.fRecords != nil && iteafunc!=nil{
 		for k,v := range r.fRecords{
-			if !iteafunc(k,v,params){
+			if !iteafunc(k,v,params...){
 				return
 			}
 		}
@@ -1663,7 +1663,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 				if parserlen,err = rec.JsonParserFromByte(b[i:blen],ConvertEscape,structRest);err == nil{
 					r.SetRecordValue(keyName,&rec)
 				}
-				parserlen+=2 //会多解析一个{
+				parserlen+=i+1 //会多解析一个{
 				return
 			case '[':
 				var arr DxArray
@@ -1671,7 +1671,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 				if parserlen,err = arr.JsonParserFromByte(b[i:],ConvertEscape,structRest);err == nil{
 					r.SetArray(keyName,&arr)
 				}
-				parserlen+=2
+				parserlen+=i+1
 				return
 			case ',','}':
 				var bvalue []byte
@@ -1872,7 +1872,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 			objStart = true
 			keyStart = true
 		case '}':
-			if keyStart{
+			if keyStart && !objStart {
 				return i,ErrInvalidateJson
 			}
 			objStart = false
@@ -1907,6 +1907,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 			if objStart || keyStart{
 				return i,ErrInvalidateJson
 			}
+			objStart = false
 		case ']':
 			if keyStart || keyStart{
 				return i,ErrInvalidateJson
