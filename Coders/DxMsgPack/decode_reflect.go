@@ -12,7 +12,6 @@ import (
 var (
 	valueDecoders []Coders.DecoderFunc
 	ErrFiledNotSetable = errors.New("The Field not Setable")
-	errorType = reflect.TypeOf((*error)(nil)).Elem()
 	ErrStructKey = errors.New("Struct Can only use String Key")
 )
 

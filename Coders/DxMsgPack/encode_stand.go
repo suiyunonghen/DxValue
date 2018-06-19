@@ -88,7 +88,7 @@ func encodeStructValue(encoder Coders.Encoder, strct reflect.Value) error {
 	if err != nil {
 		return err
 	}
-	for i:=0;i<structFields.Len("");i++{
+	for i:=0;i<mapLen;i++{
 		f := structFields.Field(i)
 		MarshName := f.MarshalName(msgPackName)
 		if MarshName != "-" {
@@ -96,7 +96,10 @@ func encodeStructValue(encoder Coders.Encoder, strct reflect.Value) error {
 			if err!=nil{
 				return err
 			}
-			f.EncodeValue(encoder,strct)
+			err = f.EncodeValue(encoder,strct)
+			if err != nil{
+				return err
+			}
 		}
 	}
 
@@ -356,7 +359,7 @@ func (encoder *MsgPackEncoder)EncodeMapLen(maplen int)(err error){
 func (coder *MsgPackEncoder)GetEncoderFunc(typ reflect.Type) Coders.EncoderFunc {
 	kind := typ.Kind()
 
-	if typ == errorType {
+	if typ == Coders.ErrorType {
 		return encodeErrorValue
 	}
 
@@ -599,7 +602,7 @@ func (encoder *MsgPackEncoder)EncodeStand(v interface{})(error)  {
 			if err != nil {
 				return err
 			}
-			for i:=0;i<structFields.Len("");i++{
+			for i:=0;i<mapLen;i++{
 				f := structFields.Field(i)
 				MarshName := f.MarshalName(msgPackName)
 				if MarshName != "-" {
