@@ -136,8 +136,14 @@ func encodeInterfaceValue(encoder Coders.Encoder, v reflect.Value) error {
 func encodeArrayValue(encoder Coders.Encoder,v reflect.Value)(err error)  {
 	arlen := uint(v.Len())
 	jsonEncoder := encoder.(*JsonEncoder)
+	IsFirst := true
 	jsonEncoder.StartArray()
 	for i := uint(0);i< arlen;i++ {
+		if IsFirst{
+			IsFirst = false
+		}else{
+			jsonEncoder.w.WriteByte(',')
+		}
 		av := v.Index(int(i))
 		arrvalue := Coders.GetRealValue(&av)
 		if arrvalue == nil {
@@ -671,10 +677,10 @@ func NewEncoder(w io.Writer) *JsonEncoder {
 }
 
 func Marshal(v interface{})([]byte,error) {
-	var buf bytes.Buffer
-	coder := NewEncoder(&buf)
+	var buffer bytes.Buffer
+	coder := NewEncoder(&buffer)
 	if err := coder.EncodeStand(v);err!=nil{
 		return nil,err
 	}
-	return buf.Bytes(),nil
+	return buffer.Bytes(),nil
 }
