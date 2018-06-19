@@ -159,7 +159,7 @@ func encodeArrayValue(encoder Coders.Encoder,v reflect.Value)(err error)  {
 			return
 		}
 	}
-	return jsonEncoder.EndObject()
+	return jsonEncoder.EndArray()
 }
 
 func encodeSliceValue(encoder Coders.Encoder,v reflect.Value)(err error)  {
@@ -677,10 +677,10 @@ func NewEncoder(w io.Writer) *JsonEncoder {
 }
 
 func Marshal(v interface{})([]byte,error) {
-	var buffer bytes.Buffer
-	coder := NewEncoder(&buffer)
+	var buf bytes.Buffer
+	coder := NewEncoder(&buf)
 	if err := coder.EncodeStand(v);err!=nil{
 		return nil,err
 	}
-	return buffer.Bytes(),nil
+	return buf.Bytes(),nil
 }
