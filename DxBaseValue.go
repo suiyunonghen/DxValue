@@ -577,9 +577,9 @@ func (v *DxExtValue)Encode(valuecoder Coders.Encoder) error{
 			return msgpacker.EncodeExtValue(v)
 		}
 		encoder := valuecoder.(*DxMsgPack.MsgPackEncoder)
-		btlen := 0
+		btlen := uint(0)
 		bt := v.ExtData()
-		btlen = len(bt)
+		btlen = uint(len(bt))
 		buf := encoder.Buffer()
 		buf[1] = v.ExtType()
 		switch {

@@ -736,7 +736,7 @@ func (r *DxRecord) Encode(valuecoder Coders.Encoder) error{
 			return msgpacker.EncodeRecord(r)
 		}
 		encoder := valuecoder.(*DxMsgPack.MsgPackEncoder)
-		maplen := r.Length()
+		maplen := uint(r.Length())
 		if maplen <= DxMsgPack.Max_fixmap_len{   //fixmap
 			err = encoder.WriteByte(0x80 | byte(maplen))
 		}else if maplen <= DxMsgPack.Max_map16_len{

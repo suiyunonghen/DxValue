@@ -1281,7 +1281,7 @@ func (arr *DxArray)Encode(valuecoder Coders.Encoder) error{
 			return msgpacker.EncodeArray(arr)
 		}
 		encoder := valuecoder.(*DxMsgPack.MsgPackEncoder)
-		arlen := arr.Length()
+		arlen := uint(arr.Length())
 		switch {
 		case arlen < 16: //1001XXXX|    N objects
 			err = encoder.WriteByte(byte(DxMsgPack.CodeFixedArrayLow) | byte(arlen))
@@ -1294,8 +1294,8 @@ func (arr *DxArray)Encode(valuecoder Coders.Encoder) error{
 			encoder.WriteUint32(uint32(arlen),DxMsgPack.CodeArray32)
 		}
 
-		for i := 0;i <= arlen - 1;i++{
-			vbase := arr.AsBaseValue(i)
+		for i := uint(0);i <= arlen - 1;i++{
+			vbase := arr.AsBaseValue(int(i))
 			if vbase == nil{
 				err = encoder.WriteByte(0xc0) //null
 			}else{

@@ -665,9 +665,9 @@ type  DxMsgPackEncoder struct{
 
 
 func (encoder *DxMsgPackEncoder)EncodeExtValue(v *DxExtValue)(err error)  {
-	btlen := 0
+	btlen := uint(0)
 	bt := v.ExtData()
-	btlen = len(bt)
+	btlen = uint(len(bt))
 	buf := encoder.Buffer()
 	buf[1] = v.ExtType()
 	switch {
@@ -713,7 +713,7 @@ func (encoder *DxMsgPackEncoder)EncodeExtValue(v *DxExtValue)(err error)  {
 
 
 func (encoder *DxMsgPackEncoder)EncodeRecord(r *DxRecord)(err error)  {
-	maplen := r.Length()
+	maplen := uint(r.Length())
 	if maplen <= DxMsgPack.Max_fixmap_len{   //fixmap
 		err = encoder.WriteByte(0x80 | byte(maplen))
 	}else if maplen <= DxMsgPack.Max_map16_len{
@@ -749,7 +749,7 @@ func (encoder *DxMsgPackEncoder)EncodeRecord(r *DxRecord)(err error)  {
 
 
 func (encoder *DxMsgPackEncoder)EncodeRecordIntKey(r *DxIntKeyRecord)(err error)  {
-	maplen := r.Length()
+	maplen := uint(r.Length())
 	if maplen <= DxMsgPack.Max_fixmap_len{   //fixmap
 		err = encoder.WriteByte(0x80 | byte(maplen))
 	}else if maplen <= DxMsgPack.Max_map16_len{
@@ -823,7 +823,7 @@ func (encoder *DxMsgPackEncoder)Encode(v *DxBaseValue)(err error)  {
 
 
 func (encoder *DxMsgPackEncoder)EncodeArray(arr *DxArray)(err error)  {
-	arlen := arr.Length()
+	arlen := uint(arr.Length())
 	switch {
 	case arlen < 16: //1001XXXX|    N objects
 		err = encoder.WriteByte(byte(DxMsgPack.CodeFixedArrayLow) | byte(arlen))
@@ -836,7 +836,7 @@ func (encoder *DxMsgPackEncoder)EncodeArray(arr *DxArray)(err error)  {
 		encoder.WriteUint32(uint32(arlen),DxMsgPack.CodeArray32)
 	}
 
-	for i := 0;i <= arlen - 1;i++{
+	for i := 0;i <= int(arlen - 1);i++{
 		vbase := arr.AsBaseValue(i)
 		if vbase == nil{
 			err = encoder.WriteByte(0xc0) //null
