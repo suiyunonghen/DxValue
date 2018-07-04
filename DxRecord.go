@@ -251,7 +251,6 @@ func (r *DxRecord)SetInt64(KeyName string,v int64)  {
 				(*DxInt32Value)(unsafe.Pointer(value)).fvalue = int32(v)
 				return
 			}
-			return
 		case DVT_Int64:
 			(*DxInt64Value)(unsafe.Pointer(value)).fvalue = v
 			return
