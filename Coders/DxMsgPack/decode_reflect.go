@@ -413,7 +413,7 @@ func (coder *MsgPackDecoder) interfaceValue(v reflect.Value) error {
 		return err
 	}
 	if vv != nil {
-		if v.Type() == errorType {
+		if v.Type() == Coders.ErrorType {
 			if vv, ok := vv.(string); ok {
 				v.Set(reflect.ValueOf(errors.New(vv)))
 				return nil

@@ -22,7 +22,9 @@ func TestJsonEncoder_EncodeStand(t *testing.T) {
 	g.TG[1] = 234
 	g.TG[2] = true
 	g.TG[3] = "TG3"
-	encoder.EncodeStand(g)
+	for i := 0;i<1;i++{
+		encoder.EncodeStand(g)
+	}
 	fmt.Println(string(buffer.Bytes()))
 }
 
