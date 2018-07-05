@@ -39,7 +39,7 @@ func (r *DxIntKeyRecord)ClearValue(clearInner bool)  {
 	if r.fRecords != nil{
 		for _,v := range r.fRecords{
 			if v != nil{
-				v.ClearValue(clearInner)
+				v.ClearValue(true)
 				v.fParent = nil
 			}
 		}
@@ -709,6 +709,13 @@ func (r *DxIntKeyRecord)AsInt32(key int64,defavalue int32)int32  {
 			}
 		case DVT_Double,DVT_DateTime:return int32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int32((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_String:
+			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
+			if err != nil{
+				panic(err)
+			}else{
+				return int32(v)
+			}
 		default:
 			panic("can not convert Type to int32")
 		}
@@ -800,6 +807,13 @@ func (r *DxIntKeyRecord)AsInt(key int64,defavalue int)int  {
 			}
 		case DVT_Double,DVT_DateTime:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_String:
+			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
+			if err != nil{
+				panic(err)
+			}else{
+				return int(v)
+			}
 		default:
 			panic("can not convert Type to int")
 		}
@@ -856,6 +870,13 @@ func (r *DxIntKeyRecord)AsInt64(key int64,defavalue int64)int64  {
 			}
 		case DVT_Double,DVT_DateTime:return int64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+		case DVT_String:
+			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
+			if err != nil{
+				panic(err)
+			}else{
+				return v
+			}
 		default:
 			panic("can not convert Type to int64")
 		}
@@ -907,6 +928,8 @@ func (r *DxIntKeyRecord)AsBool(key int64,defavalue bool)bool  {
 		case DVT_Bool: return bool((*DxBoolValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Double,DVT_DateTime:return float64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue) != 0
 		case DVT_Float:return float32((*DxFloatValue)(unsafe.Pointer(value)).fvalue) != 0
+		case DVT_String:
+			return strings.ToUpper((*DxStringValue)(unsafe.Pointer(value)).fvalue) == "TRUE"
 		default:
 			panic("can not convert Type to Bool")
 		}
