@@ -415,8 +415,9 @@ func (coder *MsgPackEncoder)GetEncoderFunc(typ reflect.Type) Coders.EncoderFunc 
 	return result
 }
 
-func (encoder *MsgPackEncoder)EncodeArrLen(arrLen int)(arlen int,err error)  {
-	arl := uint32(arlen)
+func (encoder *MsgPackEncoder)EncodeArrLen(arrLen int)(int,error)  {
+	var err error
+	arl := uint32(arrLen)
 	switch {
 	case arl < 16: //1001XXXX|    N objects
 		err = encoder.WriteByte(byte(CodeFixedArrayLow) | byte(arl))
@@ -428,7 +429,7 @@ func (encoder *MsgPackEncoder)EncodeArrLen(arrLen int)(arlen int,err error)  {
 		}
 		err = encoder.WriteUint32(arl,CodeArray32)
 	}
-	return arlen,err
+	return arrLen,err
 }
 
 func (encoder *MsgPackEncoder)encodeInterfaceArr(arr []interface{})(err error)  {
