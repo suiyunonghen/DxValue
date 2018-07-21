@@ -185,6 +185,23 @@ func (coder *MsgPackDecoder)DecodeDateTime_Go(code MsgPackCode)(time.Time,error)
 	return time.Time{},Coders.ErrValueType
 }
 
+func (coder *MsgPackDecoder)DecodeBool(code MsgPackCode)(bool,error)  {
+	var err error
+	if code == CodeUnkonw{
+		if code,err = coder.ReadCode();err!=nil{
+			return false,err
+		}
+	}
+	switch code {
+	case CodeTrue:
+		return true,nil
+	case CodeFalse:
+		return false,nil
+	default:
+		return false,errors.New("invalidate Bool type")
+	}
+}
+
 func (coder *MsgPackDecoder)DecodeInt(code MsgPackCode)(int64,error)  {
 	var err error
 	if code == CodeUnkonw{

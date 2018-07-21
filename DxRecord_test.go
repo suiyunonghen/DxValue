@@ -119,6 +119,19 @@ func TestDxRecord_AsArray(t *testing.T) {
 	}
 }
 
+
+func TestEscapStr(t *testing.T){
+	stb := []byte(`{"id":"001", "data":"$GPGGA,093805.00,2255.48843,N,\"11401.10693,E,1,23,0.6,10.527,M,0.000,M,0.0,0001*49"}`)
+	rec := NewRecord()
+	rec.JsonParserFromByte(stb,true,false)
+	fmt.Println(rec.String())
+
+ 	fmt.Println(DxCommonLib.EscapeJsonStr(`测试"fasdf""`))
+
+	fmt.Println(DxCommonLib.ParserEscapeStr([]byte(`\u6D4B\u8BD5\"fasdf\"\"`)))
+
+}
+
 func TestDxValue_JsonParserFromByte(t *testing.T) {
 	var v DxValue
 	buf, err := ioutil.ReadFile("DataProxy.config.json")

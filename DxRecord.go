@@ -1730,7 +1730,17 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 				return i,nil
 			case '"': //string
 				plen := bytes.IndexByte(b[i+1:blen],'"')
+				//还需要判断一下前一个字符，防止\"转义
 				if plen > -1{
+					for{
+						if b[i+plen]=='\\'{
+							oldp := i+plen
+							plen = bytes.IndexByte(b[i+plen+2:blen],'"')
+							if plen < 0{
+								return oldp,ErrInvalidateJson
+							}
+						}else{break}
+					}
 					bvalue := b[i+1:plen+i+1]
 					st := ""
 					if ConvertEscape{
