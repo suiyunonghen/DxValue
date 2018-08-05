@@ -92,7 +92,7 @@ func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 	rec.fValueType = DVT_Record
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	rec.fParent = &arr.DxBaseValue
-	arr.fValues = append(arr.fValues,&rec.DxBaseValue)
+	arr.fValues[idx] = &rec.DxBaseValue
 	return
 }
 
@@ -118,7 +118,7 @@ func (arr *DxArray)NewIntRecord(idx int)(rec *DxIntKeyRecord)   {
 	rec.fValueType = DVT_RecordIntKey
 	rec.fRecords = make(map[int64]*DxBaseValue,32)
 	rec.fParent = &arr.DxBaseValue
-	arr.fValues = append(arr.fValues,&rec.DxBaseValue)
+	arr.fValues[idx] = &rec.DxBaseValue
 	return
 }
 
@@ -143,7 +143,7 @@ func (arr *DxArray)NewArray(idx int)(ararr *DxArray)  {
 	ararr = new(DxArray)
 	ararr.fValueType = DVT_Array
 	ararr.fParent = &arr.DxBaseValue
-	arr.fValues = append(arr.fValues,&ararr.DxBaseValue)
+	arr.fValues[idx] = &ararr.DxBaseValue
 	return
 }
 
