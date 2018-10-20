@@ -89,6 +89,7 @@ func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 		arr.fValues[idx].ClearValue(true)
 	}
 	rec = new(DxRecord)
+	rec.PathSplitChar = '.'
 	rec.fValueType = DVT_Record
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	rec.fParent = &arr.DxBaseValue
@@ -115,6 +116,7 @@ func (arr *DxArray)NewIntRecord(idx int)(rec *DxIntKeyRecord)   {
 		arr.fValues[idx].ClearValue(true)
 	}
 	rec = new(DxIntKeyRecord)
+	rec.PathSplitChar = '.'
 	rec.fValueType = DVT_RecordIntKey
 	rec.fRecords = make(map[int64]*DxBaseValue,32)
 	rec.fParent = &arr.DxBaseValue
