@@ -64,6 +64,9 @@ func (r *DxIntKeyRecord)getSize() int {
 }
 
 func (r *DxIntKeyRecord)splitPathFields(charrune rune) bool {
+	if r.PathSplitChar == 0{
+		r.PathSplitChar = DefaultPathSplit
+	}
 	return charrune == rune(r.PathSplitChar)
 }
 
@@ -1698,7 +1701,7 @@ func (r *DxIntKeyRecord) Encode(valuecoder Coders.Encoder) error{
 
 func NewIntKeyRecord()*DxIntKeyRecord  {
 	result := new(DxIntKeyRecord)
-	result.PathSplitChar = '.'
+	result.PathSplitChar = DefaultPathSplit
 	result.fValueType = DVT_RecordIntKey
 	result.fRecords = make(map[int64]*DxBaseValue,32)
 	return result

@@ -11,6 +11,10 @@ import (
 	"github.com/suiyunonghen/DxValue/Coders"
 )
 
+
+var(
+	DefaultPathSplit byte = '.'
+)
 /******************************************************
 *  DxValue
 ******************************************************/

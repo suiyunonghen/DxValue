@@ -52,6 +52,9 @@ func (r *DxRecord)ClearValue(clearInner bool)  {
 }
 
 func (r *DxRecord)splitPathFields(charrune rune) bool {
+	if r.PathSplitChar == 0{
+		r.PathSplitChar = DefaultPathSplit
+	}
 	return charrune == rune(r.PathSplitChar)
 }
 
@@ -1954,7 +1957,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 
 func NewRecord()*DxRecord  {
 	result := new(DxRecord)
-	result.PathSplitChar = '.'
+	result.PathSplitChar = DefaultPathSplit
 	result.fValueType = DVT_Record
 	result.fRecords = make(map[string]*DxBaseValue,32)
 	return result
