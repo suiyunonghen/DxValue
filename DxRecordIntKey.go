@@ -339,29 +339,60 @@ func (r *DxIntKeyRecord)AsBytes(key int64)[]byte  {
 func (r *DxIntKeyRecord)Bytes()[]byte  {
 	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
-	isFirst := true
-	for k,v := range r.fRecords{
-		if !isFirst{
-			buffer.WriteString(`,"`)
-		}else{
-			isFirst = false
-			buffer.WriteByte('"')
+	if r.SortedKey{
+		keys := make([]int64,len(r.fRecords))
+		idx := 0
+		for k,_ := range r.fRecords{
+			keys[idx] = k
+			idx++
 		}
-		buffer.WriteString(strconv.Itoa(int(k)))
-		buffer.WriteString(`":`)
-		if v != nil{
-			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary{
+		for i := 0;i<idx;i++{
+			if i == 0{
+				buffer.WriteByte('"')
+			}else{
+				buffer.WriteString(`,"`)
+			}
+			buffer.WriteString(strconv.Itoa(int(keys[i])))
+			buffer.WriteString(`":`)
+			if v != nil{
+				vt := v.fValueType
+				if vt == DVT_String || vt == DVT_Binary{
+					buffer.WriteByte('"')
+				}
+				buffer.WriteString(v.ToString())
+				if vt == DVT_String || vt == DVT_Binary{
+					buffer.WriteByte('"')
+				}
+			}else{
+				buffer.WriteString("null")
+			}
+		}
+	}else{
+		isFirst := true
+		for k,v := range r.fRecords{
+			if !isFirst{
+				buffer.WriteString(`,"`)
+			}else{
+				isFirst = false
 				buffer.WriteByte('"')
 			}
-			buffer.WriteString(v.ToString())
-			if vt == DVT_String || vt == DVT_Binary{
-				buffer.WriteByte('"')
+			buffer.WriteString(strconv.Itoa(int(k)))
+			buffer.WriteString(`":`)
+			if v != nil{
+				vt := v.fValueType
+				if vt == DVT_String || vt == DVT_Binary{
+					buffer.WriteByte('"')
+				}
+				buffer.WriteString(v.ToString())
+				if vt == DVT_String || vt == DVT_Binary{
+					buffer.WriteByte('"')
+				}
+			}else{
+				buffer.WriteString("null")
 			}
-		}else{
-			buffer.WriteString("null")
 		}
 	}
+
 	buffer.WriteByte('}')
 	return buffer.Bytes()
 }

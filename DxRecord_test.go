@@ -159,14 +159,15 @@ func TestDxRecord_SaveJsonFile(t *testing.T) {
 	rec.SetString("Name","suiyunonghen")
 	rec.SetValue("Home",map[string]interface{}{
 		"Addres": "湖北武汉",
-		"code":"430000",
+		"Code":"430000",
 		"Peoples":4,
 	})
 	rec.SetDouble("Double",234234234.4564564)
 	rec.SetFloat("Float",-34.534)
 	rec.SetValue("Now",time.Now())
 	//rec.SaveJsonFile("d:\\testJson.json",true)
-	rec.SaveMsgPackFile("d:\\msgpack.bin")
+	//rec.SaveMsgPackFile("d:\\msgpack.bin")
+	fmt.Println(rec.ToString())
 }
 
 func TestMsgPackDecode(t *testing.T)  {
