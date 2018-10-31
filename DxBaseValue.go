@@ -131,6 +131,32 @@ func (v DxBaseValue)ValueType()DxValueType  {
 	return v.fValueType
 }
 
+func (v *DxBaseValue)Root()*DxBaseValue  {
+	lastp := v
+	p := v.fParent
+	for {
+		if p!=nil{
+			lastp = p
+			p = p.fParent
+		}else{
+			return lastp
+		}
+	}
+}
+
+func (v *DxBaseValue)NearestRecord()*DxBaseRecord  {
+	p := v.fParent
+	for {
+		if p!=nil{
+			if p.fValueType == DVT_Record || p.fValueType == DVT_RecordIntKey{
+				return (*DxBaseRecord)(unsafe.Pointer(p))
+			}
+			p = p.fParent
+		}
+	}
+	return nil
+}
+
 func (v *DxBaseValue)Encode(valuecoder Coders.Encoder) (err error)  {
 	switch valuecoder.Name() {
 	case "msgpack":

@@ -7,6 +7,7 @@ QQ:75492895
 package DxValue
 
 import (
+	"sort"
 	"unsafe"
 	"bytes"
 	"reflect"
@@ -27,10 +28,14 @@ import (
 *  DxRecord
 ******************************************************/
 type(
-	DxRecord		struct{
+	DxBaseRecord struct {
 		DxBaseValue
-		fRecords		map[string]*DxBaseValue
 		PathSplitChar	byte
+		SortedKey		bool
+	}
+	DxRecord		struct{
+		DxBaseRecord
+		fRecords		map[string]*DxBaseValue
 	}
 )
 
@@ -76,6 +81,7 @@ func (r *DxRecord)NewRecord(keyName string)(rec *DxRecord)  {
 		if value.fValueType == DVT_Record{
 			rec = (*DxRecord)(unsafe.Pointer(value))
 			rec.ClearValue(false)
+			rec.SortedKey = r.SortedKey
 			rec.fParent = &r.DxBaseValue
 			return
 		}
@@ -83,6 +89,7 @@ func (r *DxRecord)NewRecord(keyName string)(rec *DxRecord)  {
 	}
 	rec = new(DxRecord)
 	rec.fValueType = DVT_Record
+	rec.SortedKey = r.SortedKey
 	rec.PathSplitChar = r.PathSplitChar
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	r.fRecords[keyName] = &rec.DxBaseValue
@@ -106,6 +113,7 @@ func (r *DxRecord)NewIntRecord(keyName string)(rec *DxIntKeyRecord)  {
 	rec = new(DxIntKeyRecord)
 	rec.fValueType = DVT_RecordIntKey
 	rec.PathSplitChar = r.PathSplitChar
+	rec.SortedKey = r.SortedKey
 	rec.fRecords = make(map[int64]*DxBaseValue,32)
 	r.fRecords[keyName] = &rec.DxBaseValue
 	rec.fParent = &r.DxBaseValue
@@ -576,33 +584,72 @@ func (r *DxRecord)Bytes()[]byte  {
 	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
 	isFirst := true
-	for k,v := range r.fRecords{
-		if !isFirst{
-			buffer.WriteString(`,"`)
-		}else{
-			isFirst = false
-			buffer.WriteByte('"')
-		}
-		buffer.WriteString(k)
-		buffer.WriteString(`":`)
-		if v != nil{
-			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
-				buffer.WriteByte('"')
-			}
-			if vt == DVT_DateTime{
-				buffer.WriteString("/Date(")
-				buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
-				buffer.WriteString(")/")
+	if !r.SortedKey{
+		for k,v := range r.fRecords{
+			if !isFirst{
+				buffer.WriteString(`,"`)
 			}else{
-				buffer.WriteString(v.ToString())
-			}
-
-			if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
+				isFirst = false
 				buffer.WriteByte('"')
 			}
-		}else{
-			buffer.WriteString("null")
+			buffer.WriteString(k)
+			buffer.WriteString(`":`)
+			if v != nil{
+				vt := v.fValueType
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
+					buffer.WriteByte('"')
+				}
+				if vt == DVT_DateTime{
+					buffer.WriteString("/Date(")
+					buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
+					buffer.WriteString(")/")
+				}else{
+					buffer.WriteString(v.ToString())
+				}
+
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
+					buffer.WriteByte('"')
+				}
+			}else{
+				buffer.WriteString("null")
+			}
+		}
+	}else{
+		keys := make([]string,len(r.fRecords))
+		idx := 0
+		for k,_ := range r.fRecords{
+			keys[idx] = k
+			idx++
+		}
+		sort.Strings(keys)
+		for i := 0;i<idx;i++{
+			if i!=0{
+				buffer.WriteString(`,"`)
+			}else{
+				buffer.WriteByte('"')
+			}
+			v := r.fRecords[keys[i]]
+			buffer.WriteString(keys[i])
+			buffer.WriteString(`":`)
+			if v != nil{
+				vt := v.fValueType
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
+					buffer.WriteByte('"')
+				}
+				if vt == DVT_DateTime{
+					buffer.WriteString("/Date(")
+					buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
+					buffer.WriteString(")/")
+				}else{
+					buffer.WriteString(v.ToString())
+				}
+
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
+					buffer.WriteByte('"')
+				}
+			}else{
+				buffer.WriteString("null")
+			}
 		}
 	}
 	buffer.WriteByte('}')
@@ -711,6 +758,8 @@ func (r *DxRecord)SetRecordValue(keyName string,v *DxRecord) {
 	}
 	if v != nil {
 		r.fRecords[keyName] = &v.DxBaseValue
+		v.PathSplitChar = r.PathSplitChar
+		v.SortedKey = r.SortedKey
 		v.fParent = &r.DxBaseValue
 	}else{
 		r.fRecords[keyName] = nil
@@ -1683,6 +1732,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 			case '{':
 				var rec DxRecord
 				rec.PathSplitChar = r.PathSplitChar
+				rec.SortedKey = r.SortedKey
 				rec.fValueType = DVT_Record
 				rec.fRecords = make(map[string]*DxBaseValue,32)
 				if parserlen,err = rec.JsonParserFromByte(b[i:blen],ConvertEscape,structRest);err == nil{
@@ -1944,7 +1994,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 			}
 			objStart = false
 		case ']':
-			if keyStart || keyStart{
+			if keyStart{
 				return i,ErrInvalidateJson
 			}
 		default:
@@ -1955,8 +2005,9 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 	return btlen,ErrInvalidateJson
 }
 
-func NewRecord()*DxRecord  {
+func NewRecord(sortkey bool)*DxRecord  {
 	result := new(DxRecord)
+	result.SortedKey = sortkey
 	result.PathSplitChar = DefaultPathSplit
 	result.fValueType = DVT_Record
 	result.fRecords = make(map[string]*DxBaseValue,32)

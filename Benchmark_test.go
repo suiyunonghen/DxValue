@@ -35,7 +35,7 @@ func BenchmarkDxRecord_JsonParserFromByte(b *testing.B) {
 		fmt.Println("ReadFile Err:",err)
 		return
 	}
-	rc := NewRecord()
+	rc := NewRecord(true)
 	for i := 0;i<b.N;i++{
 		_,err := rc.JsonParserFromByte(buf,false,false)
 		if err != nil{

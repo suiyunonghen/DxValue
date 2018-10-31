@@ -35,25 +35,25 @@ func Test_Record(t *testing.T)  {
 }
 
 func TestDxRecord_SetRecordValue(t *testing.T) {
-	vc := NewRecord()
+	vc := NewRecord(true)
 	vcc := vc.NewRecord("testc")
 	vcc.SetString("BB","Asdf")
 	fmt.Println(vc.String())
-	mb := NewRecord()
+	mb := NewRecord(true)
 	mb.SetInt("gg",123)
 	vc.SetRecordValue("testc",mb)
 	fmt.Println(vc.String())
 }
 
 func TestDxRecord_Masharl(t *testing.T)  {
-	vc := NewRecord()
+	vc := NewRecord(true)
 	arr := NewArray()
 	fmt.Println(arr)
 	vcc := vc.NewRecord("testc")
 	vcc.SetString("BB","Asdf")
 	bt,err := Marshal(vc)
 	if err == nil{
-		mr := NewRecord()
+		mr := NewRecord(true)
 		Unmarshal(bt,mr)
 		fmt.Println(mr.ToString())
 	}
@@ -65,7 +65,7 @@ func TestDxRecord_JsonParserFromByte(t *testing.T) {
 		fmt.Println("ReadFile Err:",err)
 		return
 	}
-	rc := NewRecord()
+	rc := NewRecord(true)
 	_,err = rc.JsonParserFromByte(buf,true,false)
 	if err != nil{
 		fmt.Println("Parser Error: ",err)
@@ -85,7 +85,7 @@ func TestParserTime(t *testing.T)  {
 
 
 func TestDxRecord_AsBool(t *testing.T) {
-	rc := NewRecord()
+	rc := NewRecord(true)
 	rc.JsonParserFromByte([]byte(`{"BoolValue":  true  ,"object":{"objBool":  false  }}`),false,false)
 	fmt.Println("BoolValue=",rc.AsBool("BoolValue",false))
 	fmt.Println("object.objBool=",rc.AsBoolByPath("object.objBool",true))
@@ -97,7 +97,7 @@ func TestDxRecord_AsArray(t *testing.T) {
 		fmt.Println("ReadFile Err:",err)
 		return
 	}
-	rc := NewRecord()
+	rc := NewRecord(true)
 	_,err = rc.JsonParserFromByte(buf,true,false)
 	if err != nil{
 		fmt.Println("Parser Error: ",err)
@@ -122,7 +122,7 @@ func TestDxRecord_AsArray(t *testing.T) {
 
 func TestEscapStr(t *testing.T){
 	stb := []byte(`{"id":"001", "data":"$GPGGA,093805.00,2255.48843,N,\"11401.10693,E,1,23,0.6,10.527,M,0.000,M,0.0,0001*49"}`)
-	rec := NewRecord()
+	rec := NewRecord(true)
 	rec.JsonParserFromByte(stb,true,false)
 	fmt.Println(rec.String())
 
@@ -154,7 +154,7 @@ func TestDxValue_JsonParserFromByte(t *testing.T) {
 
 
 func TestDxRecord_SaveJsonFile(t *testing.T) {
-	rec := NewRecord()
+	rec := NewRecord(true)
 	rec.SetInt("Age",-12)
 	rec.SetString("Name","suiyunonghen")
 	rec.SetValue("Home",map[string]interface{}{
@@ -176,7 +176,7 @@ func TestMsgPackDecode(t *testing.T)  {
 		return
 	}
 	coder := NewDecoder(bytes.NewReader(bt))
-	rec := NewRecord()
+	rec := NewRecord(true)
 	if err := coder.Decode(&rec.DxBaseValue);err!=nil{
 		fmt.Println("Error；",err)
 	}
@@ -184,7 +184,7 @@ func TestMsgPackDecode(t *testing.T)  {
 }
 
 func TestDxRecord_LoadMsgPackFile(t *testing.T) {
-	rec := NewRecord()
+	rec := NewRecord(true)
 	if err := rec.LoadMsgPackFile("test.Msgpack");err!=nil{
 		fmt.Println("Error；",err)
 	}else{
@@ -194,7 +194,7 @@ func TestDxRecord_LoadMsgPackFile(t *testing.T) {
 
 
 func TestDxRecord_AsString(t *testing.T) {
-	rc := NewRecord()
+	rc := NewRecord(true)
 	rc.JsonParserFromByte([]byte(`{"StringValue":   "String    3"  ,  "object":  {"objStr":"  ObjStr1  ",  "ObjName"  :  "   I  nnerObje  ct  "}}`),false,false)
 	fmt.Println("StringValue=",rc.AsString("StringValue",""))
 	fmt.Println("object.objStr=",rc.AsStringByPath("object.objStr",""))
@@ -202,8 +202,8 @@ func TestDxRecord_AsString(t *testing.T) {
 }
 
 func TestDxRecord_SetIntRecordValue(t *testing.T) {
-	rc := NewRecord()
-	inarc := NewIntKeyRecord()
+	rc := NewRecord(true)
+	inarc := NewIntKeyRecord(true)
 	inarc.SetInt(2,23)
 	inarc.SetValue(23,"DxSoft")
 	rc.SetIntRecordValue("IntRecord",inarc)

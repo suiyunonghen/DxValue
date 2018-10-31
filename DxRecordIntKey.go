@@ -28,9 +28,8 @@ import (
 ******************************************************/
 type(
 	DxIntKeyRecord		struct{
-		DxBaseValue
+		DxBaseRecord
 		fRecords		map[int64]*DxBaseValue
-		PathSplitChar	byte
 	}
 )
 
@@ -83,6 +82,7 @@ func (r *DxIntKeyRecord)NewIntRecord(key int64)(rec *DxIntKeyRecord)  {
 	rec = new(DxIntKeyRecord)
 	rec.fValueType = DVT_RecordIntKey
 	rec.PathSplitChar = r.PathSplitChar
+	rec.SortedKey = r.SortedKey
 	rec.fRecords = make(map[int64]*DxBaseValue,32)
 	r.fRecords[key] = &rec.DxBaseValue
 	rec.fParent = &r.DxBaseValue
@@ -101,6 +101,7 @@ func (r *DxIntKeyRecord)NewRecord(key int64)(rec *DxRecord)  {
 	}
 	rec = new(DxRecord)
 	rec.fValueType = DVT_Record
+	rec.SortedKey = r.SortedKey
 	rec.PathSplitChar = r.PathSplitChar
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	r.fRecords[key] = &rec.DxBaseValue
@@ -458,6 +459,8 @@ func (r *DxIntKeyRecord)SetRecordValue(key int64,v *DxRecord) {
 	}
 	if v != nil {
 		r.fRecords[key] = &v.DxBaseValue
+		v.PathSplitChar = r.PathSplitChar
+		v.SortedKey = r.SortedKey
 		v.fParent = &r.DxBaseValue
 	}else{
 		r.fRecords[key] = nil
@@ -1400,6 +1403,7 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 			case '{':
 				var rec DxRecord
 				rec.PathSplitChar = r.PathSplitChar
+				rec.SortedKey = r.SortedKey
 				rec.fValueType = DVT_Record
 				rec.fRecords = make(map[string]*DxBaseValue,32)
 				if parserlen,err = rec.JsonParserFromByte(b[i:blen],ConvertEscape,structRest);err == nil{
@@ -1642,7 +1646,7 @@ func (r *DxIntKeyRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structR
 				return i,ErrInvalidateJson
 			}
 		case ']':
-			if keyStart || keyStart{
+			if keyStart {
 				return i,ErrInvalidateJson
 			}
 		default:
@@ -1699,9 +1703,10 @@ func (r *DxIntKeyRecord) Encode(valuecoder Coders.Encoder) error{
 	return nil
 }
 
-func NewIntKeyRecord()*DxIntKeyRecord  {
+func NewIntKeyRecord(sortkey bool)*DxIntKeyRecord  {
 	result := new(DxIntKeyRecord)
 	result.PathSplitChar = DefaultPathSplit
+	result.SortedKey = sortkey
 	result.fValueType = DVT_RecordIntKey
 	result.fRecords = make(map[int64]*DxBaseValue,32)
 	return result

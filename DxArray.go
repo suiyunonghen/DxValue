@@ -88,8 +88,16 @@ func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 		}
 		arr.fValues[idx].ClearValue(true)
 	}
+	root := arr.NearestRecord()
+	spchar := DefaultPathSplit
+	sortkey := DefaultSort
+	if root != nil{
+		spchar = root.PathSplitChar
+		sortkey= root.SortedKey
+	}
 	rec = new(DxRecord)
-	rec.PathSplitChar = DefaultPathSplit
+	rec.PathSplitChar = spchar
+	rec.SortedKey = sortkey
 	rec.fValueType = DVT_Record
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	rec.fParent = &arr.DxBaseValue
@@ -115,8 +123,16 @@ func (arr *DxArray)NewIntRecord(idx int)(rec *DxIntKeyRecord)   {
 		}
 		arr.fValues[idx].ClearValue(true)
 	}
+	root := arr.NearestRecord()
+	spchar := DefaultPathSplit
+	sortkey := DefaultSort
+	if root != nil{
+		spchar = root.PathSplitChar
+		sortkey= root.SortedKey
+	}
 	rec = new(DxIntKeyRecord)
-	rec.PathSplitChar = '.'
+	rec.PathSplitChar = spchar
+	rec.SortedKey = sortkey
 	rec.fValueType = DVT_RecordIntKey
 	rec.fRecords = make(map[int64]*DxBaseValue,32)
 	rec.fParent = &arr.DxBaseValue
@@ -681,6 +697,15 @@ func (arr *DxArray)SetRecord(idx int,value *DxRecord)  {
 		arr.fValues[idx].fParent = nil
 	}
 	if value!=nil{
+		root := arr.NearestRecord()
+		spchar := DefaultPathSplit
+		sortkey := DefaultSort
+		if root != nil{
+			spchar = root.PathSplitChar
+			sortkey= root.SortedKey
+		}
+		value.PathSplitChar = spchar
+		value.SortedKey = sortkey
 		arr.fValues[idx] = &value.DxBaseValue
 		arr.fValues[idx].fParent = &arr.DxBaseValue
 	}else{
@@ -701,6 +726,15 @@ func (arr *DxArray)SetIntRecord(idx int,value *DxIntKeyRecord)  {
 		arr.fValues[idx].fParent = nil
 	}
 	if value!=nil{
+		root := arr.NearestRecord()
+		spchar := DefaultPathSplit
+		sortkey := DefaultSort
+		if root != nil{
+			spchar = root.PathSplitChar
+			sortkey= root.SortedKey
+		}
+		value.PathSplitChar = spchar
+		value.SortedKey = sortkey
 		arr.fValues[idx] = &value.DxBaseValue
 		arr.fValues[idx].fParent = &arr.DxBaseValue
 	}else{
@@ -1080,7 +1114,14 @@ func (arr *DxArray)Delete(idx int)  {
 }
 
 func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {
-	i := 0;
+	record := arr.NearestRecord()
+	sortkey := DefaultSort
+	spchar := DefaultPathSplit
+	if record != nil{
+		sortkey = record.SortedKey
+		spchar = record.PathSplitChar
+	}
+	i := 0
 	btlen := len(b)
 	validCharIndex := -1
 	for i < btlen{
@@ -1095,7 +1136,8 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(
 				parserlen += 1+i
 				return
 			case '{':
-				rec := NewRecord()
+				rec := NewRecord(sortkey)
+				rec.PathSplitChar = spchar
 				if parserlen,err = rec.JsonParserFromByte(b[i:],ConvertEscape,structRest);err != nil{
 					return
 				}
