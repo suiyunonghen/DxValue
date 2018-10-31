@@ -152,9 +152,10 @@ func (v *DxBaseValue)NearestRecord()*DxBaseRecord  {
 				return (*DxBaseRecord)(unsafe.Pointer(p))
 			}
 			p = p.fParent
+		}else{
+			return nil
 		}
 	}
-	return nil
 }
 
 func (v *DxBaseValue)Encode(valuecoder Coders.Encoder) (err error)  {

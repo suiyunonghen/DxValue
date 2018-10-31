@@ -354,6 +354,7 @@ func (r *DxIntKeyRecord)Bytes()[]byte  {
 			}
 			buffer.WriteString(strconv.Itoa(int(keys[i])))
 			buffer.WriteString(`":`)
+			v := r.fRecords[keys[i]]
 			if v != nil{
 				vt := v.fValueType
 				if vt == DVT_String || vt == DVT_Binary{
@@ -1677,7 +1678,7 @@ func (r *DxIntKeyRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structR
 				return i,ErrInvalidateJson
 			}
 		case ']':
-			if keyStart {
+			if objStart || keyStart {
 				return i,ErrInvalidateJson
 			}
 		default:

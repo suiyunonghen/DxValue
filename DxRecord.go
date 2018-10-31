@@ -1994,7 +1994,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 			}
 			objStart = false
 		case ']':
-			if keyStart{
+			if objStart || keyStart{
 				return i,ErrInvalidateJson
 			}
 		default:

@@ -264,7 +264,8 @@ func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest boo
 				var rec *DxRecord
 				if v.fValue == nil || v.fValue.fValueType != DVT_Record{
 					rec = &DxRecord{}
-					rec.PathSplitChar = '.'
+					rec.PathSplitChar = DefaultPathSplit
+					rec.SortedKey = DefaultSort
 					rec.fValueType = DVT_Record
 					rec.fRecords = make(map[string]*DxBaseValue,32)
 				}else{
