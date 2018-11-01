@@ -82,7 +82,6 @@ func (r *DxIntKeyRecord)NewIntRecord(key int64)(rec *DxIntKeyRecord)  {
 	rec = new(DxIntKeyRecord)
 	rec.fValueType = DVT_RecordIntKey
 	rec.PathSplitChar = r.PathSplitChar
-	rec.SortedKey = r.SortedKey
 	rec.fRecords = make(map[int64]*DxBaseValue,32)
 	r.fRecords[key] = &rec.DxBaseValue
 	rec.fParent = &r.DxBaseValue
@@ -101,7 +100,6 @@ func (r *DxIntKeyRecord)NewRecord(key int64)(rec *DxRecord)  {
 	}
 	rec = new(DxRecord)
 	rec.fValueType = DVT_Record
-	rec.SortedKey = r.SortedKey
 	rec.PathSplitChar = r.PathSplitChar
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	r.fRecords[key] = &rec.DxBaseValue
@@ -336,64 +334,67 @@ func (r *DxIntKeyRecord)AsBytes(key int64)[]byte  {
 	return nil
 }
 
+func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
+	buffer := bytes.NewBuffer(make([]byte,0,512))
+	buffer.WriteByte('{')
+	keys := make([]int64,len(r.fRecords))
+	idx := 0
+	for k,_ := range r.fRecords{
+		keys[idx] = k
+		idx++
+	}
+	for i := 0;i<idx;i++{
+		if i == 0{
+			buffer.WriteByte('"')
+		}else{
+			buffer.WriteString(`,"`)
+		}
+		buffer.WriteString(strconv.Itoa(int(keys[i])))
+		buffer.WriteString(`":`)
+		v := r.fRecords[keys[i]]
+		if v != nil{
+			vt := v.fValueType
+			if vt == DVT_String || vt == DVT_Binary{
+				buffer.WriteByte('"')
+			}
+			buffer.WriteString(v.ToString())
+			if vt == DVT_String || vt == DVT_Binary{
+				buffer.WriteByte('"')
+			}
+		}else{
+			buffer.WriteString("null")
+		}
+	}
+	buffer.WriteByte('}')
+	return buffer.Bytes()
+}
+
 func (r *DxIntKeyRecord)Bytes()[]byte  {
 	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
-	if r.SortedKey{
-		keys := make([]int64,len(r.fRecords))
-		idx := 0
-		for k,_ := range r.fRecords{
-			keys[idx] = k
-			idx++
+	isFirst := true
+	for k,v := range r.fRecords{
+		if !isFirst{
+			buffer.WriteString(`,"`)
+		}else{
+			isFirst = false
+			buffer.WriteByte('"')
 		}
-		for i := 0;i<idx;i++{
-			if i == 0{
-				buffer.WriteByte('"')
-			}else{
-				buffer.WriteString(`,"`)
-			}
-			buffer.WriteString(strconv.Itoa(int(keys[i])))
-			buffer.WriteString(`":`)
-			v := r.fRecords[keys[i]]
-			if v != nil{
-				vt := v.fValueType
-				if vt == DVT_String || vt == DVT_Binary{
-					buffer.WriteByte('"')
-				}
-				buffer.WriteString(v.ToString())
-				if vt == DVT_String || vt == DVT_Binary{
-					buffer.WriteByte('"')
-				}
-			}else{
-				buffer.WriteString("null")
-			}
-		}
-	}else{
-		isFirst := true
-		for k,v := range r.fRecords{
-			if !isFirst{
-				buffer.WriteString(`,"`)
-			}else{
-				isFirst = false
+		buffer.WriteString(strconv.Itoa(int(k)))
+		buffer.WriteString(`":`)
+		if v != nil{
+			vt := v.fValueType
+			if vt == DVT_String || vt == DVT_Binary{
 				buffer.WriteByte('"')
 			}
-			buffer.WriteString(strconv.Itoa(int(k)))
-			buffer.WriteString(`":`)
-			if v != nil{
-				vt := v.fValueType
-				if vt == DVT_String || vt == DVT_Binary{
-					buffer.WriteByte('"')
-				}
-				buffer.WriteString(v.ToString())
-				if vt == DVT_String || vt == DVT_Binary{
-					buffer.WriteByte('"')
-				}
-			}else{
-				buffer.WriteString("null")
+			buffer.WriteString(v.ToString())
+			if vt == DVT_String || vt == DVT_Binary{
+				buffer.WriteByte('"')
 			}
+		}else{
+			buffer.WriteString("null")
 		}
 	}
-
 	buffer.WriteByte('}')
 	return buffer.Bytes()
 }
@@ -492,7 +493,6 @@ func (r *DxIntKeyRecord)SetRecordValue(key int64,v *DxRecord) {
 	if v != nil {
 		r.fRecords[key] = &v.DxBaseValue
 		v.PathSplitChar = r.PathSplitChar
-		v.SortedKey = r.SortedKey
 		v.fParent = &r.DxBaseValue
 	}else{
 		r.fRecords[key] = nil
@@ -1435,7 +1435,6 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 			case '{':
 				var rec DxRecord
 				rec.PathSplitChar = r.PathSplitChar
-				rec.SortedKey = r.SortedKey
 				rec.fValueType = DVT_Record
 				rec.fRecords = make(map[string]*DxBaseValue,32)
 				if parserlen,err = rec.JsonParserFromByte(b[i:blen],ConvertEscape,structRest);err == nil{
@@ -1735,10 +1734,9 @@ func (r *DxIntKeyRecord) Encode(valuecoder Coders.Encoder) error{
 	return nil
 }
 
-func NewIntKeyRecord(sortkey bool)*DxIntKeyRecord  {
+func NewIntKeyRecord()*DxIntKeyRecord  {
 	result := new(DxIntKeyRecord)
 	result.PathSplitChar = DefaultPathSplit
-	result.SortedKey = sortkey
 	result.fValueType = DVT_RecordIntKey
 	result.fRecords = make(map[int64]*DxBaseValue,32)
 	return result

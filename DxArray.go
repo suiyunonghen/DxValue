@@ -90,14 +90,11 @@ func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 	}
 	root := arr.NearestRecord()
 	spchar := DefaultPathSplit
-	sortkey := DefaultSort
 	if root != nil{
 		spchar = root.PathSplitChar
-		sortkey= root.SortedKey
 	}
 	rec = new(DxRecord)
 	rec.PathSplitChar = spchar
-	rec.SortedKey = sortkey
 	rec.fValueType = DVT_Record
 	rec.fRecords = make(map[string]*DxBaseValue,32)
 	rec.fParent = &arr.DxBaseValue
@@ -125,14 +122,11 @@ func (arr *DxArray)NewIntRecord(idx int)(rec *DxIntKeyRecord)   {
 	}
 	root := arr.NearestRecord()
 	spchar := DefaultPathSplit
-	sortkey := DefaultSort
 	if root != nil{
 		spchar = root.PathSplitChar
-		sortkey= root.SortedKey
 	}
 	rec = new(DxIntKeyRecord)
 	rec.PathSplitChar = spchar
-	rec.SortedKey = sortkey
 	rec.fValueType = DVT_RecordIntKey
 	rec.fRecords = make(map[int64]*DxBaseValue,32)
 	rec.fParent = &arr.DxBaseValue
@@ -699,13 +693,10 @@ func (arr *DxArray)SetRecord(idx int,value *DxRecord)  {
 	if value!=nil{
 		root := arr.NearestRecord()
 		spchar := DefaultPathSplit
-		sortkey := DefaultSort
 		if root != nil{
 			spchar = root.PathSplitChar
-			sortkey= root.SortedKey
 		}
 		value.PathSplitChar = spchar
-		value.SortedKey = sortkey
 		arr.fValues[idx] = &value.DxBaseValue
 		arr.fValues[idx].fParent = &arr.DxBaseValue
 	}else{
@@ -728,13 +719,10 @@ func (arr *DxArray)SetIntRecord(idx int,value *DxIntKeyRecord)  {
 	if value!=nil{
 		root := arr.NearestRecord()
 		spchar := DefaultPathSplit
-		sortkey := DefaultSort
 		if root != nil{
 			spchar = root.PathSplitChar
-			sortkey= root.SortedKey
 		}
 		value.PathSplitChar = spchar
-		value.SortedKey = sortkey
 		arr.fValues[idx] = &value.DxBaseValue
 		arr.fValues[idx].fParent = &arr.DxBaseValue
 	}else{
@@ -1101,6 +1089,42 @@ func (arr *DxArray)Bytes()[]byte  {
 	return buf.Bytes()
 }
 
+func (arr *DxArray)BytesWithSort()[]byte  {
+	var buf bytes.Buffer
+	buf.WriteByte('[')
+	if arr.fValues != nil{
+		isFirst := true
+		for i := 0;i<len(arr.fValues);i++{
+			av := arr.fValues[i]
+			if !isFirst{
+				buf.WriteByte(',')
+			}else{
+				isFirst = false
+			}
+			if av == nil{
+				buf.WriteString("null")
+			}else{
+				switch av.fValueType {
+				case DVT_String,DVT_Binary:
+					buf.WriteByte('"')
+					buf.WriteString(av.ToString())
+					buf.WriteByte('"')
+				case DVT_Record:
+					buf.Write((*DxRecord)(unsafe.Pointer(av)).BytesWithSort())
+				case DVT_RecordIntKey:
+					buf.Write((*DxIntKeyRecord)(unsafe.Pointer(av)).BytesWithSort())
+				case DVT_Array:
+					buf.Write((*DxArray)(unsafe.Pointer(av)).BytesWithSort())
+				default:
+					buf.WriteString(av.ToString())
+				}
+			}
+		}
+	}
+	buf.WriteByte(']')
+	return buf.Bytes()
+}
+
 func (arr *DxArray)Delete(idx int)  {
 	if arr.fValues != nil{
 		if idx >= 0 && idx < len(arr.fValues){
@@ -1115,10 +1139,8 @@ func (arr *DxArray)Delete(idx int)  {
 
 func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {
 	record := arr.NearestRecord()
-	sortkey := DefaultSort
 	spchar := DefaultPathSplit
 	if record != nil{
-		sortkey = record.SortedKey
 		spchar = record.PathSplitChar
 	}
 	i := 0
@@ -1136,7 +1158,7 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(
 				parserlen += 1+i
 				return
 			case '{':
-				rec := NewRecord(sortkey)
+				rec := NewRecord()
 				rec.PathSplitChar = spchar
 				if parserlen,err = rec.JsonParserFromByte(b[i:],ConvertEscape,structRest);err != nil{
 					return

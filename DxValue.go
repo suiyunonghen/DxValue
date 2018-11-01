@@ -14,7 +14,6 @@ import (
 
 var(
 	DefaultPathSplit byte = '.'
-	DefaultSort bool = false
 )
 /******************************************************
 *  DxValue
@@ -214,7 +213,6 @@ func (v *DxValue)NewRecord()*DxRecord  {
 		v.fValue.ClearValue(true)
 		rec = &DxRecord{}
 		rec.PathSplitChar = DefaultPathSplit
-		rec.SortedKey = DefaultSort
 		rec.fValueType = DVT_Record
 		rec.fRecords = make(map[string]*DxBaseValue,32)
 		v.fValue = &rec.DxBaseValue
@@ -265,7 +263,6 @@ func (v *DxValue)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest boo
 				if v.fValue == nil || v.fValue.fValueType != DVT_Record{
 					rec = &DxRecord{}
 					rec.PathSplitChar = DefaultPathSplit
-					rec.SortedKey = DefaultSort
 					rec.fValueType = DVT_Record
 					rec.fRecords = make(map[string]*DxBaseValue,32)
 				}else{
@@ -535,7 +532,7 @@ func NewDxValue(avalue interface{})(result *DxValue)  {
 		}
 		switch rv.Kind(){
 		case reflect.Struct:
-			rec := NewRecord(DefaultSort)
+			rec := NewRecord()
 			result.fValue = &rec.DxBaseValue
 			rtype := rv.Type()
 			for i := 0;i < rtype.NumField();i++{
@@ -574,9 +571,9 @@ func NewDxValue(avalue interface{})(result *DxValue)  {
 			var rbase *DxBaseValue
 			switch getBaseType(kv.Type()) {
 			case reflect.String:
-				rbase = &NewRecord(DefaultSort).DxBaseValue
+				rbase = &NewRecord().DxBaseValue
 			case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64,reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
-				rbase = &NewIntKeyRecord(DefaultSort).DxBaseValue
+				rbase = &NewIntKeyRecord().DxBaseValue
 			default:
 				panic("Invalidate Record Key,Can Only Int or String")
 			}

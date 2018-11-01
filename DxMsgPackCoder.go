@@ -459,7 +459,7 @@ func (coder *DxMsgPackDecoder)DecodeUnknownMap(code DxMsgPack.MsgPackCode)(*DxBa
 			return nil,err
 		}
 		if code.IsInt(){
-			iMap := NewIntKeyRecord(DefaultSort)
+			iMap := NewIntKeyRecord()
 			baseV = &iMap.DxBaseValue
 			if err = coder.DecodeIntKeyMapKvRecord(iMap,code);err!=nil{
 				return nil,err
@@ -471,7 +471,7 @@ func (coder *DxMsgPackDecoder)DecodeUnknownMap(code DxMsgPack.MsgPackCode)(*DxBa
 			}
 			return baseV,nil
 		}else if code.IsStr(){
-			iMap := NewRecord(DefaultSort)
+			iMap := NewRecord()
 			baseV = &iMap.DxBaseValue
 			if err = coder.DecodeStrMapKvRecord(iMap,code);err!=nil{
 				return nil,err
