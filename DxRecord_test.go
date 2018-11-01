@@ -215,3 +215,15 @@ func TestDxRecord_SetIntRecordValue(t *testing.T) {
 	}
 	fmt.Println(rc.ToString())
 }
+
+func TestDxIniDecoder_Decode(t *testing.T) {
+	bt, _ := ioutil.ReadFile("E:\\Delphi\\Leigod\\BoheBin\\BoHe.ini")
+	if bt[0] == 0xEF && bt[1] == 0xBB && bt[2] == 0xBF { //UTF-8
+		bt = bt[3:]
+	}
+	buffer := bytes.NewBuffer(bt)
+	decoder := NewIniDecoder(buffer)
+	r := NewRecord()
+	decoder.Decode(r)
+	fmt.Println(r.ToString())
+}
