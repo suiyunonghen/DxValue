@@ -16,7 +16,8 @@ type decoderReader interface {
 }
 
 type  DxIniDecoder struct {
-	r		io.Reader
+	r			io.Reader
+	readCM		DxCommonLib.FileCodeMode
 }
 
 
@@ -96,7 +97,19 @@ func (decoder *DxIniDecoder)Decode(record *DxRecord)(error)  {
 						}
 					case '=':
 						if curSection != ""{
-							k:=DxCommonLib.FastByte2String(line[idx:i])
+							k := ""
+							switch decoder.readCM {
+							case DxCommonLib.File_Code_Utf8:
+								k = DxCommonLib.FastByte2String(line[idx:i])
+							case DxCommonLib.File_Code_GBK,DxCommonLib.File_Code_Unknown:
+								if tmpbytes, err := DxCommonLib.GBK2Utf8(line[idx:i]); err == nil {
+									k = DxCommonLib.FastByte2String(tmpbytes)
+								}else{
+									k = DxCommonLib.FastByte2String(line[idx:i])
+								}
+							case DxCommonLib.File_Code_Utf16LE,DxCommonLib.File_Code_Utf16BE:
+								k = DxCommonLib.UTF16Byte2string(line[idx:i],decoder.readCM == DxCommonLib.File_Code_Utf16BE)
+							}
 							v := line[i+1:]
 							for vcommitidx := i+1;vcommitidx<linelen;vcommitidx++{
 								if !IsSpace(line[vcommitidx]){
@@ -106,10 +119,19 @@ func (decoder *DxIniDecoder)Decode(record *DxRecord)(error)  {
 									}
 								}
 							}
+							bt := v
+							switch decoder.readCM {
+							case DxCommonLib.File_Code_Utf16LE,DxCommonLib.File_Code_Utf16BE:
+								bt = ([]byte)(DxCommonLib.UTF16Byte2string(line[idx:i],decoder.readCM == DxCommonLib.File_Code_Utf16BE))
+							case DxCommonLib.File_Code_GBK,DxCommonLib.File_Code_Unknown:
+								if tmpbytes, err := DxCommonLib.GBK2Utf8(line[idx:i]); err == nil {
+									bt = tmpbytes
+								}
+							}
 							var dv DxValue
-							_,err := dv.JsonParserFromByte(v,false,false)
+							_,err := dv.JsonParserFromByte(bt,false,false)
 							if err!=nil{
-								curRecord.SetString(k,DxCommonLib.FastByte2String(v))
+								curRecord.SetString(k,DxCommonLib.FastByte2String(bt))
 							}else{
 								switch dv.fValue.fValueType {
 								case DVT_Record:
@@ -119,7 +141,6 @@ func (decoder *DxIniDecoder)Decode(record *DxRecord)(error)  {
 								}
 							}
 						}
-
 						break parserFor
 					default:
 						if section != ""{
@@ -142,6 +163,6 @@ func (decoder *DxIniDecoder)Decode(record *DxRecord)(error)  {
 	return nil
 }
 
-func NewIniDecoder(reader io.Reader)*DxIniDecoder  {
-	return &DxIniDecoder{r:reader}
+func NewIniDecoder(reader io.Reader,encodeMode DxCommonLib.FileCodeMode)*DxIniDecoder  {
+	return &DxIniDecoder{r:reader,readCM:encodeMode}
 }

@@ -1930,6 +1930,52 @@ func (r *DxRecord)LoadMsgPackReader(reader io.Reader)error  {
 	return NewDecoder (reader).Decode(&r.DxBaseValue)
 }
 
+func (r *DxRecord)LoadIni(iniFile string)error  {
+	if file, err := os.Open(iniFile); err == nil {
+		defer file.Close()
+		var bt [3]byte
+		filecodeType := DxCommonLib.File_Code_Unknown
+		if _,err := file.Read(bt[:3]);err==nil{
+			if bt[0] == 0xFF && bt[1] == 0xFE { //UTF-16(Little Endian)
+				file.Seek(-1,io.SeekCurrent)
+				filecodeType = DxCommonLib.File_Code_Utf16LE
+			}else if bt[0] == 0xFE && bt[1] == 0xFF{ //UTF-16(big Endian)
+				file.Seek(-1,io.SeekCurrent)
+				filecodeType = DxCommonLib.File_Code_Utf16BE
+			}else if bt[0] == 0xEF && bt[1] == 0xBB && bt[2] == 0xBF { //UTF-8
+				filecodeType = DxCommonLib.File_Code_Utf8
+			}else{
+				file.Seek(-3,io.SeekCurrent)
+			}
+		}
+		decoder := NewIniDecoder(bufio.NewReader(file),filecodeType)
+		return decoder.Decode(r)
+	}else{
+		return err
+	}
+}
+
+func (r *DxRecord)Encode2Ini()[]byte {
+	if len(r.fRecords) > 0{
+		var buffer bytes.Buffer
+		for k,v := range r.fRecords{
+			if v != nil && v.fValueType == DVT_Record{
+				buffer.WriteByte('[')
+				buffer.WriteString(k)
+				buffer.WriteByte(']')
+				record := (*DxRecord)(unsafe.Pointer(v))
+				for key,value := range record.fRecords{
+					buffer.WriteString(key)
+					buffer.WriteByte('=')
+					buffer.WriteString(value.ToString())
+				}
+			}
+		}
+		return buffer.Bytes()
+	}
+	return nil
+}
+
 func (r *DxRecord)LoadMsgPackFile(fileName string)error  {
 	f, err := os.Open(fileName)
 	if err != nil {
