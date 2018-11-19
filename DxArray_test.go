@@ -5,8 +5,16 @@ import (
 	"fmt"
 )
 
+
 func TestDxArray_JsonParserFromByte(t *testing.T) {
 	arr := NewArray()
+	r := arr.NewRecord(-1)
+	r.SetString("test","DxSoft")
+	//arr.SetRecord(-1,r)
+	r = arr.NewRecord(-1)
+	r.SetString("Name","不得闲")
+	fmt.Println(arr.String())
+	return
 	_,err := arr.JsonParserFromByte([]byte(`[  32  ,  "2342"  ,[ 2 , true , false  ,{ "Name" : "DxSoft" , "Age"  :  32 } ] ]`),false,false)
 	if err == nil {
 		fmt.Println(arr.ToString())

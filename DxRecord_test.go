@@ -222,7 +222,7 @@ func TestDxIniDecoder_Decode(t *testing.T) {
 		bt = bt[3:]
 	}
 	buffer := bytes.NewBuffer(bt)
-	decoder := NewIniDecoder(buffer)
+	decoder := NewIniDecoder(buffer,DxCommonLib.File_Code_Utf8)
 	r := NewRecord()
 	decoder.Decode(r)
 	fmt.Println(r.ToString())

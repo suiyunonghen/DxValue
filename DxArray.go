@@ -72,11 +72,7 @@ func (arr *DxArray)TruncateArray(ArrLen int)  {
 
 func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 	if idx < 0{
-		if arr.fValues != nil{
-			idx = 0
-		}else{
-			idx = len(arr.fValues)
-		}
+		idx = len(arr.fValues)
 	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
@@ -104,11 +100,7 @@ func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 
 func (arr *DxArray)NewIntRecord(idx int)(rec *DxIntKeyRecord)   {
 	if idx < 0{
-		if arr.fValues != nil{
-			idx = 0
-		}else{
-			idx = len(arr.fValues)
-		}
+		idx = len(arr.fValues)
 	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
@@ -136,11 +128,7 @@ func (arr *DxArray)NewIntRecord(idx int)(rec *DxIntKeyRecord)   {
 
 func (arr *DxArray)NewArray(idx int)(ararr *DxArray)  {
 	if idx < 0{
-		if arr.fValues != nil{
-			idx = 0
-		}else{
-			idx = len(arr.fValues)
-		}
+		idx = len(arr.fValues)
 	}
 	arr.ifNilInitArr2idx(idx)
 	if arr.fValues[idx] != nil{
@@ -161,7 +149,7 @@ func (arr *DxArray)NewArray(idx int)(ararr *DxArray)  {
 
 func (arr *DxArray)ifNilInitArr2idx(idx int)  {
 	if idx < 0{
-		idx = 0
+		idx = len(arr.fValues)
 	}
 	vlen := 0
 	if arr.fValues == nil{
