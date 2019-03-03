@@ -22,6 +22,14 @@ type ATest struct {
 	mc map[string]int
 }
 
+func TestDxRecord_Escape(t *testing.T) {
+	str := `{"ctrlpath":"C:\\frank\\pvt_new\\te\"mp\\\\\"lateopt\""}`
+	str = `["asdf","C:\\frank\\pvt_new\\te\"mp\\\\\"lateopt\"","asdf","\"\"\\\\"]`
+	vc := NewArray()// NewRecord()
+	vc.JsonParserFromByte(([]byte)(str),true,true)
+	fmt.Println(vc.ToString())
+}
+
 func Test_Record(t *testing.T)  {
 	mA := &ATest{A:123,B:234}
 	mA.mc = make(map[string]int)

@@ -1482,6 +1482,61 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 			case '"': //string
 				plen := bytes.IndexByte(b[i+1:blen],'"')
 				if plen > -1{
+					for{
+						if b[i+plen]=='\\'{ //查找到的是\"
+							//需要判断转义
+							oldp := i+plen
+							willCheckBefore := false
+							//判断下一个字符，是否是结束的字符
+							for k := oldp+2;k<blen;k++{
+								if !IsSpace(b[k]){
+									if b[k] == ',' || b[k] == ']' || b[k] == '}'{
+										break
+									}else{
+										willCheckBefore = true
+										break
+									}
+								}else{
+									//判断前面一系列是否是正常的转义
+									willCheckBefore = true
+									break
+								}
+							}
+							if willCheckBefore{
+								escapcount := 0
+								for k := oldp - 1;k > i;k--{
+									if b[k] == '\\'{
+										escapcount ++
+									}else{
+										break
+									}
+								}
+								if escapcount % 2 == 0{ //是转义字符,然后还需要判断后面一个"
+									plen = bytes.IndexByte(b[oldp+2:blen],'"')
+									if plen < 0{
+										return oldp+2,ErrInvalidateJson
+									}
+									plen += oldp
+								}else{
+									return oldp,ErrInvalidateJson
+								}
+							}else{
+								break
+							}
+						}else{
+							//非转义字符，那么就需要判定
+							for k := i+plen+2;k<blen;k++{
+								if !IsSpace(b[k]){
+									if b[k] == ',' || b[k] == ']' || b[k] == '}' {
+										break
+									}else{
+										return i+plen+2,ErrInvalidateJson
+									}
+								}
+							}
+							break
+						}
+					}
 					bvalue := b[i+1:plen+i+1]
 					st := ""
 					if ConvertEscape{
