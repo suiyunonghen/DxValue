@@ -45,6 +45,7 @@ func Test_Record(t *testing.T)  {
 func TestDxRecord_SetRecordValue(t *testing.T) {
 	vc := NewRecord()
 	vcc := vc.NewRecord("testc")
+	fmt.Println(vcc.AsStringByPath("testc.gg.asdf",""))
 	vcc.SetString("BB","Asdf")
 	fmt.Println(vc.String())
 	mb := NewRecord()

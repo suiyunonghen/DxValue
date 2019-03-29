@@ -430,6 +430,9 @@ func (r *DxIntKeyRecord)findPathNode(path string)(rec *DxBaseValue,keyName strin
 		default:
 			return nil,""
 		}
+		if rParent==nil{
+			return nil,""
+		}
 	}
 	return rParent,fields[vlen - 1]
 }
