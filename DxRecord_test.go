@@ -23,11 +23,16 @@ type ATest struct {
 }
 
 func TestDxRecord_Escape(t *testing.T) {
-	str := `{"ctrlpath":"C:\\frank\\pvt_new\\te\"mp\\\\\"lateopt\""}`
+	/*str := `{"ctrlpath":"C:\\frank\\pvt_new\\te\"mp\\\\\"lateopt\""}`
 	str = `["asdf","C:\\frank\\pvt_new\\te\"mp\\\\\"lateopt\"","asdf","\"\"\\\\"]`
 	vc := NewArray()// NewRecord()
 	vc.JsonParserFromByte(([]byte)(str),true,true)
-	fmt.Println(vc.ToString())
+	fmt.Println(vc.ToString())*/
+	str := "{\"id\":\"00\",\"output\":\"ntripsvr://0000@58.49.94.210:2103/WUH9\",\"inputidx\":1}"
+	json := NewRecord()
+	json.ClearValue(true)
+	json.JsonParserFromByte([]byte(str), true, false)
+	fmt.Println(json.ToString())
 }
 
 func Test_Record(t *testing.T)  {

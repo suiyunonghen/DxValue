@@ -33,7 +33,6 @@ type(
 	}
 )
 
-
 func (r *DxIntKeyRecord)ClearValue(clearInner bool)  {
 	if r.fRecords != nil{
 		for _,v := range r.fRecords{
@@ -70,14 +69,18 @@ func (r *DxIntKeyRecord)splitPathFields(charrune rune) bool {
 }
 
 func (r *DxIntKeyRecord)NewIntRecord(key int64)(rec *DxIntKeyRecord)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_RecordIntKey{
-			rec = (*DxIntKeyRecord)(unsafe.Pointer(value))
-			rec.ClearValue(false)
-			rec.fParent = &r.DxBaseValue
-			return
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_RecordIntKey{
+				rec = (*DxIntKeyRecord)(unsafe.Pointer(value))
+				rec.ClearValue(false)
+				rec.fParent = &r.DxBaseValue
+				return
+			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	rec = new(DxIntKeyRecord)
 	rec.fValueType = DVT_RecordIntKey
@@ -89,14 +92,18 @@ func (r *DxIntKeyRecord)NewIntRecord(key int64)(rec *DxIntKeyRecord)  {
 }
 
 func (r *DxIntKeyRecord)NewRecord(key int64)(rec *DxRecord)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Record{
-			rec = (*DxRecord)(unsafe.Pointer(value))
-			rec.ClearValue(false)
-			rec.fParent = &r.DxBaseValue
-			return
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_Record{
+				rec = (*DxRecord)(unsafe.Pointer(value))
+				rec.ClearValue(false)
+				rec.fParent = &r.DxBaseValue
+				return
+			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	rec = new(DxRecord)
 	rec.fValueType = DVT_Record
@@ -108,22 +115,28 @@ func (r *DxIntKeyRecord)NewRecord(key int64)(rec *DxRecord)  {
 }
 
 func (r *DxIntKeyRecord)Find(key int64)*DxBaseValue  {
-	if v,ok := r.fRecords[key];ok{
-		return v
+	if r.fRecords != nil{
+		if v,ok := r.fRecords[key];ok{
+			return v
+		}
 	}
 	return nil
 }
 
 
 func (r *DxIntKeyRecord)NewArray(key int64)(arr *DxArray)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Array{
-			arr = (*DxArray)(unsafe.Pointer(value))
-			arr.ClearValue(false)
-			arr.fParent = &r.DxBaseValue
-			return
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_Array{
+				arr = (*DxArray)(unsafe.Pointer(value))
+				arr.ClearValue(false)
+				arr.fParent = &r.DxBaseValue
+				return
+			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	arr = new(DxArray)
 	arr.fValueType = DVT_Array
@@ -133,21 +146,25 @@ func (r *DxIntKeyRecord)NewArray(key int64)(arr *DxArray)  {
 }
 
 func (r *DxIntKeyRecord)SetInt(key int64,v int)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int:
-			(*DxIntValue)(unsafe.Pointer(value)).fvalue = v
-			return
-		case DVT_Int32:
-			if v <= math.MaxInt32 && v >= math.MinInt32{
-				(*DxInt32Value)(unsafe.Pointer(value)).fvalue = int32(v)
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int:
+				(*DxIntValue)(unsafe.Pointer(value)).fvalue = v
+				return
+			case DVT_Int32:
+				if v <= math.MaxInt32 && v >= math.MinInt32{
+					(*DxInt32Value)(unsafe.Pointer(value)).fvalue = int32(v)
+					return
+				}
+			case DVT_Int64:
+				(*DxInt64Value)(unsafe.Pointer(value)).fvalue = int64(v)
 				return
 			}
-		case DVT_Int64:
-			(*DxInt64Value)(unsafe.Pointer(value)).fvalue = int64(v)
-			return
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxIntValue
 	m.fvalue = v
@@ -157,19 +174,23 @@ func (r *DxIntKeyRecord)SetInt(key int64,v int)  {
 }
 
 func (r *DxIntKeyRecord)SetInt32(key int64,v int32)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int:
-			(*DxIntValue)(unsafe.Pointer(value)).fvalue = int(v)
-			return
-		case DVT_Int32:
-			(*DxInt32Value)(unsafe.Pointer(value)).fvalue = v
-			return
-		case DVT_Int64:
-			(*DxInt64Value)(unsafe.Pointer(value)).fvalue = int64(v)
-			return
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int:
+				(*DxIntValue)(unsafe.Pointer(value)).fvalue = int(v)
+				return
+			case DVT_Int32:
+				(*DxInt32Value)(unsafe.Pointer(value)).fvalue = v
+				return
+			case DVT_Int64:
+				(*DxInt64Value)(unsafe.Pointer(value)).fvalue = int64(v)
+				return
+			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxInt32Value
 	m.fvalue = v
@@ -180,24 +201,28 @@ func (r *DxIntKeyRecord)SetInt32(key int64,v int32)  {
 
 
 func (r *DxIntKeyRecord)SetInt64(key int64,v int64)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int:
-			if DxCommonLib.IsAmd64 || v <= math.MaxInt32 && v >= math.MinInt32{
-				(*DxIntValue)(unsafe.Pointer(value)).fvalue = int(v)
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int:
+				if DxCommonLib.IsAmd64 || v <= math.MaxInt32 && v >= math.MinInt32{
+					(*DxIntValue)(unsafe.Pointer(value)).fvalue = int(v)
+					return
+				}
+			case DVT_Int32:
+				if v <= math.MaxInt32 && v >= math.MinInt32{
+					(*DxInt32Value)(unsafe.Pointer(value)).fvalue = int32(v)
+					return
+				}
+				return
+			case DVT_Int64:
+				(*DxInt64Value)(unsafe.Pointer(value)).fvalue = v
 				return
 			}
-		case DVT_Int32:
-			if v <= math.MaxInt32 && v >= math.MinInt32{
-				(*DxInt32Value)(unsafe.Pointer(value)).fvalue = int32(v)
-				return
-			}
-			return
-		case DVT_Int64:
-			(*DxInt64Value)(unsafe.Pointer(value)).fvalue = v
-			return
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxInt64Value
 	m.fvalue = v
@@ -207,12 +232,16 @@ func (r *DxIntKeyRecord)SetInt64(key int64,v int64)  {
 }
 
 func (r *DxIntKeyRecord)SetBool(key int64,v bool)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Bool {
-			(*DxBoolValue)(unsafe.Pointer(value)).fvalue = v
-			return
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_Bool {
+				(*DxBoolValue)(unsafe.Pointer(value)).fvalue = v
+				return
+			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxBoolValue
 	m.fvalue = v
@@ -222,9 +251,13 @@ func (r *DxIntKeyRecord)SetBool(key int64,v bool)  {
 }
 
 func (r *DxIntKeyRecord)SetNull(key int64)  {
-	if v,ok := r.fRecords[key];ok{
-		v.ClearValue(true)
-		v.fParent = nil
+	if r.fRecords != nil{
+		if v,ok := r.fRecords[key];ok{
+			v.ClearValue(true)
+			v.fParent = nil
+		}
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	r.fRecords[key] = nil
 }
@@ -232,15 +265,19 @@ func (r *DxIntKeyRecord)SetNull(key int64)  {
 
 
 func (r *DxIntKeyRecord)SetFloat(key int64,v float32)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Float{
-			(*DxFloatValue)(unsafe.Pointer(value)).fvalue = v
-			return
-		}else if value.fValueType == DVT_Double || value.fValueType == DVT_DateTime{
-			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(v)
-			return
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_Float{
+				(*DxFloatValue)(unsafe.Pointer(value)).fvalue = v
+				return
+			}else if value.fValueType == DVT_Double || value.fValueType == DVT_DateTime{
+				(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(v)
+				return
+			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxFloatValue
 	m.fvalue = v
@@ -250,17 +287,21 @@ func (r *DxIntKeyRecord)SetFloat(key int64,v float32)  {
 }
 
 func (r *DxIntKeyRecord)SetDouble(key int64,v float64)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Double || value.fValueType == DVT_DateTime{
-			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = v
-			return
-		}else if value.fValueType == DVT_Float{
-			if v <= math.MaxFloat32 && v >= math.MinInt32{
-				(*DxFloatValue)(unsafe.Pointer(value)).fvalue = float32(v)
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_Double || value.fValueType == DVT_DateTime{
+				(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = v
 				return
+			}else if value.fValueType == DVT_Float{
+				if v <= math.MaxFloat32 && v >= math.MinInt32{
+					(*DxFloatValue)(unsafe.Pointer(value)).fvalue = float32(v)
+					return
+				}
 			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxDoubleValue
 	m.fvalue = v
@@ -270,18 +311,22 @@ func (r *DxIntKeyRecord)SetDouble(key int64,v float64)  {
 }
 
 func (r *DxIntKeyRecord)SetDateTime(key int64,v DxCommonLib.TDateTime)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Double || value.fValueType == DVT_DateTime{
-			(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(v)
-			(*DxDoubleValue)(unsafe.Pointer(value)).fValueType = DVT_DateTime
-			return
-		}else if value.fValueType == DVT_Float{
-			if v <= math.MaxFloat32 && v >= math.MinInt32{
-				(*DxFloatValue)(unsafe.Pointer(value)).fvalue = float32(v)
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_Double || value.fValueType == DVT_DateTime{
+				(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(v)
+				(*DxDoubleValue)(unsafe.Pointer(value)).fValueType = DVT_DateTime
 				return
+			}else if value.fValueType == DVT_Float{
+				if v <= math.MaxFloat32 && v >= math.MinInt32{
+					(*DxFloatValue)(unsafe.Pointer(value)).fvalue = float32(v)
+					return
+				}
 			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxDoubleValue
 	m.fvalue = float64(v)
@@ -293,12 +338,16 @@ func (r *DxIntKeyRecord)SetDateTime(key int64,v DxCommonLib.TDateTime)  {
 
 
 func (r *DxIntKeyRecord)SetString(key int64,v string)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_String{
-			(*DxStringValue)(unsafe.Pointer(value)).fvalue = v
-			return
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_String{
+				(*DxStringValue)(unsafe.Pointer(value)).fvalue = v
+				return
+			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxStringValue
 	m.fvalue = v
@@ -307,17 +356,21 @@ func (r *DxIntKeyRecord)SetString(key int64,v string)  {
 }
 
 func (r *DxIntKeyRecord)SetBinary(key int64,v []byte,reWrite bool)  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Binary{
-			bv := (*DxBinaryValue)(unsafe.Pointer(value))
-			if reWrite{
-				bv.SetBinary(v,false)
-			}else{
-				bv.Append(v)
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_Binary{
+				bv := (*DxBinaryValue)(unsafe.Pointer(value))
+				if reWrite{
+					bv.SetBinary(v,false)
+				}else{
+					bv.Append(v)
+				}
+				return
 			}
-			return
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxBinaryValue
 	m.Append(v)
@@ -327,9 +380,11 @@ func (r *DxIntKeyRecord)SetBinary(key int64,v []byte,reWrite bool)  {
 }
 
 func (r *DxIntKeyRecord)AsBytes(key int64)[]byte  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		bt,_ := value.AsBytes()
-		return bt
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			bt,_ := value.AsBytes()
+			return bt
+		}
 	}
 	return nil
 }
@@ -337,32 +392,34 @@ func (r *DxIntKeyRecord)AsBytes(key int64)[]byte  {
 func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
 	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
-	keys := make([]int64,len(r.fRecords))
-	idx := 0
-	for k,_ := range r.fRecords{
-		keys[idx] = k
-		idx++
-	}
-	for i := 0;i<idx;i++{
-		if i == 0{
-			buffer.WriteByte('"')
-		}else{
-			buffer.WriteString(`,"`)
+	if r.fRecords != nil{
+		keys := make([]int64,len(r.fRecords))
+		idx := 0
+		for k,_ := range r.fRecords{
+			keys[idx] = k
+			idx++
 		}
-		buffer.WriteString(strconv.Itoa(int(keys[i])))
-		buffer.WriteString(`":`)
-		v := r.fRecords[keys[i]]
-		if v != nil{
-			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary{
+		for i := 0;i<idx;i++{
+			if i == 0{
 				buffer.WriteByte('"')
+			}else{
+				buffer.WriteString(`,"`)
 			}
-			buffer.WriteString(v.ToString())
-			if vt == DVT_String || vt == DVT_Binary{
-				buffer.WriteByte('"')
+			buffer.WriteString(strconv.Itoa(int(keys[i])))
+			buffer.WriteString(`":`)
+			v := r.fRecords[keys[i]]
+			if v != nil{
+				vt := v.fValueType
+				if vt == DVT_String || vt == DVT_Binary{
+					buffer.WriteByte('"')
+				}
+				buffer.WriteString(v.ToString())
+				if vt == DVT_String || vt == DVT_Binary{
+					buffer.WriteByte('"')
+				}
+			}else{
+				buffer.WriteString("null")
 			}
-		}else{
-			buffer.WriteString("null")
 		}
 	}
 	buffer.WriteByte('}')
@@ -372,27 +429,29 @@ func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
 func (r *DxIntKeyRecord)Bytes()[]byte  {
 	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
-	isFirst := true
-	for k,v := range r.fRecords{
-		if !isFirst{
-			buffer.WriteString(`,"`)
-		}else{
-			isFirst = false
-			buffer.WriteByte('"')
-		}
-		buffer.WriteString(strconv.Itoa(int(k)))
-		buffer.WriteString(`":`)
-		if v != nil{
-			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary{
+	if r.fRecords != nil{
+		isFirst := true
+		for k,v := range r.fRecords{
+			if !isFirst{
+				buffer.WriteString(`,"`)
+			}else{
+				isFirst = false
 				buffer.WriteByte('"')
 			}
-			buffer.WriteString(v.ToString())
-			if vt == DVT_String || vt == DVT_Binary{
-				buffer.WriteByte('"')
+			buffer.WriteString(strconv.Itoa(int(k)))
+			buffer.WriteString(`":`)
+			if v != nil{
+				vt := v.fValueType
+				if vt == DVT_String || vt == DVT_Binary{
+					buffer.WriteByte('"')
+				}
+				buffer.WriteString(v.ToString())
+				if vt == DVT_String || vt == DVT_Binary{
+					buffer.WriteByte('"')
+				}
+			}else{
+				buffer.WriteString("null")
 			}
-		}else{
-			buffer.WriteString("null")
 		}
 	}
 	buffer.WriteByte('}')
@@ -473,9 +532,13 @@ func (r *DxIntKeyRecord)SetIntRecordValue(key int64,v *DxIntKeyRecord) {
 	if v != nil && v.fParent != nil {
 		panic("Must Set A Single Record(no Parent)")
 	}
-	if value, ok := r.fRecords[key]; ok && value != nil {
-		value.ClearValue(true)
-		value.fParent = nil
+	if r.fRecords != nil{
+		if value, ok := r.fRecords[key]; ok && value != nil {
+			value.ClearValue(true)
+			value.fParent = nil
+		}
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	if v != nil {
 		r.fRecords[key] = &v.DxBaseValue
@@ -489,9 +552,13 @@ func (r *DxIntKeyRecord)SetRecordValue(key int64,v *DxRecord) {
 	if v != nil && v.fParent != nil {
 		panic("Must Set A Single Record(no Parent)")
 	}
-	if value, ok := r.fRecords[key]; ok && value != nil {
-		value.ClearValue(true)
-		value.fParent = nil
+	if r.fRecords != nil{
+		if value, ok := r.fRecords[key]; ok && value != nil {
+			value.ClearValue(true)
+			value.fParent = nil
+		}
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	if v != nil {
 		r.fRecords[key] = &v.DxBaseValue
@@ -506,9 +573,13 @@ func (r *DxIntKeyRecord)SetArray(key int64,v *DxArray)  {
 	if v != nil && v.fParent != nil {
 		panic("Must Set A Single Array(no Parent)")
 	}
-	if value,ok := r.fRecords[key];ok && value != nil{
-		value.ClearValue(true)
-		value.fParent = nil
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			value.ClearValue(true)
+			value.fParent = nil
+		}
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	if v!=nil{
 		r.fRecords[key] = &v.DxBaseValue
@@ -585,8 +656,10 @@ func (r *DxIntKeyRecord)SetValue(key int64,v interface{})  {
 		reflectv := reflect.ValueOf(v)
 		rv := getRealValue(&reflectv)
 		if rv == nil{
-			if _,ok := r.fRecords[key];!ok{
-				r.fRecords[key] = nil
+			if r.fRecords != nil{
+				if _,ok := r.fRecords[key];!ok{
+					r.fRecords[key] = nil
+				}
 			}
 			return
 		}
@@ -730,35 +803,39 @@ func (r *DxIntKeyRecord)SetValue(key int64,v interface{})  {
 
 
 func (r *DxIntKeyRecord)KeyValueType(key int64)DxValueType  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		return value.fValueType
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			return value.fValueType
+		}
 	}
 	return DVT_Null
 }
 
 func (r *DxIntKeyRecord)AsInt32(key int64,defavalue int32)int32  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int: return int32((*DxIntValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int32: return int32((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int64: return int32((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Bool:
-			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
-				return 1
-			}else{
-				return 0
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int: return int32((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int32: return int32((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int64: return int32((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Bool:
+				if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+					return 1
+				}else{
+					return 0
+				}
+			case DVT_Double,DVT_DateTime:return int32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Float:return int32((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_String:
+				v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
+				if err != nil{
+					panic(err)
+				}else{
+					return int32(v)
+				}
+			default:
+				panic("can not convert Type to int32")
 			}
-		case DVT_Double,DVT_DateTime:return int32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Float:return int32((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_String:
-			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-			if err != nil{
-				panic(err)
-			}else{
-				return int32(v)
-			}
-		default:
-			panic("can not convert Type to int32")
 		}
 	}
 	return defavalue
@@ -835,28 +912,30 @@ func (r *DxIntKeyRecord)AsIntByPath(path string,defavalue int)int  {
 }
 
 func (r *DxIntKeyRecord)AsInt(key int64,defavalue int)int  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int: return (*DxIntValue)(unsafe.Pointer(value)).fvalue
-		case DVT_Int32: return int((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int64: return int((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Bool:
-			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
-				return 1
-			}else{
-				return 0
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int: return (*DxIntValue)(unsafe.Pointer(value)).fvalue
+			case DVT_Int32: return int((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int64: return int((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Bool:
+				if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+					return 1
+				}else{
+					return 0
+				}
+			case DVT_Double,DVT_DateTime:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Float:return int((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_String:
+				v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
+				if err != nil{
+					panic(err)
+				}else{
+					return int(v)
+				}
+			default:
+				panic("can not convert Type to int")
 			}
-		case DVT_Double,DVT_DateTime:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Float:return int((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_String:
-			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-			if err != nil{
-				panic(err)
-			}else{
-				return int(v)
-			}
-		default:
-			panic("can not convert Type to int")
 		}
 	}
 	return defavalue
@@ -898,28 +977,30 @@ func (r *DxIntKeyRecord)AsInt64ByPath(path string,defavalue int64)int64  {
 }
 
 func (r *DxIntKeyRecord)AsInt64(key int64,defavalue int64)int64  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int: return int64((*DxIntValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int32: return int64((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int64: return int64((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Bool:
-			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
-				return 1
-			}else{
-				return 0
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int: return int64((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int32: return int64((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int64: return int64((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Bool:
+				if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+					return 1
+				}else{
+					return 0
+				}
+			case DVT_Double,DVT_DateTime:return int64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Float:return int64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_String:
+				v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
+				if err != nil{
+					panic(err)
+				}else{
+					return v
+				}
+			default:
+				panic("can not convert Type to int64")
 			}
-		case DVT_Double,DVT_DateTime:return int64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Float:return int64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_String:
-			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-			if err != nil{
-				panic(err)
-			}else{
-				return v
-			}
-		default:
-			panic("can not convert Type to int64")
 		}
 	}
 	return defavalue
@@ -961,18 +1042,20 @@ func (r *DxIntKeyRecord)AsBoolByPath(path string,defavalue bool)bool  {
 }
 
 func (r *DxIntKeyRecord)AsBool(key int64,defavalue bool)bool  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int: return (*DxIntValue)(unsafe.Pointer(value)).fvalue != 0
-		case DVT_Int32: return (*DxInt32Value)(unsafe.Pointer(value)).fvalue != 0
-		case DVT_Int64: return (*DxInt64Value)(unsafe.Pointer(value)).fvalue != 0
-		case DVT_Bool: return bool((*DxBoolValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Double,DVT_DateTime:return float64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue) != 0
-		case DVT_Float:return float32((*DxFloatValue)(unsafe.Pointer(value)).fvalue) != 0
-		case DVT_String:
-			return strings.ToUpper((*DxStringValue)(unsafe.Pointer(value)).fvalue) == "TRUE"
-		default:
-			panic("can not convert Type to Bool")
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int: return (*DxIntValue)(unsafe.Pointer(value)).fvalue != 0
+			case DVT_Int32: return (*DxInt32Value)(unsafe.Pointer(value)).fvalue != 0
+			case DVT_Int64: return (*DxInt64Value)(unsafe.Pointer(value)).fvalue != 0
+			case DVT_Bool: return bool((*DxBoolValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Double,DVT_DateTime:return float64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue) != 0
+			case DVT_Float:return float32((*DxFloatValue)(unsafe.Pointer(value)).fvalue) != 0
+			case DVT_String:
+				return strings.ToUpper((*DxStringValue)(unsafe.Pointer(value)).fvalue) == "TRUE"
+			default:
+				panic("can not convert Type to Bool")
+			}
 		}
 	}
 	return defavalue
@@ -1015,32 +1098,38 @@ func (r *DxIntKeyRecord)AsFloatByPath(path string,defavalue float32)float32  {
 }
 
 func (r *DxIntKeyRecord)AsFloat(key int64,defavalue float32)float32  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int: return float32((*DxIntValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int32: return float32((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int64: return float32((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Bool:
-			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
-				return 1
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int: return float32((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int32: return float32((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int64: return float32((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Bool:
+				if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+					return 1
+				}
+				return 0
+			case DVT_Double,DVT_DateTime:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Float:return (*DxFloatValue)(unsafe.Pointer(value)).fvalue
+			default:
+				panic("can not convert Type to Float")
 			}
-			return 0
-		case DVT_Double,DVT_DateTime:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Float:return (*DxFloatValue)(unsafe.Pointer(value)).fvalue
-		default:
-			panic("can not convert Type to Float")
 		}
 	}
 	return defavalue
 }
 
 func (r *DxIntKeyRecord)SetExtValue(intKey int64,extbt []byte)  {
-	if value,ok := r.fRecords[intKey];ok && value != nil{
-		if value.fValueType == DVT_Ext{
-			value.SetExtValue(extbt)
-			return
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[intKey];ok && value != nil{
+			if value.fValueType == DVT_Ext{
+				value.SetExtValue(extbt)
+				return
+			}
+			value.ClearValue(true)
 		}
-		value.ClearValue(true)
+	}else{
+		r.fRecords = make(map[int64]*DxBaseValue,32)
 	}
 	var m DxExtValue
 	m.fdata = extbt
@@ -1059,9 +1148,13 @@ func (r *DxIntKeyRecord)SetBaseValue(intKey int64,v *DxBaseValue)  {
 			if v != nil && v.fParent != nil {
 				panic("Must Set A Single Record(no Parent)")
 			}
-			if value, ok := r.fRecords[intKey]; ok && value != nil {
-				value.ClearValue(true)
-				value.fParent = nil
+			if r.fRecords != nil{
+				if value, ok := r.fRecords[intKey]; ok && value != nil {
+					value.ClearValue(true)
+					value.fParent = nil
+				}
+			}else{
+				r.fRecords = make(map[int64]*DxBaseValue,32)
 			}
 			if v != nil {
 				r.fRecords[intKey] = v
@@ -1086,8 +1179,10 @@ func (r *DxIntKeyRecord)SetBaseValue(intKey int64,v *DxBaseValue)  {
 }
 
 func (r *DxIntKeyRecord)AsExtValue(intKey int64)(*DxExtValue)  {
-	if value,ok := r.fRecords[intKey];ok && value != nil && value.fValueType == DVT_Ext{
-		return (*DxExtValue)(unsafe.Pointer(value))
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[intKey];ok && value != nil && value.fValueType == DVT_Ext{
+			return (*DxExtValue)(unsafe.Pointer(value))
+		}
 	}
 	return nil
 }
@@ -1128,40 +1223,44 @@ func (r *DxIntKeyRecord)AsDoubleByPath(path string,defavalue float64)float64  {
 }
 
 func (r *DxIntKeyRecord)AsDouble(key int64,defavalue float64)float64  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int: return float64((*DxIntValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int32: return float64((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int64: return float64((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Bool:
-			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
-				return 1
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int: return float64((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int32: return float64((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int64: return float64((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Bool:
+				if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+					return 1
+				}
+				return 0
+			case DVT_Double,DVT_DateTime:return (*DxDoubleValue)(unsafe.Pointer(value)).fvalue
+			case DVT_Float:return float64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+			default:
+				panic("can not convert Type to Double")
 			}
-			return 0
-		case DVT_Double,DVT_DateTime:return (*DxDoubleValue)(unsafe.Pointer(value)).fvalue
-		case DVT_Float:return float64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
-		default:
-			panic("can not convert Type to Double")
 		}
 	}
 	return defavalue
 }
 
 func (r *DxIntKeyRecord)AsDateTime(key int64,defavalue DxCommonLib.TDateTime)DxCommonLib.TDateTime  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		switch value.fValueType {
-		case DVT_Int: return DxCommonLib.TDateTime((*DxIntValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int32: return DxCommonLib.TDateTime((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Int64: return DxCommonLib.TDateTime((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
-		case DVT_Bool:
-			if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
-				return 1
+	if r.fRecords!= nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			switch value.fValueType {
+			case DVT_Int: return DxCommonLib.TDateTime((*DxIntValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int32: return DxCommonLib.TDateTime((*DxInt32Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Int64: return DxCommonLib.TDateTime((*DxInt64Value)(unsafe.Pointer(value)).fvalue)
+			case DVT_Bool:
+				if (*DxBoolValue)(unsafe.Pointer(value)).fvalue{
+					return 1
+				}
+				return 0
+			case DVT_Double,DVT_DateTime:return DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
+			case DVT_Float:return DxCommonLib.TDateTime((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
+			default:
+				panic("can not convert Type to Double")
 			}
-			return 0
-		case DVT_Double,DVT_DateTime:return DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
-		case DVT_Float:return DxCommonLib.TDateTime((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
-		default:
-			panic("can not convert Type to Double")
 		}
 	}
 	return defavalue
@@ -1199,8 +1298,10 @@ func (r *DxIntKeyRecord)AsStringByPath(path string,defavalue string)string  {
 }
 
 func (r *DxIntKeyRecord)AsString(key int64,defavalue string)string  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		return value.ToString()
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			return value.ToString()
+		}
 	}
 	return defavalue
 }
@@ -1251,11 +1352,13 @@ func (r *DxIntKeyRecord)AsRecord(key int64)*DxRecord  {
 }
 
 func (r *DxIntKeyRecord)AsIntRecord(key int64)*DxIntKeyRecord  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Record{
-			return (*DxIntKeyRecord)(unsafe.Pointer(value))
+	if r.fRecords != nil{
+		if value,ok := r.fRecords[key];ok && value != nil{
+			if value.fValueType == DVT_Record{
+				return (*DxIntKeyRecord)(unsafe.Pointer(value))
+			}
+			panic("not Record Value")
 		}
-		panic("not Record Value")
 	}
 	return nil
 }
@@ -1296,11 +1399,13 @@ func (r *DxIntKeyRecord)AsIntRecordByPath(path string)*DxIntKeyRecord  {
 }
 
 func (r *DxIntKeyRecord)AsArray(key int64)*DxArray  {
-	if value,ok := r.fRecords[key];ok && value != nil{
-		if value.fValueType == DVT_Array{
-			return (*DxArray)(unsafe.Pointer(value))
+	if r.fRecords != nil {
+		if value, ok := r.fRecords[key]; ok && value != nil {
+			if value.fValueType == DVT_Array {
+				return (*DxArray)(unsafe.Pointer(value))
+			}
+			panic("not Array Value")
 		}
-		panic("not Array Value")
 	}
 	return nil
 }
@@ -1403,9 +1508,11 @@ func (r *DxIntKeyRecord)Remove(keyOrPath string)  {
 }
 
 func (r *DxIntKeyRecord)Delete(key int64)  {
-	if v,ok := r.fRecords[key];ok{
-		v.ClearValue(true)
-		delete(r.fRecords,key)
+	if r.fRecords!=nil {
+		if v, ok := r.fRecords[key]; ok {
+			v.ClearValue(true)
+			delete(r.fRecords, key)
+		}
 	}
 }
 
@@ -1591,42 +1698,44 @@ func (r *DxIntKeyRecord)SaveJsonWriter(w io.Writer)error  {
 	if err != nil{
 		return err
 	}
-	isFirst := true
-	for k,v := range r.fRecords{
-		if !isFirst{
-			_,err = writer.WriteString(`,"`)
-		}else{
-			isFirst = false
-			err = writer.WriteByte('"')
-		}
-		if err != nil{
-			return err
-		}
-		_,err = writer.WriteString(strconv.Itoa(int(k)))
-		if err!=nil{
-			return err
-		}
-		_, err = writer.WriteString(`":`)
-		if err!=nil{
-			return err
-		}
-		if v != nil{
-			vt := v.fValueType
-			if vt == DVT_String || vt == DVT_Binary{
+	if r.fRecords != nil {
+		isFirst := true
+		for k, v := range r.fRecords {
+			if !isFirst {
+				_, err = writer.WriteString(`,"`)
+			} else {
+				isFirst = false
 				err = writer.WriteByte('"')
 			}
-			if err != nil{
+			if err != nil {
 				return err
 			}
-			_,err = writer.WriteString(v.ToString())
-			if err == nil && (vt == DVT_String || vt == DVT_Binary){
-				err = writer.WriteByte('"')
+			_, err = writer.WriteString(strconv.Itoa(int(k)))
+			if err != nil {
+				return err
 			}
-		}else{
-			_,err = writer.WriteString("null")
-		}
-		if err != nil{
-			return err
+			_, err = writer.WriteString(`":`)
+			if err != nil {
+				return err
+			}
+			if v != nil {
+				vt := v.fValueType
+				if vt == DVT_String || vt == DVT_Binary {
+					err = writer.WriteByte('"')
+				}
+				if err != nil {
+					return err
+				}
+				_, err = writer.WriteString(v.ToString())
+				if err == nil && (vt == DVT_String || vt == DVT_Binary) {
+					err = writer.WriteByte('"')
+				}
+			} else {
+				_, err = writer.WriteString("null")
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
 	writer.WriteByte('}')
