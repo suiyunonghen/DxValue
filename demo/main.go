@@ -48,7 +48,7 @@ var err error
 		if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF {
 			databytes = databytes[3:]
 		}
-		_,err = mrec.JsonParserFromByte(databytes)
+		_,err = mrec.JsonParserFromByte(databytes,true,false)
 		if err != nil{
 			panic(err)
 		}
@@ -69,7 +69,7 @@ var err error
 	fmt.Println(mrec.ToString())
 	//json.Marshal()
 
-	mrec.ClearValue()
+	mrec.ClearValue(false)
 	mrec.ForcePath("DxSoft.Name","不得闲")
 	fmt.Println(mrec.ToString())
 
@@ -79,7 +79,7 @@ var err error
 
 	ma := DxValue.NewArray()
 
-	_,err = ma.JsonParserFromByte([]byte(`[null,["gg","23","gasdf"],20,null ,null ,12,{ "Name": "不得闲" }]`))
+	_,err = ma.JsonParserFromByte([]byte(`[null,["gg","23","gasdf"],20,null ,null ,12,{ "Name": "不得闲" }]`),true,false)
 	if err != nil{
 		panic(err)
 	}
