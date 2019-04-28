@@ -137,6 +137,83 @@ func (r *DxRecord)Find(keyName string)*DxBaseValue  {
 }
 
 
+func (r *DxRecord)ForcePathRecord(path string) *DxRecord{
+	fields := strings.FieldsFunc(path,r.splitPathFields)
+	vlen := len(fields)
+	if vlen == 0{
+		return nil
+	}
+	vbase := r.Find(fields[0])
+	if vbase == nil || vbase.fValueType != DVT_Record{
+		vbase = &r.NewRecord(fields[0]).DxBaseValue
+	}
+	for i := 1;i<vlen;i++{
+		oldbase := vbase
+		switch vbase.fValueType {
+		case DVT_Record:
+			vbase = (*DxRecord)(unsafe.Pointer(vbase)).Find(fields[i])
+			if vbase == nil || vbase.fValueType != DVT_Record{
+				vbase = &(*DxRecord)(unsafe.Pointer(oldbase)).NewRecord(fields[i]).DxBaseValue
+			}
+		case DVT_RecordIntKey:
+			if intkey,er := strconv.ParseInt(fields[i],10,64);er == nil{
+				vbase = (*DxIntKeyRecord)(unsafe.Pointer(vbase)).Find(intkey)
+				if vbase == nil || vbase.fValueType != DVT_Record{
+					vbase = &(*DxIntKeyRecord)(unsafe.Pointer(oldbase)).NewRecord(intkey).DxBaseValue
+				}
+			}else{
+				vbase = vbase.Parent()
+				vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+			}
+		default:
+			vbase = vbase.Parent()
+			if vbase == nil{
+				 vbase = &(NewRecord().DxBaseValue)
+			}
+			vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+		}
+	}
+	return (*DxRecord)(unsafe.Pointer(vbase))
+}
+
+func (r *DxRecord)ForcePathArray(path string) *DxArray{
+	fields := strings.FieldsFunc(path,r.splitPathFields)
+	vlen := len(fields)
+	if vlen == 0{
+		return nil
+	}
+	vbase := r.Find(fields[0])
+	if vbase == nil || vbase.fValueType != DVT_Record{
+		vbase = &r.NewRecord(fields[0]).DxBaseValue
+	}
+	for i := 1;i<vlen - 1;i++{
+		oldbase := vbase
+		switch vbase.fValueType {
+		case DVT_Record:
+			vbase = (*DxRecord)(unsafe.Pointer(vbase)).Find(fields[i])
+			if vbase == nil || vbase.fValueType != DVT_Record{
+				vbase = &(*DxRecord)(unsafe.Pointer(oldbase)).NewRecord(fields[i]).NewRecord(fields[i]).DxBaseValue
+			}
+		case DVT_RecordIntKey:
+			if intkey,er := strconv.ParseInt(fields[i],10,64);er == nil{
+				vbase = (*DxIntKeyRecord)(unsafe.Pointer(vbase)).Find(intkey)
+				if vbase == nil || vbase.fValueType != DVT_Record{
+					vbase = &(*DxIntKeyRecord)(unsafe.Pointer(oldbase)).NewRecord(intkey).DxBaseValue
+				}
+			}else{
+				vbase = vbase.Parent()
+				vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+			}
+		default:
+			vbase = vbase.Parent()
+			if vbase == nil{
+				vbase = &(NewRecord().DxBaseValue)
+			}
+			vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+		}
+	}
+	return (*DxRecord)(unsafe.Pointer(vbase)).NewArray(fields[vlen-1])
+}
 
 func (r *DxRecord)ForcePath(path string,v interface{}) {
 	fields := strings.FieldsFunc(path,r.splitPathFields)

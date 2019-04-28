@@ -35,6 +35,20 @@ func TestDxRecord_Escape(t *testing.T) {
 	fmt.Println(json.ToString())
 }
 
+func TestDxRecord_ForcePathRecord(t *testing.T) {
+	json := NewRecord()
+	rc := json.ForcePathRecord("test.gg.mm")
+	rc.SetString("Name","不得an")
+	fmt.Println(json.ToString())
+	rc = json.ForcePathRecord("test.gg")
+	fmt.Println(rc.ToString())
+
+	arr := rc.ForcePathArray("mm.Array")
+	arr.SetString(0,"ASdf")
+	arr.SetString(1,"ceshia")
+	fmt.Println(rc.ToString())
+}
+
 func Test_Record(t *testing.T)  {
 	mA := &ATest{A:123,B:234}
 	mA.mc = make(map[string]int)
