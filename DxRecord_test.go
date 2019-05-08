@@ -49,6 +49,17 @@ func TestDxRecord_ForcePathRecord(t *testing.T) {
 	fmt.Println(rc.ToString())
 }
 
+func TestDxRecord_BytesWithSort(t *testing.T) {
+	lvResp := NewRecord()
+	lvAcc := lvResp.ForcePathRecord("account")
+	lvAcc.SetInt("max", 34)
+	lvAcc.SetInt("used", 42)
+	fmt.Println(string(lvResp.Bytes()))
+	str :=string( lvResp.BytesWithSort())
+	fmt.Println(str)
+
+}
+
 func Test_Record(t *testing.T)  {
 	mA := &ATest{A:123,B:234}
 	mA.mc = make(map[string]int)

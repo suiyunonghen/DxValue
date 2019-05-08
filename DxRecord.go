@@ -755,9 +755,9 @@ func(r *DxRecord)BytesWithSort()[]byte{
 					buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
 					buffer.WriteString(")/")
 				case DVT_RecordIntKey:
-					buffer.Write((*DxRecord)(unsafe.Pointer(v)).BytesWithSort())
-				case DVT_Record:
 					buffer.Write((*DxIntKeyRecord)(unsafe.Pointer(v)).BytesWithSort())
+				case DVT_Record:
+					buffer.Write((*DxRecord)(unsafe.Pointer(v)).BytesWithSort())
 				case DVT_Array:
 					buffer.Write((*DxArray)(unsafe.Pointer(v)).BytesWithSort())
 				default:

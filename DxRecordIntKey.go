@@ -413,7 +413,20 @@ func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
 				if vt == DVT_String || vt == DVT_Binary{
 					buffer.WriteByte('"')
 				}
-				buffer.WriteString(v.ToString())
+				switch vt {
+				case DVT_DateTime:
+					buffer.WriteString("/Date(")
+					buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
+					buffer.WriteString(")/")
+				case DVT_RecordIntKey:
+					buffer.Write((*DxIntKeyRecord)(unsafe.Pointer(v)).BytesWithSort())
+				case DVT_Record:
+					buffer.Write((*DxRecord)(unsafe.Pointer(v)).BytesWithSort())
+				case DVT_Array:
+					buffer.Write((*DxArray)(unsafe.Pointer(v)).BytesWithSort())
+				default:
+					buffer.WriteString(v.ToString())
+				}
 				if vt == DVT_String || vt == DVT_Binary{
 					buffer.WriteByte('"')
 				}
