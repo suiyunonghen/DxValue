@@ -28,10 +28,28 @@ func TestDxRecord_Escape(t *testing.T) {
 	vc := NewArray()// NewRecord()
 	vc.JsonParserFromByte(([]byte)(str),true,true)
 	fmt.Println(vc.ToString())*/
-	str := "{\"id\":\"00\",\"output\":\"ntripsvr://0000@58.49.94.210:2103/WUH9\",\"inputidx\":1}"
+	//str := "{\"id\":\"00\",\"output\":\"ntripsvr://0000@58.49.94.210:2103/WUH9\",\"inputidx\":1}"
+
+	lvReq := NewRecord()
+	lvReq.SetString("msg", "HTTP/1.0 401 Unauthorized \r\n WWW-Authenticate: Basic realm=\"RTCM32_GGB\"")
+	str:=string(lvReq.BytesWithSort())
+	fmt.Println(str)
+	fmt.Println(lvReq.AsString("msg",""))
+
+	str = `{"msg":"\r\n123"}`
+
 	json := NewRecord()
 	json.ClearValue(true)
 	json.JsonParserFromByte([]byte(str), true, false)
+	arr := json.NewArray("testArray")
+
+
+	json.JsonParserFromByte([]byte(`{"testArray":["/Date(1558844627000)/"],"msg":"\r\n123"}`),true,true)
+
+	fmt.Println(json.AsBytes("msg"))
+	arr = json.AsArray("testArray")
+	fmt.Println(arr.AsDateTime(0,0).ToTime())
+	fmt.Println(json.AsString("msg",""))
 	fmt.Println(json.ToString())
 }
 

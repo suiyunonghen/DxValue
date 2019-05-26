@@ -1063,11 +1063,21 @@ func (arr *DxArray)Bytes()[]byte  {
 			if av == nil{
 				buf.WriteString("null")
 			}else{
-				if av.fValueType == DVT_String || av.fValueType == DVT_Binary{
+				vt := av.fValueType
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 					buf.WriteByte('"')
 				}
-				buf.WriteString(av.ToString())
-				if av.fValueType == DVT_String || av.fValueType == DVT_Binary{
+				switch vt {
+				case DVT_DateTime:
+					buf.WriteString("/Date(")
+					buf.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(av)).fvalue).ToTime().Unix())*1000))
+					buf.WriteString(")/")
+				case DVT_String:
+					buf.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(av)).fvalue))
+				default:
+					buf.WriteString(av.ToString())
+				}
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 					buf.WriteByte('"')
 				}
 			}
@@ -1095,7 +1105,11 @@ func (arr *DxArray)BytesWithSort()[]byte  {
 				switch av.fValueType {
 				case DVT_String,DVT_Binary:
 					buf.WriteByte('"')
-					buf.WriteString(av.ToString())
+					if av.fValueType == DVT_String{
+						buf.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(av)).fvalue))
+					}else{
+						buf.WriteString(av.ToString())
+					}
 					buf.WriteByte('"')
 				case DVT_Record:
 					buf.Write((*DxRecord)(unsafe.Pointer(av)).BytesWithSort())
@@ -1103,6 +1117,10 @@ func (arr *DxArray)BytesWithSort()[]byte  {
 					buf.Write((*DxIntKeyRecord)(unsafe.Pointer(av)).BytesWithSort())
 				case DVT_Array:
 					buf.Write((*DxArray)(unsafe.Pointer(av)).BytesWithSort())
+				case DVT_DateTime:
+					buf.WriteString(`"/Date(`)
+					buf.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(av)).fvalue).ToTime().Unix())*1000))
+					buf.WriteString(`)/"`)
 				default:
 					buf.WriteString(av.ToString())
 				}

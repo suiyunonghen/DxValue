@@ -410,7 +410,7 @@ func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
 			v := r.fRecords[keys[i]]
 			if v != nil{
 				vt := v.fValueType
-				if vt == DVT_String || vt == DVT_Binary{
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 					buffer.WriteByte('"')
 				}
 				switch vt {
@@ -424,6 +424,8 @@ func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
 					buffer.Write((*DxRecord)(unsafe.Pointer(v)).BytesWithSort())
 				case DVT_Array:
 					buffer.Write((*DxArray)(unsafe.Pointer(v)).BytesWithSort())
+				case DVT_String:
+					buffer.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(v)).fvalue))
 				default:
 					buffer.WriteString(v.ToString())
 				}
@@ -455,11 +457,20 @@ func (r *DxIntKeyRecord)Bytes()[]byte  {
 			buffer.WriteString(`":`)
 			if v != nil{
 				vt := v.fValueType
-				if vt == DVT_String || vt == DVT_Binary{
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 					buffer.WriteByte('"')
 				}
-				buffer.WriteString(v.ToString())
-				if vt == DVT_String || vt == DVT_Binary{
+				switch vt {
+				case DVT_DateTime:
+					buffer.WriteString("/Date(")
+					buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
+					buffer.WriteString(")/")
+				case DVT_String:
+					buffer.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(v)).fvalue))
+				default:
+					buffer.WriteString(v.ToString())
+				}
+				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 					buffer.WriteByte('"')
 				}
 			}else{
