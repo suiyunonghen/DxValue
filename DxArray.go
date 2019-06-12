@@ -527,6 +527,13 @@ func (arr *DxArray)AsFloat(idx int,defValue float32)float32  {
 				return 1
 			}
 			return 0
+		case DVT_String: {
+			v,e := strconv.ParseFloat((*DxStringValue)(unsafe.Pointer(value)).fvalue,2)
+			if e == nil{
+				return float32(v)
+			}
+			panic("can not convert Type to Float")
+		}
 		case DVT_Double,DVT_DateTime:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return (*DxFloatValue)(unsafe.Pointer(value)).fvalue
 		default:
@@ -601,10 +608,17 @@ func (arr *DxArray)AsDouble(idx int,defValue float64)float64  {
 				return 1
 			}
 			return 0
+		case DVT_String: {
+			v,e := strconv.ParseFloat((*DxStringValue)(unsafe.Pointer(value)).fvalue,2)
+			if e == nil{
+				return v
+			}
+			panic("can not convert Type to Double")
+		}
 		case DVT_Double,DVT_DateTime:return (*DxDoubleValue)(unsafe.Pointer(value)).fvalue
 		case DVT_Float:return float64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		default:
-			panic("can not convert Type to Float")
+			panic("can not convert Type to Double")
 		}
 	}
 	return defValue
