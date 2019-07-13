@@ -61,7 +61,15 @@ func (coder *DxMsgPackDecoder)DecodeStrMapKvRecord(strMap *DxRecord,strcode DxMs
 		if bin ,err := coder.DecodeExtValue(strcode);err!=nil{
 			return err
 		}else{
-			strMap.SetExtValue(keyName,bin)
+			if len(bin) == 13 && int8(bin[0]) == -1{ //96位日期格式
+				//32位纳秒，64位秒
+				nsec := binary.BigEndian.Uint32(bin[1:5])
+				sec := binary.BigEndian.Uint64(bin[5:])
+				ntime := time.Unix(int64(sec), int64(nsec))
+				strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(&ntime))
+			}else{
+				strMap.SetExtValue(keyName,bin)
+			}
 		}
 	}else{
 		switch strcode {
@@ -97,6 +105,28 @@ func (coder *DxMsgPackDecoder)DecodeStrMapKvRecord(strMap *DxRecord,strcode DxMs
 
 			}else{
 				var mb [5]byte
+				if err = coder.Read(mb[1:]);err!=nil{
+					return err
+				}
+				mb[0] = byte(strcode)
+				strMap.SetExtValue(keyName,mb[:])
+			}
+		case DxMsgPack.CodeFixExt8: //64位时间格式
+			if strcode,err = coder.ReadCode();err!=nil{
+				return err
+			}
+			if int8(strcode) == -1{
+				//30位纳秒，34位秒
+				if sec,err := coder.ReadBigEnd64();err!=nil{
+					return err
+				}else{
+					nsec := int64(sec >> 34)
+					sec &= 0x00000003ffffffff
+					ntime := time.Unix(int64(sec), nsec)
+					strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(&ntime))
+				}
+			}else{
+				var mb [9]byte
 				if err = coder.Read(mb[1:]);err!=nil{
 					return err
 				}

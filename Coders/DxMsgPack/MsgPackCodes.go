@@ -53,16 +53,16 @@ const(
 	CodeFixExt1  MsgPackCode = 0xd4
 	CodeFixExt2  MsgPackCode = 0xd5
 	CodeFixExt4  MsgPackCode = 0xd6
-	CodeFixExt8  MsgPackCode = 0xd7
+	CodeFixExt8  MsgPackCode = 0xd7 //64位时间格式
 	CodeFixExt16 MsgPackCode = 0xd8
-	CodeExt8     MsgPackCode = 0xc7
+	CodeExt8     MsgPackCode = 0xc7 //96位时间格式
 	CodeExt16    MsgPackCode = 0xc8
 	CodeExt32    MsgPackCode = 0xc9
 )
 
 
 func (code MsgPackCode)IsExt() bool {
-	return (code >= CodeFixExt1 && code <= CodeFixExt16 && code != CodeFixExt4) || (code >= CodeExt8 && code <= CodeExt32)
+	return (code >= CodeFixExt1 && code <= CodeFixExt16 && code != CodeFixExt4 && code != CodeFixExt8) || (code >= CodeExt8 && code <= CodeExt32)
 }
 
 func (code MsgPackCode)IsMap()bool  {
