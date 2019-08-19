@@ -78,6 +78,7 @@ func TestDxRecord_BytesWithSort(t *testing.T) {
 
 }
 
+
 func Test_Record(t *testing.T)  {
 	mA := &ATest{A:123,B:234}
 	mA.mc = make(map[string]int)
@@ -228,7 +229,7 @@ func TestDxRecord_SaveJsonFile(t *testing.T) {
 }
 
 func TestMsgPackDecode(t *testing.T)  {
-	bt, err := ioutil.ReadFile("d:\\msgpack.bin")
+	bt, err := ioutil.ReadFile("d:\\1.bin")
 	if err != nil {
 		fmt.Println("ReadFile Err:",err)
 		return
@@ -238,6 +239,7 @@ func TestMsgPackDecode(t *testing.T)  {
 	if err := coder.Decode(&rec.DxBaseValue);err!=nil{
 		fmt.Println("Error；",err)
 	}
+	fmt.Println(rec.AsDateTime("create_time",0).ToTime())
 	fmt.Println(rec.ToString())
 }
 
