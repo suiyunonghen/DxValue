@@ -53,6 +53,16 @@ func (v *DxValue)SetIntValue(value int)  {
 	v.fValue = &m.DxBaseValue
 }
 
+func (v *DxValue)Clone()*DxValue  {
+	result := &DxValue{}
+	if v.fValue != nil{
+		result.fValue = v.fValue.Clone()
+	}else{
+		result.fValue = nil
+	}
+	return result
+}
+
 func (v *DxValue)SetInt32Value(value int32)  {
 	if v.fValue != nil{
 		switch v.fValue.fValueType {

@@ -1,17 +1,17 @@
 package DxValue
 
 import (
-	"fmt"
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
+	//"github.com/gogf/gf/g/encoding/gparser"
 	"github.com/json-iterator/go"
-	"gitee.com/johng/gf/g/encoding/gparser"
+	"io/ioutil"
 	"testing"
 	//"os"
 	"os"
 )
 
-func BenchmarkGparser(b *testing.B){
+/*func BenchmarkGparser(b *testing.B){
 	buf, err := ioutil.ReadFile("DataProxy.config.json")
 	if err != nil {
 		fmt.Println("ReadFile Err:",err)
@@ -27,7 +27,7 @@ func BenchmarkGparser(b *testing.B){
 			file.Close()
 		}
 	}
-}
+}*/
 
 func BenchmarkDxRecord_JsonParserFromByte(b *testing.B) {
 	buf, err := ioutil.ReadFile("DataProxy.config.json")

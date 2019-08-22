@@ -1805,6 +1805,19 @@ func (r *DxRecord)AsIntRecordByPath(path string)*DxIntKeyRecord  {
 	return nil
 }
 
+func (r *DxRecord)Clone()*DxRecord  {
+	result := NewRecord()
+	result.PathSplitChar = r.PathSplitChar
+	if r.fRecords != nil{
+		for k,v := range r.fRecords{
+			vbase := v.Clone()
+			vbase.fParent = &result.DxBaseValue
+			result.fRecords[k] = vbase
+		}
+	}
+	return  result
+}
+
 func (r *DxRecord)AsArray(KeyName string)*DxArray  {
 	if r.fRecords != nil{
 		if value,ok := r.fRecords[KeyName];ok && value != nil{

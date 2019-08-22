@@ -127,6 +127,56 @@ var (
 	extTypes map[byte]IExtTypeCoder
 )
 
+func (v *DxStringValue)Clone()*DxStringValue  {
+	var result DxStringValue
+	result.fValueType = DVT_String
+	result.fvalue = v.fvalue
+	return &result
+}
+
+func (v *DxBoolValue)Clone() *DxBoolValue  {
+	var result DxBoolValue
+	result.fValueType = DVT_Bool
+	result.fvalue = v.fvalue
+	return &result
+}
+
+func (v *DxDoubleValue)Clone() *DxDoubleValue  {
+	var result DxDoubleValue
+	result.fValueType = DVT_Double
+	result.fvalue = v.fvalue
+	return &result
+}
+
+func (v *DxFloatValue)Clone() *DxFloatValue  {
+	var result DxFloatValue
+	result.fValueType = DVT_Float
+	result.fvalue = v.fvalue
+	return &result
+}
+
+func (v *DxInt32Value)Clone() *DxInt32Value  {
+	var result DxInt32Value
+	result.fValueType = DVT_Int32
+	result.fvalue = v.fvalue
+	return &result
+}
+
+func (v *DxInt64Value)Clone() *DxInt64Value  {
+	var result DxInt64Value
+	result.fValueType = DVT_Int64
+	result.fvalue = v.fvalue
+	return &result
+}
+
+func (v *DxIntValue)Clone() *DxIntValue  {
+	var result DxIntValue
+	result.fValueType = DVT_Int
+	result.fvalue = v.fvalue
+	return &result
+}
+
+
 func (v DxBaseValue)ValueType()DxValueType  {
 	return v.fValueType
 }
@@ -142,6 +192,23 @@ func (v *DxBaseValue)Root()*DxBaseValue  {
 			return lastp
 		}
 	}
+}
+
+func (v *DxBaseValue)Clone()*DxBaseValue  {
+	switch v.ValueType() {
+	case DVT_Int32:  return &((*DxInt32Value)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Int:  return &((*DxIntValue)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Int64:  return &((*DxInt64Value)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Float:  return &((*DxFloatValue)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Double,DVT_DateTime:  return &((*DxDoubleValue)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Binary:  return &((*DxBinaryValue)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Bool:  return &((*DxBoolValue)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Array: return &((*DxArray)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Ext: return &((*DxExtValue)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_String: return &((*DxStringValue)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	case DVT_Record: return &((*DxRecord)(unsafe.Pointer(v)).Clone().DxBaseValue)
+	}
+	return nil
 }
 
 func (v *DxBaseValue)NearestRecord()*DxBaseRecord  {
@@ -344,6 +411,22 @@ func  (v *DxExtValue)ExtType()byte{
 		v.fExtType = v.fdata[0]
 	}
 	return v.fExtType
+}
+
+func (v *DxExtValue)Clone() *DxExtValue  {
+	var result DxExtValue
+	result.DxBaseValue.fParent = nil
+	result.DxBaseValue.fValueType = v.fValueType
+	result.fExtType = v.fExtType
+	result.fisDecoded = false
+	result.fvalue = nil
+	if v.fdata == nil{
+		result.fdata = nil
+	}else{
+		result.fdata = make([]byte,len(v.fdata))
+		copy(result.fdata,v.fdata)
+	}
+	return &result
 }
 
 func (v *DxExtValue)IsDecoded()bool  {
@@ -1169,6 +1252,19 @@ func (v *DxBinaryValue)ClearValue(clearInner bool)  {
 
 func (v *DxBinaryValue)Bytes()[]byte  {
 	return v.fbinary
+}
+
+func (v *DxBinaryValue)Clone() *DxBinaryValue  {
+	var result DxBinaryValue
+	result.fValueType = DVT_Binary
+	result.EncodeType = v.EncodeType
+	if v.fbinary != nil{
+		result.fbinary = make([]byte,len(v.fbinary))
+		copy(result.fbinary,v.fbinary)
+	}else{
+		result.fbinary = nil
+	}
+	return &result
 }
 
 func IsSpace(b byte)bool  {

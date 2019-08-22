@@ -69,6 +69,18 @@ func (arr *DxArray)TruncateArray(ArrLen int)  {
 	}
 }
 
+func (arr *DxArray)Clone()*DxArray{
+	result := NewArray()
+	if arr.fValues != nil{
+		result.fValues = make([]*DxBaseValue,len(arr.fValues))
+		for i:=0;i<len(arr.fValues);i++{
+			value := arr.fValues[i].Clone()
+			value.fParent = &result.DxBaseValue
+			result.fValues[i] = value
+		}
+	}
+	return result
+}
 
 func (arr *DxArray)NewRecord(idx int)(rec *DxRecord)  {
 	if idx < 0{

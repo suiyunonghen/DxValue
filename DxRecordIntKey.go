@@ -900,6 +900,19 @@ func (r *DxIntKeyRecord)AsInt32ByPath(path string,defavalue int32)int32  {
 	return defavalue
 }
 
+func (r *DxIntKeyRecord)Clone()*DxIntKeyRecord  {
+	result := NewIntKeyRecord()
+	result.PathSplitChar = r.PathSplitChar
+	if r.fRecords != nil{
+		for k,v := range r.fRecords{
+			vbase := v.Clone()
+			vbase.fParent = &result.DxBaseValue
+			result.fRecords[k] = vbase
+		}
+	}
+	return  result
+}
+
 func (r *DxIntKeyRecord)AsIntByPath(path string,defavalue int)int  {
 	parentBase,keyName := r.findPathNode(path)
 	if parentBase != nil && keyName != ""{
