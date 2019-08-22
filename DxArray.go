@@ -69,6 +69,10 @@ func (arr *DxArray)TruncateArray(ArrLen int)  {
 	}
 }
 
+func (arr *DxArray)Clear()  {
+	arr.fValues = nil
+}
+
 func (arr *DxArray)Clone()*DxArray{
 	result := NewArray()
 	if arr.fValues != nil{
@@ -175,7 +179,13 @@ func (arr *DxArray)ifNilInitArr2idx(idx int)  {
 		vlen = len(arr.fValues)
 	}
 	if idx > vlen - 1{
-		mv := make([]*DxBaseValue,idx + 1 - vlen)
+		cap := cap(arr.fValues)
+		var mv []*DxBaseValue
+		if idx > cap{
+			mv = make([]*DxBaseValue,cap)
+		}else{
+			mv = make([]*DxBaseValue,idx + 1 - vlen)
+		}
 		arr.fValues = append(arr.fValues,mv...)
 	}
 }

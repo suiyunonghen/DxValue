@@ -44,7 +44,11 @@ func TestDxArray_Append(t *testing.T) {
 	arr := NewArray()
 	arr.Append(2,"@3423",23,"asdfasdf")
 	fmt.Println(arr.String())
-
 	narr := arr.Clone()
 	fmt.Println(narr.String())
+	arr.SetString(0,"测试一")
+	arr.Delete(1)
+	fmt.Println(arr.String())
+	fmt.Println(narr.String())
+
 }
