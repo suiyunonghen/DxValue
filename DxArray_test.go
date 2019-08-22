@@ -50,5 +50,4 @@ func TestDxArray_Append(t *testing.T) {
 	arr.Delete(1)
 	fmt.Println(arr.String())
 	fmt.Println(narr.String())
-
 }
