@@ -187,10 +187,23 @@ func (coder *DxMsgPackDecoder)DecodeUnkown()(*DxBaseValue,error)  {
 		if bin,err := coder.DecodeExtValue(code);err!=nil{
 			return nil,err
 		}else {
-			var v DxExtValue
-			v.fValueType = DVT_Ext
-			v.fExtType = bin[0]
-			v.fdata = bin
+			if len(bin) == 13 && int8(bin[0]) == -1{ //96位日期格式
+				//32位纳秒，64位秒
+				nsec := binary.BigEndian.Uint32(bin[1:5])
+				sec := binary.BigEndian.Uint64(bin[5:])
+				ntime := time.Unix(int64(sec), int64(nsec))
+				var v DxDoubleValue
+				v.fValueType = DVT_DateTime
+				v.SetDateTime(DxCommonLib.Time2DelphiTime(&ntime))
+				return  &v.DxBaseValue,nil
+			}else{
+				var v DxExtValue
+				v.fValueType = DVT_Ext
+				v.fExtType = bin[0]
+				v.fdata = bin
+				return  &v.DxBaseValue,nil
+			}
+
 		}
 	} else{
 		switch code {
@@ -301,7 +314,15 @@ func (coder *DxMsgPackDecoder)DecodeIntKeyMapKvRecord(intKeyMap *DxIntKeyRecord,
 		if bin ,err := coder.DecodeExtValue(keycode);err!=nil{
 			return err
 		}else{
-			intKeyMap.SetExtValue(intKey,bin)
+			if len(bin) == 13 && int8(bin[0]) == -1{ //96位日期格式
+				//32位纳秒，64位秒
+				nsec := binary.BigEndian.Uint32(bin[1:5])
+				sec := binary.BigEndian.Uint64(bin[5:])
+				ntime := time.Unix(int64(sec), int64(nsec))
+				intKeyMap.SetDateTime(intKey, DxCommonLib.Time2DelphiTime(&ntime))
+			}else{
+				intKeyMap.SetExtValue(intKey,bin)
+			}
 		}
 	}else{
 		switch keycode {
@@ -390,7 +411,15 @@ func (coder *DxMsgPackDecoder)DecodeArrayElement(arr *DxArray,eleIndex int)(erro
 		if bin,err := coder.DecodeExtValue(code);err!=nil{
 			return err
 		}else {
-			arr.SetExtValue(eleIndex,bin)
+			if len(bin) == 13 && int8(bin[0]) == -1{ //96位日期格式
+				//32位纳秒，64位秒
+				nsec := binary.BigEndian.Uint32(bin[1:5])
+				sec := binary.BigEndian.Uint64(bin[5:])
+				ntime := time.Unix(int64(sec), int64(nsec))
+				arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(&ntime))
+			}else{
+				arr.SetExtValue(eleIndex,bin)
+			}
 		}
 	} else{
 		switch code {
@@ -425,6 +454,28 @@ func (coder *DxMsgPackDecoder)DecodeArrayElement(arr *DxArray,eleIndex int)(erro
 				}
 			}else{
 				var mb [5]byte
+				if err = coder.Read(mb[1:]);err!=nil{
+					return err
+				}
+				mb[0] = byte(code)
+				arr.SetExtValue(eleIndex,mb[:])
+			}
+		case DxMsgPack.CodeFixExt8:
+			if code,err = coder.ReadCode();err!=nil{
+				return err
+			}
+			if int8(code) == -1{
+				//30位纳秒，34位秒
+				if sec,err := coder.ReadBigEnd64();err!=nil{
+					return err
+				}else{
+					nsec := int64(sec >> 34)
+					sec &= 0x00000003ffffffff
+					ntime := time.Unix(int64(sec), nsec)
+					arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(&ntime))
+				}
+			}else{
+				var mb [9]byte
 				if err = coder.Read(mb[1:]);err!=nil{
 					return err
 				}
