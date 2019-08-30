@@ -754,19 +754,19 @@ func (encoder *DxMsgPackEncoder)EncodeExtValue(v *DxExtValue)(err error)  {
 	switch {
 	case btlen == 1:
 		buf[0] = byte(DxMsgPack.CodeFixExt1)
-		err = encoder.Write(buf[:1])
+		err = encoder.Write(buf[:2])
 	case btlen == 2:
 		buf[0] = byte(DxMsgPack.CodeFixExt2)
-		err = encoder.Write(buf[:1])
+		err = encoder.Write(buf[:2])
 	case btlen == 4:
 		buf[0] = byte(DxMsgPack.CodeFixExt4)
-		err = encoder.Write(buf[:1])
+		err = encoder.Write(buf[:2])
 	case btlen == 8:
 		buf[0] = byte(DxMsgPack.CodeFixExt8)
-		err = encoder.Write(buf[:1])
+		err = encoder.Write(buf[:2])
 	case btlen <= 16:
 		buf[0] = byte(DxMsgPack.CodeFixExt16)
-		err = encoder.Write(buf[:1])
+		err = encoder.Write(buf[:2])
 	case btlen <= DxMsgPack.Max_str8_len:
 		buf[0] = byte(DxMsgPack.CodeExt8)
 		buf[1] = byte(btlen)
@@ -781,7 +781,7 @@ func (encoder *DxMsgPackEncoder)EncodeExtValue(v *DxExtValue)(err error)  {
 		if btlen > DxMsgPack.Max_str32_len{
 			btlen = DxMsgPack.Max_str32_len
 		}
-		buf[0] = 0xc6
+		buf[0] = byte(DxMsgPack.CodeExt32)
 		binary.BigEndian.PutUint32(buf[1:5],uint32(btlen))
 		buf[5] = v.ExtType()
 		err = encoder.Write(buf[:6])

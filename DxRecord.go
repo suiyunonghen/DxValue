@@ -192,7 +192,7 @@ func (r *DxRecord)ForcePathArray(path string) *DxArray{
 		case DVT_Record:
 			vbase = (*DxRecord)(unsafe.Pointer(vbase)).Find(fields[i])
 			if vbase == nil || vbase.fValueType != DVT_Record{
-				vbase = &(*DxRecord)(unsafe.Pointer(oldbase)).NewRecord(fields[i]).NewRecord(fields[i]).DxBaseValue
+				vbase = &(*DxRecord)(unsafe.Pointer(oldbase)).NewRecord(fields[i]).DxBaseValue
 			}
 		case DVT_RecordIntKey:
 			if intkey,er := strconv.ParseInt(fields[i],10,64);er == nil{
