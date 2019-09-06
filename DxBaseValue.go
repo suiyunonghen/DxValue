@@ -599,8 +599,8 @@ func (v *DxExtValue)AsString()(string)  {
 	case uint16:return strconv.FormatInt(int64(rvalue),10)
 	case uint32: return strconv.FormatInt(int64(rvalue),10)
 	case uint64: return strconv.FormatInt(int64(rvalue),10)
-	case float32: return strconv.FormatFloat(float64(rvalue),'f','e',32)
-	case float64: return strconv.FormatFloat(rvalue,'f','e',64)
+	case float32: return strconv.FormatFloat(float64(rvalue),'f',-1,32)
+	case float64: return strconv.FormatFloat(rvalue,'f',-1,64)
 	case *DxInt32Value:	return rvalue.AsString()
 	case *DxIntValue: return rvalue.AsString()
 	case *DxInt64Value: return rvalue.AsString()
@@ -1138,7 +1138,7 @@ func (v *DxBoolValue)Bytes()[]byte  {
 
 
 func (v *DxFloatValue)ToString()string  {
-	return strconv.FormatFloat(float64(v.fvalue),'f','e',32)
+	return strconv.FormatFloat(float64(v.fvalue),'f',-1,32)
 }
 
 func (v *DxFloatValue)Float()float32  {
@@ -1157,7 +1157,7 @@ func (v *DxDoubleValue)ToString()string  {
 	if v.fValueType == DVT_DateTime{
 		return DxCommonLib.TDateTime(v.fvalue).ToTime().Format("2006-01-02 15:04:05")
 	}
-	return strconv.FormatFloat(float64(v.fvalue),'f','e',64)
+	return strconv.FormatFloat(float64(v.fvalue),'f',-1,64)
 }
 
 func (v *DxDoubleValue)Bytes()[]byte  {

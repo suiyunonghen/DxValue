@@ -38,6 +38,12 @@ type(
 	}
 )
 
+func (r *DxRecord)Count()int  {
+	if r.fRecords != nil{
+		return len(r.fRecords)
+	}
+	return 0
+}
 
 func (r *DxRecord)ClearValue(clearInner bool)  {
 	if r.fRecords != nil{
