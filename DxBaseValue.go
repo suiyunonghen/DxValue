@@ -1054,9 +1054,9 @@ func (v *DxBaseValue)AsBytes()([]byte,error)  {
 	case DVT_Bool:
 		return (*DxBoolValue)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Record:
-		return (*DxRecord)(unsafe.Pointer(v)).Bytes(),nil
+		return (*DxRecord)(unsafe.Pointer(v)).Bytes(true),nil
 	case DVT_RecordIntKey:
-		return (*DxIntKeyRecord)(unsafe.Pointer(v)).Bytes(),nil
+		return (*DxIntKeyRecord)(unsafe.Pointer(v)).Bytes(true),nil
 	case DVT_Int32:
 		return (*DxInt32Value)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Int:
@@ -1066,7 +1066,7 @@ func (v *DxBaseValue)AsBytes()([]byte,error)  {
 	case DVT_Int64:
 		return (*DxInt64Value)(unsafe.Pointer(v)).Bytes(),nil
 	case DVT_Array:
-		return (*DxArray)(unsafe.Pointer(v)).Bytes(),nil
+		return (*DxArray)(unsafe.Pointer(v)).Bytes(true),nil
 	default:
 		return nil,nil
 	}

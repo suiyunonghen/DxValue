@@ -32,7 +32,7 @@ func TestDxRecord_Escape(t *testing.T) {
 
 	lvReq := NewRecord()
 	lvReq.SetString("msg", "HTTP/1.0 401 Unauthorized \r\n WWW-Authenticate: Basic realm=\"RTCM32_GGB\"")
-	str:=string(lvReq.BytesWithSort())
+	str:=string(lvReq.BytesWithSort(false))
 	fmt.Println(str)
 	fmt.Println(lvReq.AsString("msg",""))
 
@@ -72,8 +72,8 @@ func TestDxRecord_BytesWithSort(t *testing.T) {
 	lvAcc := lvResp.ForcePathRecord("account")
 	lvAcc.SetInt("max", 34)
 	lvAcc.SetInt("used", 42)
-	fmt.Println(string(lvResp.Bytes()))
-	str :=string( lvResp.BytesWithSort())
+	fmt.Println(string(lvResp.Bytes(false)))
+	str :=string( lvResp.BytesWithSort(false))
 	fmt.Println(str)
 
 }
@@ -100,6 +100,20 @@ func TestDxRecord_SetRecordValue(t *testing.T) {
 	mb := NewRecord()
 	mb.SetInt("gg",123)
 	vc.SetRecordValue("testc",mb)
+	fmt.Println(vc.String())
+}
+
+func TestDxRecord_Extract(t *testing.T) {
+	vc := NewRecord()
+	vcc := vc.NewRecord("test")
+	vcc.SetString("Name","不得闲")
+	vcc.SetString("Sex","男")
+	vcc.SetInt("Age",32)
+	vc.SetGoTime("now",time.Now())
+	fmt.Println(vc.String())
+
+	vcc.Extract()
+	fmt.Println(vcc.String())
 	fmt.Println(vc.String())
 }
 
@@ -248,7 +262,7 @@ func TestDxRecord_LoadMsgPackFile(t *testing.T) {
 	if err := rec.LoadMsgPackFile("test.Msgpack");err!=nil{
 		fmt.Println("Error；",err)
 	}else{
-		fmt.Println(DxCommonLib.FastByte2String(rec.BytesWithSort()))
+		fmt.Println(DxCommonLib.FastByte2String(rec.BytesWithSort(false)))
 	}
 }
 

@@ -639,6 +639,10 @@ func (arr *DxArray)SetDouble(idx int,value float64)  {
 	arr.fValues[idx] = &dv.DxBaseValue
 }
 
+func (arr *DxArray)SetGoTime(idx int,v time.Time)  {
+	arr.SetDateTime(idx,DxCommonLib.Time2DelphiTime(&v))
+}
+
 func (arr *DxArray)SetDateTime(idx int,t DxCommonLib.TDateTime)  {
 	if idx < 0{
 		return
@@ -1132,7 +1136,7 @@ func (arr *DxArray)AsExtValue(idx int)(*DxExtValue)  {
 	return nil
 }
 
-func (arr *DxArray)Bytes()[]byte  {
+func (arr *DxArray)Bytes(escapJsonStr bool)[]byte  {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 	if arr.fValues != nil{
@@ -1157,7 +1161,11 @@ func (arr *DxArray)Bytes()[]byte  {
 					buf.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(av)).fvalue).ToTime().Unix())*1000))
 					buf.WriteString(")/")
 				case DVT_String:
-					buf.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(av)).fvalue))
+					if escapJsonStr{
+						buf.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(av)).fvalue))
+					}else{
+						buf.WriteString((*DxStringValue)(unsafe.Pointer(av)).fvalue)
+					}
 				default:
 					buf.WriteString(av.ToString())
 				}
@@ -1171,7 +1179,7 @@ func (arr *DxArray)Bytes()[]byte  {
 	return buf.Bytes()
 }
 
-func (arr *DxArray)BytesWithSort()[]byte  {
+func (arr *DxArray)BytesWithSort(escapJsonStr bool)[]byte  {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 	if arr.fValues != nil{
@@ -1196,11 +1204,11 @@ func (arr *DxArray)BytesWithSort()[]byte  {
 					}
 					buf.WriteByte('"')
 				case DVT_Record:
-					buf.Write((*DxRecord)(unsafe.Pointer(av)).BytesWithSort())
+					buf.Write((*DxRecord)(unsafe.Pointer(av)).BytesWithSort(escapJsonStr))
 				case DVT_RecordIntKey:
-					buf.Write((*DxIntKeyRecord)(unsafe.Pointer(av)).BytesWithSort())
+					buf.Write((*DxIntKeyRecord)(unsafe.Pointer(av)).BytesWithSort(escapJsonStr))
 				case DVT_Array:
-					buf.Write((*DxArray)(unsafe.Pointer(av)).BytesWithSort())
+					buf.Write((*DxArray)(unsafe.Pointer(av)).BytesWithSort(escapJsonStr))
 				case DVT_DateTime:
 					buf.WriteString(`"/Date(`)
 					buf.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(av)).fvalue).ToTime().Unix())*1000))
@@ -1421,7 +1429,7 @@ func (arr *DxArray)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest b
 }
 
 func (arr *DxArray)ToString()string  {
-	return DxCommonLib.FastByte2String(arr.Bytes())
+	return DxCommonLib.FastByte2String(arr.Bytes(false))
 }
 
 func (arr *DxArray)LoadJsonFile(fileName string,ConvertEscape,structRest bool)error  {

@@ -335,7 +335,9 @@ func (r *DxIntKeyRecord)SetDateTime(key int64,v DxCommonLib.TDateTime)  {
 	r.fRecords[key] = &m.DxBaseValue
 }
 
-
+func (r *DxIntKeyRecord)SetGoTime(key int64,v time.Time)  {
+	r.SetDateTime(key,DxCommonLib.Time2DelphiTime(&v))
+}
 
 func (r *DxIntKeyRecord)SetString(key int64,v string)  {
 	if r.fRecords != nil{
@@ -389,7 +391,7 @@ func (r *DxIntKeyRecord)AsBytes(key int64)[]byte  {
 	return nil
 }
 
-func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
+func (r *DxIntKeyRecord)BytesWithSort(escapJsonStr bool)[]byte  {
 	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
 	if r.fRecords != nil{
@@ -419,13 +421,17 @@ func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
 					buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
 					buffer.WriteString(")/")
 				case DVT_RecordIntKey:
-					buffer.Write((*DxIntKeyRecord)(unsafe.Pointer(v)).BytesWithSort())
+					buffer.Write((*DxIntKeyRecord)(unsafe.Pointer(v)).BytesWithSort(escapJsonStr))
 				case DVT_Record:
-					buffer.Write((*DxRecord)(unsafe.Pointer(v)).BytesWithSort())
+					buffer.Write((*DxRecord)(unsafe.Pointer(v)).BytesWithSort(escapJsonStr))
 				case DVT_Array:
-					buffer.Write((*DxArray)(unsafe.Pointer(v)).BytesWithSort())
+					buffer.Write((*DxArray)(unsafe.Pointer(v)).BytesWithSort(escapJsonStr))
 				case DVT_String:
-					buffer.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(v)).fvalue))
+					if escapJsonStr{
+						buffer.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(v)).fvalue))
+					}else{
+						buffer.WriteString((*DxStringValue)(unsafe.Pointer(v)).fvalue)
+					}
 				default:
 					buffer.WriteString(v.ToString())
 				}
@@ -441,7 +447,7 @@ func (r *DxIntKeyRecord)BytesWithSort()[]byte  {
 	return buffer.Bytes()
 }
 
-func (r *DxIntKeyRecord)Bytes()[]byte  {
+func (r *DxIntKeyRecord)Bytes(escapJsonStr bool)[]byte  {
 	buffer := bytes.NewBuffer(make([]byte,0,512))
 	buffer.WriteByte('{')
 	if r.fRecords != nil{
@@ -466,7 +472,11 @@ func (r *DxIntKeyRecord)Bytes()[]byte  {
 					buffer.WriteString(strconv.Itoa(int(DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(v)).fvalue).ToTime().Unix())*1000))
 					buffer.WriteString(")/")
 				case DVT_String:
-					buffer.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(v)).fvalue))
+					if escapJsonStr{
+						buffer.WriteString(DxCommonLib.EscapeJsonStr((*DxStringValue)(unsafe.Pointer(v)).fvalue))
+					}else{
+						buffer.WriteString((*DxStringValue)(unsafe.Pointer(v)).fvalue)
+					}
 				default:
 					buffer.WriteString(v.ToString())
 				}
@@ -1578,7 +1588,7 @@ func (r *DxIntKeyRecord)Range(iteafunc func(key int64,value *DxBaseValue,params 
 }
 
 func (r *DxIntKeyRecord)ToString()string  {
-	return DxCommonLib.FastByte2String(r.Bytes())
+	return DxCommonLib.FastByte2String(r.Bytes(false))
 }
 
 func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {
