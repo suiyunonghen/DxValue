@@ -45,7 +45,6 @@ func (arr *DxArray)ExtractValue(index int)*DxBaseValue  {
 	if index >= 0 && index < len(arr.fValues){
 		v := arr.fValues[index]
 		if v!= nil{
-			v.ClearValue(true)
 			v.fParent = nil
 		}
 		arr.fValues = append(arr.fValues[:index],arr.fValues[index+1:]...)
