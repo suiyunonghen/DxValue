@@ -41,6 +41,55 @@ func (arr *DxArray)ClearValue(clearInner bool)  {
 	}
 }
 
+func (arr *DxArray)ExtractValue(index int)*DxBaseValue  {
+	if index >= 0 && index < len(arr.fValues){
+		v := arr.fValues[index]
+		if v!= nil{
+			v.ClearValue(true)
+			v.fParent = nil
+		}
+		arr.fValues = append(arr.fValues[:index],arr.fValues[index+1:]...)
+		return v
+	}
+	return nil
+}
+
+func (arr *DxArray)IndexOf(v *DxBaseValue)int  {
+	if arr.fValues != nil{
+		for index,value := range arr.fValues{
+			if v == value{
+				return index
+			}
+		}
+	}
+	return  -1
+}
+
+func (arr *DxArray)RemoveItem(v *DxBaseValue)  {
+	if arr.fValues != nil{
+		for index,value := range arr.fValues{
+			if v == value{
+				v.fParent = nil
+				arr.fValues = append(arr.fValues[:index],arr.fValues[index+1:]...)
+				break
+			}
+		}
+	}
+}
+
+
+
+func (arr *DxArray)Extract()  {
+	if arr.fParent != nil{
+		switch arr.fParent.fValueType {
+		case DVT_Record:
+			(*DxRecord)(unsafe.Pointer(arr.fParent)).RemoveItem(&arr.DxBaseValue)
+		case DVT_Array:
+			(*DxArray)(unsafe.Pointer(arr.fParent)).RemoveItem(&arr.DxBaseValue)
+		}
+	}
+}
+
 func (arr *DxArray)getSize() int {
 	result := 0
 	if arr.fValues != nil{
@@ -1177,6 +1226,10 @@ func (arr *DxArray)Delete(idx int)  {
 			arr.fValues = append(arr.fValues[:idx],arr.fValues[idx+1:]...)
 		}
 	}
+}
+
+func (arr *DxArray)Remove(idx int)  {
+	arr.Delete(idx)
 }
 
 func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(parserlen int, err error)  {

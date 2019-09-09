@@ -1945,6 +1945,38 @@ func (r *DxRecord)Delete(key string)  {
 	}
 }
 
+func (r *DxRecord)RemoveItem(v *DxBaseValue)  {
+	if r.fRecords != nil && v.fParent == &r.DxBaseValue{
+		for key,value := range r.fRecords{
+			if value == v{
+				delete(r.fRecords,key)
+				return
+			}
+		}
+	}
+}
+
+func (r *DxRecord)ExtractValue(key string)*DxBaseValue  {
+	if r.fRecords != nil {
+		if v,ok := r.fRecords[key];ok{
+			delete(r.fRecords,key)
+			return v
+		}
+	}
+	return nil
+}
+
+func (r *DxRecord)Extract()  {
+	if r.fParent != nil{
+		switch r.fParent.fValueType {
+		case DVT_Record:
+			(*DxRecord)(unsafe.Pointer(&r.DxBaseValue)).RemoveItem(&r.DxBaseValue)
+		case DVT_Array:
+			(*DxArray)(unsafe.Pointer(&r.DxBaseValue)).RemoveItem(&r.DxBaseValue)
+		}
+	}
+}
+
 func (r *DxRecord)Range(iteafunc func(keyName string,value *DxBaseValue,params ...interface{})bool,params ...interface{}){
 	if r.fRecords != nil && iteafunc!=nil{
 		for k,v := range r.fRecords{
