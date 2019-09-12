@@ -80,6 +80,15 @@ func TestDxRecord_BytesWithSort(t *testing.T) {
 
 
 func Test_Record(t *testing.T)  {
+	r := NewRecord()
+	r.JsonParserFromByte([]byte(`{
+"sys":{
+  "sd":"c:\"\\t\"est"},"gg":"asdfasdf",
+"Node1":{
+	\"234234\":"as\td\\\"faf"
+}`),true,false)
+	fmt.Println(r.String())
+
 	mA := &ATest{A:123,B:234}
 	mA.mc = make(map[string]int)
 	mA.mc["saf"]=23443
@@ -211,9 +220,9 @@ func TestDxValue_JsonParserFromByte(t *testing.T) {
 		fmt.Println("ReadFile Err:",err)
 		return
 	}
-	_,err = v.JsonParserFromByte(buf,false,false)
+	index,err := v.JsonParserFromByte(buf,true,false)
 	if err != nil{
-		fmt.Println("Parser Error: ",err)
+		fmt.Println("Parser Error: ",err," index=",index)
 	}else{
 		switch v.ValueType() {
 		case DVT_Record:

@@ -1166,8 +1166,14 @@ func (arr *DxArray)Bytes(escapJsonStr bool)[]byte  {
 					}else{
 						buf.WriteString((*DxStringValue)(unsafe.Pointer(av)).fvalue)
 					}
+				case DVT_Array:
+					buf.Write((*DxArray)(unsafe.Pointer(av)).Bytes(escapJsonStr))
+				case DVT_Record:
+					buf.Write((*DxRecord)(unsafe.Pointer(av)).Bytes(escapJsonStr))
+				case DVT_RecordIntKey:
+					buf.Write((*DxIntKeyRecord)(unsafe.Pointer(av)).Bytes(escapJsonStr))
 				default:
-					buf.WriteString(av.ToString())
+					buf.Write(DxCommonLib.FastString2Byte(av.ToString()))
 				}
 				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 					buf.WriteByte('"')

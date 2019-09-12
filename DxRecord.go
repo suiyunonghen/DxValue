@@ -821,8 +821,14 @@ func (r *DxRecord)Bytes(escapJsonStr bool)[]byte  {
 					}else{
 						buffer.WriteString((*DxStringValue)(unsafe.Pointer(v)).fvalue)
 					}
+				case DVT_Record:
+					buffer.Write((*DxRecord)(unsafe.Pointer(v)).Bytes(escapJsonStr))
+				case DVT_Array:
+					buffer.Write((*DxArray)(unsafe.Pointer(v)).Bytes(escapJsonStr))
+				case DVT_RecordIntKey:
+					buffer.Write((*DxIntKeyRecord)(unsafe.Pointer(v)).Bytes(escapJsonStr))
 				default:
-					buffer.WriteString(v.ToString())
+					buffer.Write(DxCommonLib.FastString2Byte(v.ToString()))
 				}
 				if vt == DVT_String || vt == DVT_Binary || vt == DVT_DateTime || vt == DVT_Ext{
 					buffer.WriteByte('"')
@@ -2069,14 +2075,54 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 				}
 				return i,nil
 			case '"': //string
-				plen := bytes.IndexByte(b[i+1:blen],'"')
+				i++
+				isInEscape := false
+				for j :=i; j<blen;j++{
+					if IsSpace(b[j]){
+						continue
+					}
+					switch b[j] {
+					case '"':
+						if isInEscape{
+							isInEscape = false
+							continue
+						}
+						//字符串完毕了！
+						bvalue := b[i:j]
+						if ConvertEscape{
+							st := DxCommonLib.ParserEscapeStr(bvalue)
+							jt := DxCommonLib.ParserJsonTime(st)
+							if jt >= 0{
+								r.SetDateTime(keyName,jt)
+							}else{
+								r.SetString(keyName,st)
+							}
+						}else{
+							r.SetString(keyName,DxCommonLib.FastByte2String(bvalue))
+						}
+						return j+1,nil
+					case '\\':
+						isInEscape = !isInEscape
+					default:
+						if isInEscape{
+							//判断是否是有效的转义
+							if b[j] == 't'|| b[j] == 'b'|| b[j] == 'f'|| b[j] == 'n'|| b[j] == 'r'|| b[j] == '\\'|| b[j] == '"' || b[j]=='u'|| b[j]=='U'{
+								//有效的转义
+								isInEscape = false
+							}else{
+								return j,ErrInvalidateJson
+							}
+						}
+					}
+				}
+				/*plen := bytes.IndexByte(b[i+1:blen],'"')
 				//还需要判断一下前一个字符，防止\"转义
 				if plen > -1{
+					willCheckBefore := false
 					for{
 						if b[i+plen]=='\\'{ //查找到的是\"
 							//需要判断转义
 							oldp := i+plen
-							willCheckBefore := false
 							//判断下一个字符，是否是结束的字符
 							for k := oldp+2;k<blen;k++{
 								if !IsSpace(b[k]){
@@ -2094,7 +2140,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 							}
 							if willCheckBefore{
 								escapcount := 0
-								for k := oldp - 1;k > i;k--{
+								for k := oldp;k > i;k--{
 									if b[k] == '\\'{
 										escapcount ++
 									}else{
@@ -2102,13 +2148,15 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 									}
 								}
 								if escapcount % 2 == 0{ //是转义字符,然后还需要判断后面一个"
-									plen = bytes.IndexByte(b[oldp+2:blen],'"')
+									plen = bytes.IndexByte(b[oldp+1:blen],'"')
 									if plen < 0{
-										return oldp+2,ErrInvalidateJson
+										return oldp+1,ErrInvalidateJson
 									}
 									plen += oldp
 								}else{
-									return oldp,ErrInvalidateJson
+									//\"转义，需要到下一个
+									plen += oldp
+									//return oldp,ErrInvalidateJson
 								}
 							}else{
 								break
@@ -2123,6 +2171,9 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 										return i+plen+2,ErrInvalidateJson
 									}
 								}
+							}
+							if willCheckBefore{
+								plen-- //去掉最后一个转义\"的检查
 							}
 							break
 						}
@@ -2142,7 +2193,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 					r.SetString(keyName,st)
 					return plen + i + 2,nil
 				}
-				return i,ErrInvalidateJson
+				return i,ErrInvalidateJson*/
 			default:
 				if !startValue && valuestart == -1{
 					return i,ErrInvalidateJson
@@ -2325,6 +2376,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 	btlen := len(JsonByte)
 	plen := -1
 	keyName := ""
+	isNextKeyStart := false
 	for i < btlen{
 		if IsSpace(JsonByte[i]){
 			i++
@@ -2337,11 +2389,13 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 		case '{':
 			objStart = true
 			keyStart = true
+			isNextKeyStart = false
 		case '}':
-			if keyStart && !objStart {
+			if keyStart && !objStart || isNextKeyStart {
 				return i,ErrInvalidateJson
 			}
 			objStart = false
+			isNextKeyStart = false
 			return i,nil
 		case '"': //keyName
 			if keyStart{
@@ -2352,6 +2406,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 				}
 				i += plen+2
 				keyStart = false
+				isNextKeyStart = false
 				//解析Value
 				if ilen,err := r.parserValue(keyName,JsonByte[i:btlen],ConvertEscape,structRest);err!=nil{
 					return ilen + i,err
@@ -2364,6 +2419,7 @@ func (r *DxRecord)JsonParserFromByte(JsonByte []byte,ConvertEscape,structRest bo
 			if keyStart{
 				return i,ErrInvalidateJson
 			}
+			isNextKeyStart = true
 			keyStart = true
 		case ':': //value
 			if keyStart || objStart{
