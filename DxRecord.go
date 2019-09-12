@@ -2088,17 +2088,18 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 							continue
 						}
 						//字符串完毕了！
+						st := ""
 						bvalue := b[i:j]
 						if ConvertEscape{
-							st := DxCommonLib.ParserEscapeStr(bvalue)
-							jt := DxCommonLib.ParserJsonTime(st)
-							if jt >= 0{
-								r.SetDateTime(keyName,jt)
-							}else{
-								r.SetString(keyName,st)
-							}
+							st = DxCommonLib.ParserEscapeStr(bvalue)
 						}else{
-							r.SetString(keyName,DxCommonLib.FastByte2String(bvalue))
+							st = DxCommonLib.FastByte2String(bvalue)
+						}
+						jt := DxCommonLib.ParserJsonTime(st)
+						if jt >= 0{
+							r.SetDateTime(keyName,jt)
+						}else{
+							r.SetString(keyName,st)
 						}
 						return j+1,nil
 					case '\\':
