@@ -191,6 +191,9 @@ func (r *DxRecord)ForcePathArray(path string) *DxArray{
 	vbase := r.Find(fields[0])
 	if vbase == nil || vbase.fValueType != DVT_Record{
 		if vlen == 1{
+			if vbase != nil && vbase.fValueType == DVT_Array{
+				return (*DxArray)(unsafe.Pointer(vbase))
+			}
 			return r.NewArray(fields[0])
 		}
 		vbase = &r.NewRecord(fields[0]).DxBaseValue

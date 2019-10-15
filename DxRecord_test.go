@@ -55,6 +55,12 @@ func TestDxRecord_Escape(t *testing.T) {
 
 func TestDxRecord_ForcePathRecord(t *testing.T) {
 	json := NewRecord()
+	s := json.ForcePathArray("data")
+	s.Append("hello")
+	s = json.ForcePathArray("data")
+	s.Append("word")
+	fmt.Println(json.ToString())
+	return
 	rc := json.ForcePathRecord("test.gg.mm")
 	rc.SetString("Name","不得an")
 	fmt.Println(json.ToString())
