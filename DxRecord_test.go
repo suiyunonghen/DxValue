@@ -41,7 +41,7 @@ func TestDxRecord_Escape(t *testing.T) {
 	json := NewRecord()
 	json.ClearValue(true)
 	json.JsonParserFromByte([]byte(str), true, false)
-	arr := json.NewArray("testArray")
+	arr := json.NewArray("testArray",false)
 
 
 	json.JsonParserFromByte([]byte(`{"testArray":["/Date(1558844627000)/"],"msg":"\r\n123"}`),true,true)
@@ -108,7 +108,7 @@ func Test_Record(t *testing.T)  {
 
 func TestDxRecord_SetRecordValue(t *testing.T) {
 	vc := NewRecord()
-	vcc := vc.NewRecord("testc")
+	vcc := vc.NewRecord("testc",true)
 	fmt.Println(vcc.AsStringByPath("testc.gg.asdf",""))
 	vcc.SetString("BB","Asdf")
 	fmt.Println(vc.String())
@@ -120,7 +120,7 @@ func TestDxRecord_SetRecordValue(t *testing.T) {
 
 func TestDxRecord_Extract(t *testing.T) {
 	vc := NewRecord()
-	vcc := vc.NewRecord("test")
+	vcc := vc.NewRecord("test",true)
 	vcc.SetString("Name","不得闲")
 	vcc.SetString("Sex","男")
 	vcc.SetInt("Age",32)
@@ -136,7 +136,7 @@ func TestDxRecord_Masharl(t *testing.T)  {
 	vc := NewRecord()
 	arr := NewArray()
 	fmt.Println(arr)
-	vcc := vc.NewRecord("testc")
+	vcc := vc.NewRecord("testc",true)
 	vcc.SetString("BB","Asdf")
 	bt,err := Marshal(vc)
 	if err == nil{

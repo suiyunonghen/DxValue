@@ -91,13 +91,15 @@ func (r *DxIntKeyRecord)NewIntRecord(key int64)(rec *DxIntKeyRecord)  {
 	return
 }
 
-func (r *DxIntKeyRecord)NewRecord(key int64)(rec *DxRecord)  {
+func (r *DxIntKeyRecord)NewRecord(key int64,ExistsReset bool)(rec *DxRecord)  {
 	if r.fRecords != nil{
 		if value,ok := r.fRecords[key];ok && value != nil{
 			if value.fValueType == DVT_Record{
 				rec = (*DxRecord)(unsafe.Pointer(value))
-				rec.ClearValue(false)
-				rec.fParent = &r.DxBaseValue
+				if ExistsReset{
+					rec.ClearValue(false)
+					rec.fParent = &r.DxBaseValue
+				}
 				return
 			}
 			value.ClearValue(true)
@@ -705,7 +707,7 @@ func (r *DxIntKeyRecord)SetValue(key int64,v interface{})  {
 		}
 		switch rv.Kind(){
 		case reflect.Struct:
-			rec := r.NewRecord(key)
+			rec := r.NewRecord(key,true)
 			rtype := rv.Type()
 			for i := 0;i < rtype.NumField();i++{
 				sfield := rtype.Field(i)
@@ -743,7 +745,7 @@ func (r *DxIntKeyRecord)SetValue(key int64,v interface{})  {
 			var rbase *DxBaseValue
 			switch getBaseType(kv.Type()) {
 			case reflect.String:
-				rbase = &r.NewRecord(key).DxBaseValue
+				rbase = &r.NewRecord(key,true).DxBaseValue
 			case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64,reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
 				rbase = &r.NewIntRecord(key).DxBaseValue
 			default:

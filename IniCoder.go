@@ -151,7 +151,7 @@ func (decoder *DxIniDecoder)Decode(record *DxRecord)(error)  {
 				if section != ""{
 					curRecord = record.AsRecord(section)
 					if curRecord == nil{
-						curRecord = record.NewRecord(section)
+						curRecord = record.NewRecord(section,true)
 					}
 					curSection = section
 				}

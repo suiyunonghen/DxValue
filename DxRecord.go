@@ -80,7 +80,7 @@ func (r *DxRecord)getSize()int  {
 	return result
 }
 
-func (r *DxRecord)NewRecord(keyName string)(rec *DxRecord)  {
+func (r *DxRecord)NewRecord(keyName string,ExistsReset bool)(rec *DxRecord)  {
 	if keyName == ""{
 		return nil
 	}
@@ -88,8 +88,10 @@ func (r *DxRecord)NewRecord(keyName string)(rec *DxRecord)  {
 		if value,ok := r.fRecords[keyName];ok && value != nil{
 			if value.fValueType == DVT_Record{
 				rec = (*DxRecord)(unsafe.Pointer(value))
-				rec.ClearValue(false)
-				rec.fParent = &r.DxBaseValue
+				if ExistsReset{
+					rec.ClearValue(false)
+					rec.fParent = &r.DxBaseValue
+				}
 				return
 			}
 			value.ClearValue(true)
@@ -106,7 +108,7 @@ func (r *DxRecord)NewRecord(keyName string)(rec *DxRecord)  {
 	return
 }
 
-func (r *DxRecord)NewIntRecord(keyName string)(rec *DxIntKeyRecord)  {
+func (r *DxRecord)NewIntRecord(keyName string,ExistsReset bool)(rec *DxIntKeyRecord)  {
 	if keyName == ""{
 		return nil
 	}
@@ -114,8 +116,10 @@ func (r *DxRecord)NewIntRecord(keyName string)(rec *DxIntKeyRecord)  {
 		if value,ok := r.fRecords[keyName];ok && value != nil{
 			if value.fValueType == DVT_RecordIntKey{
 				rec = (*DxIntKeyRecord)(unsafe.Pointer(value))
-				rec.ClearValue(false)
-				rec.fParent = &r.DxBaseValue
+				if ExistsReset{
+					rec.ClearValue(false)
+					rec.fParent = &r.DxBaseValue
+				}
 				return
 			}
 			value.ClearValue(true)
@@ -151,7 +155,7 @@ func (r *DxRecord)ForcePathRecord(path string) *DxRecord{
 	}
 	vbase := r.Find(fields[0])
 	if vbase == nil || vbase.fValueType != DVT_Record{
-		vbase = &r.NewRecord(fields[0]).DxBaseValue
+		vbase = &r.NewRecord(fields[0],false).DxBaseValue
 	}
 	for i := 1;i<vlen;i++{
 		oldbase := vbase
@@ -159,24 +163,24 @@ func (r *DxRecord)ForcePathRecord(path string) *DxRecord{
 		case DVT_Record:
 			vbase = (*DxRecord)(unsafe.Pointer(vbase)).Find(fields[i])
 			if vbase == nil || vbase.fValueType != DVT_Record{
-				vbase = &(*DxRecord)(unsafe.Pointer(oldbase)).NewRecord(fields[i]).DxBaseValue
+				vbase = &(*DxRecord)(unsafe.Pointer(oldbase)).NewRecord(fields[i],false).DxBaseValue
 			}
 		case DVT_RecordIntKey:
 			if intkey,er := strconv.ParseInt(fields[i],10,64);er == nil{
 				vbase = (*DxIntKeyRecord)(unsafe.Pointer(vbase)).Find(intkey)
 				if vbase == nil || vbase.fValueType != DVT_Record{
-					vbase = &(*DxIntKeyRecord)(unsafe.Pointer(oldbase)).NewRecord(intkey).DxBaseValue
+					vbase = &(*DxIntKeyRecord)(unsafe.Pointer(oldbase)).NewRecord(intkey,false).DxBaseValue
 				}
 			}else{
 				vbase = vbase.Parent()
-				vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+				vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1],false).NewRecord(fields[i],false).DxBaseValue
 			}
 		default:
 			vbase = vbase.Parent()
 			if vbase == nil{
 				 vbase = &(NewRecord().DxBaseValue)
 			}
-			vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+			vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1],false).NewRecord(fields[i],false).DxBaseValue
 		}
 	}
 	return (*DxRecord)(unsafe.Pointer(vbase))
@@ -194,9 +198,9 @@ func (r *DxRecord)ForcePathArray(path string) *DxArray{
 			if vbase != nil && vbase.fValueType == DVT_Array{
 				return (*DxArray)(unsafe.Pointer(vbase))
 			}
-			return r.NewArray(fields[0])
+			return r.NewArray(fields[0],false)
 		}
-		vbase = &r.NewRecord(fields[0]).DxBaseValue
+		vbase = &r.NewRecord(fields[0],false).DxBaseValue
 	}
 	for i := 1;i<vlen - 1;i++{
 		oldbase := vbase
@@ -204,27 +208,27 @@ func (r *DxRecord)ForcePathArray(path string) *DxArray{
 		case DVT_Record:
 			vbase = (*DxRecord)(unsafe.Pointer(vbase)).Find(fields[i])
 			if vbase == nil || vbase.fValueType != DVT_Record{
-				vbase = &(*DxRecord)(unsafe.Pointer(oldbase)).NewRecord(fields[i]).DxBaseValue
+				vbase = &(*DxRecord)(unsafe.Pointer(oldbase)).NewRecord(fields[i],false).DxBaseValue
 			}
 		case DVT_RecordIntKey:
 			if intkey,er := strconv.ParseInt(fields[i],10,64);er == nil{
 				vbase = (*DxIntKeyRecord)(unsafe.Pointer(vbase)).Find(intkey)
 				if vbase == nil || vbase.fValueType != DVT_Record{
-					vbase = &(*DxIntKeyRecord)(unsafe.Pointer(oldbase)).NewRecord(intkey).DxBaseValue
+					vbase = &(*DxIntKeyRecord)(unsafe.Pointer(oldbase)).NewRecord(intkey,false).DxBaseValue
 				}
 			}else{
 				vbase = vbase.Parent()
-				vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+				vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1],false).NewRecord(fields[i],false).DxBaseValue
 			}
 		default:
 			vbase = vbase.Parent()
 			if vbase == nil{
 				vbase = &(NewRecord().DxBaseValue)
 			}
-			vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+			vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1],false).NewRecord(fields[i],false).DxBaseValue
 		}
 	}
-	return (*DxRecord)(unsafe.Pointer(vbase)).NewArray(fields[vlen-1])
+	return (*DxRecord)(unsafe.Pointer(vbase)).NewArray(fields[vlen-1],false)
 }
 
 func (r *DxRecord)ForcePath(path string,v interface{}) {
@@ -235,7 +239,7 @@ func (r *DxRecord)ForcePath(path string,v interface{}) {
 	}
 	vbase := r.Find(fields[0])
 	if vbase == nil{
-		vbase = &r.NewRecord(fields[0]).DxBaseValue
+		vbase = &r.NewRecord(fields[0],false).DxBaseValue
 	}
 	for i := 1;i<vlen - 1;i++{
 		if vbase != nil {
@@ -246,7 +250,7 @@ func (r *DxRecord)ForcePath(path string,v interface{}) {
 					vbase = (*DxIntKeyRecord)(unsafe.Pointer(vbase)).Find(intkey)
 				}else{
 					vbase = vbase.Parent()
-					vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1]).NewRecord(fields[i]).DxBaseValue
+					vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[i - 1],false).NewRecord(fields[i],false).DxBaseValue
 				}
 			}
 		}
@@ -260,16 +264,17 @@ func (r *DxRecord)ForcePath(path string,v interface{}) {
 		}else{
 			vbase = vbase.Parent()
 			if vlen > 2{
-				vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[vlen - 2]).NewRecord(fields[vlen - 1]).DxBaseValue
+				vbase = &(*DxRecord)(unsafe.Pointer(vbase)).NewRecord(fields[vlen - 2],false).NewRecord(fields[vlen - 1],false).DxBaseValue
 			}else{
-				vbase = &r.NewRecord(fields[vlen - 2]).DxBaseValue
+				vbase = &r.NewRecord(fields[vlen - 2],false).DxBaseValue
 			}
 			(*DxRecord)(unsafe.Pointer(vbase)).SetValue(fields[vlen - 1],v)
 		}
 	}
 }
 
-func (r *DxRecord)NewArray(keyName string)(arr *DxArray)  {
+
+func (r *DxRecord)NewArray(keyName string,ExistsReset bool)(arr *DxArray)  {
 	if keyName == ""{
 		return nil
 	}
@@ -277,8 +282,10 @@ func (r *DxRecord)NewArray(keyName string)(arr *DxArray)  {
 		if value,ok := r.fRecords[keyName];ok && value != nil{
 			if value.fValueType == DVT_Array{
 				arr = (*DxArray)(unsafe.Pointer(value))
-				arr.ClearValue(false)
-				arr.fParent = &r.DxBaseValue
+				if ExistsReset{
+					arr.ClearValue(false)
+					arr.fParent = &r.DxBaseValue
+				}
 				return
 			}
 			value.ClearValue(true)
@@ -1174,7 +1181,7 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 		}
 		switch rv.Kind(){
 		case reflect.Struct:
-			rec := r.NewRecord(keyName)
+			rec := r.NewRecord(keyName,true)
 			rtype := rv.Type()
 			for i := 0;i < rtype.NumField();i++{
 				sfield := rtype.Field(i)
@@ -1212,9 +1219,9 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 			var rbase *DxBaseValue
 			switch getBaseType(keytype) {
 			case reflect.String:
-				rbase = &r.NewRecord(keyName).DxBaseValue
+				rbase = &r.NewRecord(keyName,true).DxBaseValue
 			case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64,reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
-				rbase = &r.NewIntRecord(keyName).DxBaseValue
+				rbase = &r.NewIntRecord(keyName,true).DxBaseValue
 			default:
 				panic("Invalidate Record Key,Can Only Int or String")
 			}
@@ -1280,7 +1287,7 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 				}
 			}
 		case reflect.Slice,reflect.Array:
-			arr := r.NewArray(keyName)
+			arr := r.NewArray(keyName,true)
 			vlen := rv.Len()
 			for i := 0;i< vlen;i++{
 				av := rv.Index(i)
