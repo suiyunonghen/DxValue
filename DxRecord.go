@@ -1968,7 +1968,7 @@ func (r *DxRecord)Remove(keyOrPath string)  {
 
 func (r *DxRecord)Delete(key string)  {
 	if r.fRecords != nil{
-		if v,ok := r.fRecords[key];ok{
+		if v,ok := r.fRecords[key];ok && v != nil{
 			v.ClearValue(true)
 			v.fParent = nil
 			delete(r.fRecords,key)
@@ -2079,10 +2079,15 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 					}else if st == "null" || strings.ToUpper(st) == "NULL"{
 						r.SetNull(keyName)
 					}else{
-						if vf,err := strconv.Atoi(st);err!=nil{
+						//if vf,err := strconv.Atoi(st);err!=nil{
+						if vf,err := strconv.ParseInt(st,0,64);err != nil{
 							return i,ErrInvalidateJson
 						}else{
-							r.SetInt(keyName,vf)
+							if vf <= math.MaxInt32 && vf>=math.MinInt32{
+								r.SetInt(keyName,int(vf))
+							}else{
+								r.SetInt64(keyName,vf)
+							}
 						}
 					}
 				}

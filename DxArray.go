@@ -1296,10 +1296,14 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(
 					}else if st == "null" || strings.ToUpper(st) == "NULL"{
 						arr.SetNull(idx)
 					}else{
-						if vf,err := strconv.Atoi(st);err!=nil{
+						if vf,err := strconv.ParseInt(st,0,64);err != nil{
 							return i,ErrInvalidateJson
 						}else{
-							arr.SetInt(idx,vf)
+							if vf <= math.MaxInt32 && vf>=math.MinInt32{
+								arr.SetInt(idx,int(vf))
+							}else{
+								arr.SetInt64(idx,vf)
+							}
 						}
 					}
 				}

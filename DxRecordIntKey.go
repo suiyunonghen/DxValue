@@ -1650,10 +1650,14 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 					}else if st == "null" || strings.ToUpper(st) == "NULL"{
 						r.SetNull(key)
 					}else{
-						if vf,err := strconv.Atoi(st);err!=nil{
+						if vf,err := strconv.ParseInt(st,0,64);err != nil{
 							return i,ErrInvalidateJson
 						}else{
-							r.SetInt(key,vf)
+							if vf <= math.MaxInt32 && vf>=math.MinInt32{
+								r.SetInt(key,int(vf))
+							}else{
+								r.SetInt64(key,vf)
+							}
 						}
 					}
 				}
