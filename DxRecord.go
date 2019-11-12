@@ -2235,7 +2235,7 @@ func (r *DxRecord)LoadJsonFile(fileName string,ConvertEscape,structRest bool)err
 	if err != nil {
 		return err
 	}
-	if databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF{//BOM
+	if len(databytes) > 2 && databytes[0] == 0xEF && databytes[1] == 0xBB && databytes[2] == 0xBF{//BOM
 		databytes = databytes[3:]
 	}
 	_,err = r.JsonParserFromByte(databytes,ConvertEscape,structRest)
