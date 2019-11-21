@@ -1443,7 +1443,7 @@ func (arr *DxArray)ToString()string  {
 }
 
 func (arr *DxArray)LoadJsonFile(fileName string,ConvertEscape,structRest bool)error  {
-	databytes, err := ioutil.ReadFile("DataProxy.config.json")
+	databytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
