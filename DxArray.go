@@ -280,14 +280,11 @@ func (arr *DxArray)AsInt(idx int,defValue int)int  {
 		case DVT_Double,DVT_DateTime:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_String:
-			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-			if err != nil{
-				panic(err)
-			}else{
+			if v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0);err == nil{
 				return int(v)
 			}
 		default:
-			panic("can not convert Type to int")
+			//panic("can not convert Type to int")
 		}
 	}
 	return defValue
@@ -309,14 +306,11 @@ func (arr *DxArray)AsInt32(idx int,defValue int32)int32  {
 		case DVT_Double,DVT_DateTime:return int32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int32((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_String:
-			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-			if err != nil{
-				panic(err)
-			}else{
+			if v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0);err == nil{
 				return int32(v)
 			}
 		default:
-			panic("can not convert Type to int")
+			//panic("can not convert Type to int")
 		}
 	}
 	return defValue
@@ -338,14 +332,11 @@ func (arr *DxArray)AsInt64(idx int,defValue int64)int64  {
 		case DVT_Double,DVT_DateTime:return int64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_String:
-			v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-			if err != nil{
-				panic(err)
-			}else{
+			if v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0);err == nil{
 				return v
 			}
 		default:
-			panic("can not convert Type to int")
+			//panic("can not convert Type to int")
 		}
 	}
 	return defValue
@@ -480,7 +471,7 @@ func (arr *DxArray)AsBool(idx int,defValue bool)bool  {
 		case DVT_String:
 			return strings.ToUpper((*DxStringValue)(unsafe.Pointer(value)).fvalue) == "TRUE"
 		default:
-			panic("can not convert Type to Bool")
+			//panic("can not convert Type to Bool")
 		}
 	}
 	return defValue
@@ -602,12 +593,12 @@ func (arr *DxArray)AsFloat(idx int,defValue float32)float32  {
 			if e == nil{
 				return float32(v)
 			}
-			panic("can not convert Type to Float")
+			//panic("can not convert Type to Float")
 		}
 		case DVT_Double,DVT_DateTime:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return (*DxFloatValue)(unsafe.Pointer(value)).fvalue
 		default:
-			panic("can not convert Type to Float")
+			//panic("can not convert Type to Float")
 		}
 	}
 	return defValue
@@ -687,12 +678,12 @@ func (arr *DxArray)AsDouble(idx int,defValue float64)float64  {
 			if e == nil{
 				return v
 			}
-			panic("can not convert Type to Double")
+			//panic("can not convert Type to Double")
 		}
 		case DVT_Double,DVT_DateTime:return (*DxDoubleValue)(unsafe.Pointer(value)).fvalue
 		case DVT_Float:return float64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		default:
-			panic("can not convert Type to Double")
+			//panic("can not convert Type to Double")
 		}
 	}
 	return defValue
@@ -720,7 +711,7 @@ func (arr *DxArray)AsDateTime(idx int,defValue DxCommonLib.TDateTime)DxCommonLib
 		case DVT_Double,DVT_DateTime:return DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return DxCommonLib.TDateTime((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		default:
-			panic("can not convert Type to Float")
+			//panic("can not convert Type to Float")
 		}
 	}
 	return defValue
@@ -748,7 +739,7 @@ func (arr *DxArray)AsArray(idx int)(*DxArray)  {
 		if arr.fValues[idx].fValueType == DVT_Array{
 			return (*DxArray)(unsafe.Pointer(arr.fValues[idx]))
 		}
-		panic("not Array Value")
+		//panic("not Array Value")
 	}
 	return nil
 }
@@ -811,7 +802,7 @@ func (arr *DxArray)AsRecord(idx int)(*DxRecord)  {
 		if arr.fValues[idx].fValueType == DVT_Record{
 			return (*DxRecord)(unsafe.Pointer(arr.fValues[idx]))
 		}
-		panic("not Record Value")
+		//panic("not Record Value")
 	}
 	return nil
 }
@@ -821,7 +812,7 @@ func (arr *DxArray)AsIntRecord(idx int)(*DxIntKeyRecord)  {
 		if arr.fValues[idx].fValueType == DVT_RecordIntKey{
 			return (*DxIntKeyRecord)(unsafe.Pointer(arr.fValues[idx]))
 		}
-		panic("not IntKeyRecord Value")
+		//panic("not IntKeyRecord Value")
 	}
 	return nil
 }
@@ -1131,7 +1122,7 @@ func (arr *DxArray)AsExtValue(idx int)(*DxExtValue)  {
 		if arr.fValues[idx].fValueType == DVT_Ext{
 			return (*DxExtValue)(unsafe.Pointer(arr.fValues[idx]))
 		}
-		panic("not ExtType Value")
+		//panic("not ExtType Value")
 	}
 	return nil
 }

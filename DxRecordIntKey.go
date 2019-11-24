@@ -545,19 +545,17 @@ func (r *DxIntKeyRecord)AsBytesByPath(Path string)[]byte  {
 			switch parentBase.fValueType {
 			case DVT_Array:
 				if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
-					panic("can not Convert to IntKey")
+					//panic("can not Convert to IntKey")
 				}else{
 					values := (*DxArray)(unsafe.Pointer(parentBase)).fValues
 					if values != nil && intkey >= 0 && intkey < int64(len(values)){
 						bt,_ :=  values[intkey].AsBytes()
 						return bt
-					}else{
-						panic("KeyIndex Out bands of Array")
 					}
 				}
 			case DVT_RecordIntKey:
 				if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
-					panic("can not Convert to IntKey")
+					//panic("can not Convert to IntKey")
 				}else{
 					return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsBytes(intkey)
 				}
@@ -870,13 +868,11 @@ func (r *DxIntKeyRecord)AsInt32(key int64,defavalue int32)int32  {
 			case DVT_Float:return int32((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 			case DVT_String:
 				v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-				if err != nil{
-					panic(err)
-				}else{
+				if err == nil{
 					return int32(v)
 				}
 			default:
-				panic("can not convert Type to int32")
+				//panic("can not convert Type to int32")
 			}
 		}
 	}
@@ -892,27 +888,20 @@ func (r *DxIntKeyRecord)AsInt32ByPath(path string,defavalue int32)int32  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsInt32(intkey,defavalue)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
 						v,err := values[intkey].AsInt32()
-						if err != nil{
-							panic(err)
+						if err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return defavalue
@@ -940,27 +929,20 @@ func (r *DxIntKeyRecord)AsIntByPath(path string,defavalue int)int  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsInt(intkey,defavalue)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
 						v,err := values[intkey].AsInt()
-						if err != nil{
-							panic(err)
+						if err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return defavalue
@@ -982,14 +964,11 @@ func (r *DxIntKeyRecord)AsInt(key int64,defavalue int)int  {
 			case DVT_Double,DVT_DateTime:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 			case DVT_Float:return int((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 			case DVT_String:
-				v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-				if err != nil{
-					panic(err)
-				}else{
+				if v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0);err == nil{
 					return int(v)
 				}
 			default:
-				panic("can not convert Type to int")
+				//panic("can not convert Type to int")
 			}
 		}
 	}
@@ -1005,27 +984,19 @@ func (r *DxIntKeyRecord)AsInt64ByPath(path string,defavalue int64)int64  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsInt64(intkey,defavalue)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
-						v,err := values[intkey].AsInt64()
-						if err != nil{
-							panic(err)
+						if v,err := values[intkey].AsInt64();err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return defavalue
@@ -1047,14 +1018,11 @@ func (r *DxIntKeyRecord)AsInt64(key int64,defavalue int64)int64  {
 			case DVT_Double,DVT_DateTime:return int64((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 			case DVT_Float:return int64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 			case DVT_String:
-				v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0)
-				if err != nil{
-					panic(err)
-				}else{
+				if v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0);err == nil{
 					return v
 				}
 			default:
-				panic("can not convert Type to int64")
+				//panic("can not convert Type to int64")
 			}
 		}
 	}
@@ -1070,27 +1038,19 @@ func (r *DxIntKeyRecord)AsBoolByPath(path string,defavalue bool)bool  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsBool(intkey,defavalue)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
-						v,err := values[intkey].AsBool()
-						if err != nil{
-							panic(err)
+						if v,err := values[intkey].AsBool();err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return defavalue
@@ -1109,7 +1069,7 @@ func (r *DxIntKeyRecord)AsBool(key int64,defavalue bool)bool  {
 			case DVT_String:
 				return strings.ToUpper((*DxStringValue)(unsafe.Pointer(value)).fvalue) == "TRUE"
 			default:
-				panic("can not convert Type to Bool")
+				//panic("can not convert Type to Bool")
 			}
 		}
 	}
@@ -1126,27 +1086,19 @@ func (r *DxIntKeyRecord)AsFloatByPath(path string,defavalue float32)float32  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsFloat(intkey,defavalue)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
-						v,err := values[intkey].AsFloat()
-						if err != nil{
-							panic(err)
+						if v,err := values[intkey].AsFloat();err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return defavalue
@@ -1169,12 +1121,10 @@ func (r *DxIntKeyRecord)AsFloat(key int64,defavalue float32)float32  {
 				if e == nil{
 					return float32(v)
 				}
-				panic("can not convert Type to Float")
 			}
 			case DVT_Double,DVT_DateTime:return float32((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 			case DVT_Float:return (*DxFloatValue)(unsafe.Pointer(value)).fvalue
 			default:
-				panic("can not convert Type to Float")
 			}
 		}
 	}
@@ -1258,27 +1208,19 @@ func (r *DxIntKeyRecord)AsDoubleByPath(path string,defavalue float64)float64  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsDouble(intkey,defavalue)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
-						v,err := values[intkey].AsDouble()
-						if err != nil{
-							panic(err)
+						if v,err := values[intkey].AsDouble();err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return defavalue
@@ -1301,12 +1243,11 @@ func (r *DxIntKeyRecord)AsDouble(key int64,defavalue float64)float64  {
 				if e == nil{
 					return v
 				}
-				panic("can not convert Type to Double")
 			}
 			case DVT_Double,DVT_DateTime:return (*DxDoubleValue)(unsafe.Pointer(value)).fvalue
 			case DVT_Float:return float64((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 			default:
-				panic("can not convert Type to Double")
+				//panic("can not convert Type to Double")
 			}
 		}
 	}
@@ -1328,7 +1269,7 @@ func (r *DxIntKeyRecord)AsDateTime(key int64,defavalue DxCommonLib.TDateTime)DxC
 			case DVT_Double,DVT_DateTime:return DxCommonLib.TDateTime((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 			case DVT_Float:return DxCommonLib.TDateTime((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 			default:
-				panic("can not convert Type to Double")
+				//panic("can not convert Type to Double")
 			}
 		}
 	}
@@ -1344,23 +1285,17 @@ func (r *DxIntKeyRecord)AsStringByPath(path string,defavalue string)string  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsString(intkey,defavalue)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
 						return values[intkey].AsString()
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return defavalue
@@ -1384,27 +1319,19 @@ func (r *DxIntKeyRecord)AsRecordByPath(path string)*DxRecord  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsRecord(intkey)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
-						v,err := values[intkey].AsRecord()
-						if err != nil{
-							panic(err)
+						if v,err := values[intkey].AsRecord();err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return nil
@@ -1415,7 +1342,6 @@ func (r *DxIntKeyRecord)AsRecord(key int64)*DxRecord  {
 		if value.fValueType == DVT_Record{
 			return (*DxRecord)(unsafe.Pointer(value))
 		}
-		panic("not Record Value")
 	}
 	return nil
 }
@@ -1426,7 +1352,6 @@ func (r *DxIntKeyRecord)AsIntRecord(key int64)*DxIntKeyRecord  {
 			if value.fValueType == DVT_Record{
 				return (*DxIntKeyRecord)(unsafe.Pointer(value))
 			}
-			panic("not Record Value")
 		}
 	}
 	return nil
@@ -1441,27 +1366,19 @@ func (r *DxIntKeyRecord)AsIntRecordByPath(path string)*DxIntKeyRecord  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsIntRecord(intkey)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
-						v,err := values[intkey].AsIntRecord()
-						if err != nil{
-							panic(err)
+						if v,err := values[intkey].AsIntRecord();err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return nil
@@ -1473,7 +1390,7 @@ func (r *DxIntKeyRecord)AsArray(key int64)*DxArray  {
 			if value.fValueType == DVT_Array {
 				return (*DxArray)(unsafe.Pointer(value))
 			}
-			panic("not Array Value")
+			//panic("not Array Value")
 		}
 	}
 	return nil
@@ -1488,27 +1405,19 @@ func (r *DxIntKeyRecord)AsArrayByPath(path string)*DxArray  {
 		case DVT_RecordIntKey:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				return (*DxIntKeyRecord)(unsafe.Pointer(parentBase)).AsArray(intkey)
-			}else{
-				panic(err)
 			}
 		case DVT_Array:
 			if intkey,err := strconv.ParseInt(keyName,10,64);err == nil{
 				if values := (*DxArray)(unsafe.Pointer(parentBase)).fValues;values != nil{
 					if intkey >= 0 && intkey < int64(len(values)){
-						v,err := values[intkey].AsArray()
-						if err != nil{
-							panic(err)
+						if v,err := values[intkey].AsArray();err == nil{
+							return v
 						}
-						return v
-					}else{
-						panic("array Index out of bounds")
 					}
 				}
-			}else{
-				panic(err)
 			}
 		default:
-			panic("Path not A Parent Node")
+			//panic("Path not A Parent Node")
 		}
 	}
 	return nil
@@ -1530,14 +1439,14 @@ func (r *DxIntKeyRecord)Contains(keyName string)bool  {
 				return ok
 			case DVT_RecordIntKey:
 				if intkey,err := strconv.ParseInt(vk,10,64);err!=nil{
-					panic(err)
+					//panic(err)
 				}else{
 					_,ok := (*DxIntKeyRecord)(unsafe.Pointer(vr)).fRecords[intkey]
 					return ok
 				}
 			case DVT_Array:
 				if intkey,err := strconv.ParseInt(vk,10,64);err!=nil{
-					panic(err)
+					//panic(err)
 				}else{
 					arr := (*DxArray)(unsafe.Pointer(vr))
 					return arr.fValues != nil && intkey >= 0 && intkey < int64(len(arr.fValues))
@@ -1559,14 +1468,14 @@ func (r *DxIntKeyRecord)Remove(keyOrPath string)  {
 				}
 			case DVT_RecordIntKey:
 				if intkey,err := strconv.ParseInt(vk,10,64);err!=nil{
-					panic(err)
+					//panic(err)
 				}else if v,ok := (*DxIntKeyRecord)(unsafe.Pointer(vr)).fRecords[intkey];ok{
 					v.ClearValue(true)
 					delete((*DxIntKeyRecord)(unsafe.Pointer(vr)).fRecords,intkey)
 				}
 			case DVT_Array:
 				if intkey,err := strconv.ParseInt(vk,10,64);err!=nil{
-					panic(err)
+					//panic(err)
 				}else{
 					arr := (*DxArray)(unsafe.Pointer(vr))
 					arr.Delete(int(intkey))
