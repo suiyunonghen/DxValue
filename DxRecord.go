@@ -1377,17 +1377,10 @@ func (r *DxRecord)AsInt32ByPath(path string,defavalue int32)int32  {
 						v,err := values[intkey].AsInt32()
 						if err == nil{
 							return v
-						}/*else{
-							panic(err)
-						}*/
-
-					}/*else{
-						panic("array Index out of bounds")
-					}*/
+						}
+					}
 				}
-			}/*else{
-				panic(err)
-			}*/
+			}
 		default:
 			//panic("Path not A Parent Node")
 		}
