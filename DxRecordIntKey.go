@@ -1572,7 +1572,48 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 				}
 				return i,nil
 			case '"': //string
-				plen := bytes.IndexByte(b[i+1:blen],'"')
+				i++
+				isInEscape := false
+				for j :=i; j<blen;j++{
+					if IsSpace(b[j]){
+						continue
+					}
+					switch b[j] {
+					case '"':
+						if isInEscape{
+							isInEscape = false
+							continue
+						}
+						//字符串完毕了！
+						st := ""
+						bvalue := b[i:j]
+						if ConvertEscape{
+							st = DxCommonLib.ParserEscapeStr(bvalue)
+						}else{
+							st = DxCommonLib.FastByte2String(bvalue)
+						}
+						jt := DxCommonLib.ParserJsonTime(st)
+						if jt >= 0{
+							r.SetDateTime(key,jt)
+						}else{
+							r.SetString(key,st)
+						}
+						return j+1,nil
+					case '\\':
+						isInEscape = !isInEscape
+					default:
+						if isInEscape{
+							//判断是否是有效的转义
+							if b[j] == 't'|| b[j] == 'b'|| b[j] == 'f'|| b[j] == 'n'|| b[j] == 'r'|| b[j] == '\\'|| b[j] == '"' || b[j]=='u'|| b[j]=='U' || b[j] == '/'{
+								//有效的转义
+								isInEscape = false
+							}else{
+								return j,ErrInvalidateJson
+							}
+						}
+					}
+				}
+				/*plen := bytes.IndexByte(b[i+1:blen],'"')
 				if plen > -1{
 					for{
 						if b[i+plen]=='\\'{ //查找到的是\"
@@ -1644,7 +1685,7 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 					r.SetString(key,st)
 					return plen + i + 2,nil
 				}
-				return i,ErrInvalidateJson
+				return i,ErrInvalidateJson*/
 			default:
 				if !startValue && valuestart == -1{
 					return i,ErrInvalidateJson

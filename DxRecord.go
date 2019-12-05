@@ -7,21 +7,21 @@ QQ:75492895
 package DxValue
 
 import (
-	"sort"
-	"unsafe"
-	"bytes"
-	"reflect"
-	"github.com/suiyunonghen/DxCommonLib"
-	"strings"
-	"math"
-	"strconv"
-	"io/ioutil"
-	"io"
 	"bufio"
-	"os"
-	"time"
+	"bytes"
+	"github.com/suiyunonghen/DxCommonLib"
 	"github.com/suiyunonghen/DxValue/Coders"
 	"github.com/suiyunonghen/DxValue/Coders/DxMsgPack"
+	"io"
+	"io/ioutil"
+	"math"
+	"os"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+	"unsafe"
 )
 
 /******************************************************
@@ -2070,7 +2070,7 @@ func (r *DxRecord)parserValue(keyName string, b []byte,ConvertEscape,structRest 
 					default:
 						if isInEscape{
 							//判断是否是有效的转义
-							if b[j] == 't'|| b[j] == 'b'|| b[j] == 'f'|| b[j] == 'n'|| b[j] == 'r'|| b[j] == '\\'|| b[j] == '"' || b[j]=='u'|| b[j]=='U'{
+							if b[j] == 't'|| b[j] == 'b'|| b[j] == 'f'|| b[j] == 'n'|| b[j] == 'r'|| b[j] == '\\'|| b[j] == '"' || b[j]=='u'|| b[j]=='U' || b[j] == '/'{
 								//有效的转义
 								isInEscape = false
 							}else{
