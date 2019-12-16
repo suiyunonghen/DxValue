@@ -1,14 +1,15 @@
 package DxMsgPack
 
 import (
-	"encoding/binary"
-	"github.com/suiyunonghen/DxCommonLib"
-	"unsafe"
-	"time"
-	"io"
 	"bufio"
+	"encoding/binary"
 	"errors"
+	"github.com/suiyunonghen/DxCommonLib"
 	"github.com/suiyunonghen/DxValue/Coders"
+	"io"
+	"sync"
+	"time"
+	"unsafe"
 )
 
 
@@ -805,8 +806,16 @@ func (coder *MsgPackDecoder)DecodeString(code MsgPackCode)([]byte,error) {
 	return nil,nil
 }
 
+var decodePool		sync.Pool
+
 func NewDecoder(r io.Reader)*MsgPackDecoder  {
-	var result MsgPackDecoder
+	var result *MsgPackDecoder
+	v := decodePool.Get()
+	if v != nil{
+		result = v.(*MsgPackDecoder)
+	}else{
+		result = &MsgPackDecoder{}
+	}
 	if bytebf,ok := r.(bufReader);ok {
 		result.r = bytebf
 	}else {
@@ -817,7 +826,10 @@ func NewDecoder(r io.Reader)*MsgPackDecoder  {
 			result.r = bufio.NewReader(r)
 		}
 	}
-	return &result
+	return result
 }
 
+func FreeDecoder(coder *MsgPackDecoder)  {
+	decodePool.Put(coder)
+}
 

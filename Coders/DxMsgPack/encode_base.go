@@ -1,12 +1,13 @@
 package DxMsgPack
 
 import (
-	"io"
-	"github.com/suiyunonghen/DxCommonLib"
 	"encoding/binary"
-	"unsafe"
+	"github.com/suiyunonghen/DxCommonLib"
+	"io"
 	"math"
+	"sync"
 	"time"
+	"unsafe"
 )
 
 const(
@@ -347,9 +348,22 @@ func (encoder *MsgPackEncoder)ReSet(w io.Writer)  {
 	encoder.w = w
 }
 
+var encoderPool sync.Pool
+
 func NewEncoder(w io.Writer) *MsgPackEncoder {
-	return &MsgPackEncoder{
-		w:   w,
-		buf: make([]byte, 9),
+	v := encoderPool.Get()
+	if v != nil{
+		result := v.(*MsgPackEncoder)
+		result.w = w
+		return result
+	}else{
+		return &MsgPackEncoder{
+			w:   w,
+			buf: make([]byte, 9),
+		}
 	}
+}
+
+func FreeEncoder(coder *MsgPackEncoder)  {
+	encoderPool.Put(coder)
 }

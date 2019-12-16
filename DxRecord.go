@@ -56,7 +56,6 @@ func (r *DxRecord)ClearValue(clearInner bool)  {
 	}
 	if clearInner{
 		r.fRecords = nil
-		return
 	}
 	if r.fRecords == nil || len(r.fRecords) > 0{
 		r.fRecords = make(map[string]*DxBaseValue,32)
@@ -2272,7 +2271,10 @@ func (r *DxRecord)SaveMsgPackFile(fileName string)error  {
 }
 
 func (r *DxRecord)LoadMsgPackReader(reader io.Reader)error  {
-	return NewDecoder (reader).Decode(&r.DxBaseValue)
+	coder := NewDecoder(reader)
+	err := coder.Decode(&r.DxBaseValue)
+	FreeDecoder(coder)
+	return err
 }
 
 func (r *DxRecord)LoadIni(iniFile string)error  {

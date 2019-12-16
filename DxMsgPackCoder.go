@@ -1,15 +1,16 @@
 package DxValue
 
 import (
-	"github.com/suiyunonghen/DxValue/Coders/DxMsgPack"
-	"github.com/suiyunonghen/DxCommonLib"
-	"unsafe"
-	"time"
-	"io"
-	"github.com/suiyunonghen/DxValue/Coders"
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
 	"errors"
+	"github.com/suiyunonghen/DxCommonLib"
+	"github.com/suiyunonghen/DxValue/Coders"
+	"github.com/suiyunonghen/DxValue/Coders/DxMsgPack"
+	"io"
+	"sync"
+	"time"
+	"unsafe"
 )
 
 type  DxMsgPackDecoder  struct{
@@ -733,11 +734,20 @@ func (dcoder *DxMsgPackDecoder)DecodeStand(v interface{})(error)  {
 }
 
 func NewDecoder(r io.Reader)*DxMsgPackDecoder  {
-	var result DxMsgPackDecoder
+	var result *DxMsgPackDecoder
+	v := decoderPool.Get()
+	if v == nil{
+		result = &DxMsgPackDecoder{}
+	}else{
+		result = v.(*DxMsgPackDecoder)
+	}
 	result.ReSetReader(r)
-	return &result
+	return result
 }
 
+func FreeDecoder(coder *DxMsgPackDecoder)  {
+	decoderPool.Put(coder)
+}
 
 
 type  DxMsgPackEncoder struct{
@@ -950,12 +960,26 @@ func (encoder *DxMsgPackEncoder)EncodeStand(v interface{})(error)  {
 	}
 }
 
+var(
+	encoderPool		sync.Pool
+	decoderPool		sync.Pool
+)
 
 func NewEncoder(w io.Writer) *DxMsgPackEncoder {
-	var result DxMsgPackEncoder
-	result.Buffer()
+	var result *DxMsgPackEncoder
+	v := encoderPool.Get()
+	if v == nil{
+		result = &DxMsgPackEncoder{}
+		result.Buffer()
+	}else{
+		result = v.(*DxMsgPackEncoder)
+	}
 	result.ReSet(w)
-	return &result
+	return result
+}
+
+func FreeEncoder(coder *DxMsgPackEncoder)  {
+	encoderPool.Put(coder)
 }
 
 
@@ -968,6 +992,7 @@ func Marshal(v...interface{})([]byte,error) {
 			return nil,err
 		}
 	}
+	encoderPool.Put(coder)
 	return buf.Bytes(),nil
 }
 
@@ -978,5 +1003,6 @@ func Unmarshal(data []byte, v...interface{}) error {
 			return err
 		}
 	}
+	decoderPool.Put(coder)
 	return nil
 }

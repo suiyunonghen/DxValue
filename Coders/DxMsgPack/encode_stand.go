@@ -631,5 +631,6 @@ func Marshal(v...interface{})([]byte,error) {
 			return nil,err
 		}
 	}
+	encoderPool.Put(coder)
 	return buf.Bytes(),nil
 }

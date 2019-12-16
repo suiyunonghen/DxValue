@@ -1155,5 +1155,6 @@ func Unmarshal(data []byte, v...interface{}) error {
 			return err
 		}
 	}
+	decodePool.Put(coder)
 	return nil
 }
