@@ -1935,6 +1935,7 @@ func (r *DxRecord)ExtractValue(key string)*DxBaseValue  {
 	if r.fRecords != nil {
 		if v,ok := r.fRecords[key];ok{
 			delete(r.fRecords,key)
+			v.fParent = nil
 			return v
 		}
 	}
