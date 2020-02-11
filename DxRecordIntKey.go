@@ -1545,11 +1545,8 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 					return i,ErrInvalidateJson
 				}
 				if bytes.IndexByte(bvalue,'.') > -1{
-					if vf,err := strconv.ParseFloat(DxCommonLib.FastByte2String(bvalue),64);err!=nil{
-						return i,ErrInvalidateJson
-					}else{
-						r.SetDouble(key,vf)
-					}
+					vf := DxCommonLib.StrToFloatDef(DxCommonLib.FastByte2String(bvalue),0)
+					r.SetDouble(key,vf)
 				}else {
 					st := DxCommonLib.FastByte2String(bvalue)
 					if st == "true" || strings.ToUpper(st) == "TRUE"{
@@ -1559,14 +1556,11 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 					}else if st == "null" || strings.ToUpper(st) == "NULL"{
 						r.SetNull(key)
 					}else{
-						if vf,err := strconv.ParseInt(st,0,64);err != nil{
-							return i,ErrInvalidateJson
+						vf := DxCommonLib.StrToIntDef(st,0)
+						if vf <= math.MaxInt32 && vf>=math.MinInt32{
+							r.SetInt(key,int(vf))
 						}else{
-							if vf <= math.MaxInt32 && vf>=math.MinInt32{
-								r.SetInt(key,int(vf))
-							}else{
-								r.SetInt64(key,vf)
-							}
+							r.SetInt64(key,vf)
 						}
 					}
 				}
@@ -1613,79 +1607,6 @@ func (r *DxIntKeyRecord)parserValue(key int64, b []byte,ConvertEscape,structRest
 						}
 					}
 				}
-				/*plen := bytes.IndexByte(b[i+1:blen],'"')
-				if plen > -1{
-					for{
-						if b[i+plen]=='\\'{ //查找到的是\"
-							//需要判断转义
-							oldp := i+plen
-							willCheckBefore := false
-							//判断下一个字符，是否是结束的字符
-							for k := oldp+2;k<blen;k++{
-								if !IsSpace(b[k]){
-									if b[k] == ',' || b[k] == ']' || b[k] == '}'{
-										break
-									}else{
-										willCheckBefore = true
-										break
-									}
-								}else{
-									//判断前面一系列是否是正常的转义
-									willCheckBefore = true
-									break
-								}
-							}
-							if willCheckBefore{
-								escapcount := 0
-								for k := oldp - 1;k > i;k--{
-									if b[k] == '\\'{
-										escapcount ++
-									}else{
-										break
-									}
-								}
-								if escapcount % 2 == 0{ //是转义字符,然后还需要判断后面一个"
-									plen = bytes.IndexByte(b[oldp+2:blen],'"')
-									if plen < 0{
-										return oldp+2,ErrInvalidateJson
-									}
-									plen += oldp
-								}else{
-									return oldp,ErrInvalidateJson
-								}
-							}else{
-								break
-							}
-						}else{
-							//非转义字符，那么就需要判定
-							for k := i+plen+2;k<blen;k++{
-								if !IsSpace(b[k]){
-									if b[k] == ',' || b[k] == ']' || b[k] == '}' {
-										break
-									}else{
-										return i+plen+2,ErrInvalidateJson
-									}
-								}
-							}
-							break
-						}
-					}
-					bvalue := b[i+1:plen+i+1]
-					st := ""
-					if ConvertEscape{
-						st = DxCommonLib.ParserEscapeStr(bvalue)
-						jt := DxCommonLib.ParserJsonTime(st)
-						if jt >= 0{
-							r.SetDateTime(key,jt)
-							return plen + i + 2,nil
-						}
-					}else{
-						st = DxCommonLib.FastByte2String(bvalue)
-					}
-					r.SetString(key,st)
-					return plen + i + 2,nil
-				}
-				return i,ErrInvalidateJson*/
 			default:
 				if !startValue && valuestart == -1{
 					return i,ErrInvalidateJson

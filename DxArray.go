@@ -280,11 +280,7 @@ func (arr *DxArray)AsInt(idx int,defValue int)int  {
 		case DVT_Double,DVT_DateTime:return int((*DxDoubleValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_Float:return int((*DxFloatValue)(unsafe.Pointer(value)).fvalue)
 		case DVT_String:
-			if v,err := strconv.ParseInt((*DxStringValue)(unsafe.Pointer(value)).fvalue,0,0);err == nil{
-				return int(v)
-			}
-		default:
-			//panic("can not convert Type to int")
+			return int(DxCommonLib.StrToIntDef((*DxStringValue)(unsafe.Pointer(value)).fvalue,int64(defValue)))
 		}
 	}
 	return defValue
@@ -1273,11 +1269,7 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(
 					return i,ErrInvalidateJson
 				}
 				if bytes.IndexByte(bvalue,'.') > -1{
-					if vf,err := strconv.ParseFloat(DxCommonLib.FastByte2String(bvalue),64);err!=nil{
-						return i,ErrInvalidateJson
-					}else{
-						arr.SetDouble(idx,vf)
-					}
+					arr.SetDouble(idx,DxCommonLib.StrToFloatDef(DxCommonLib.FastByte2String(bvalue),0))
 				}else{
 					st := DxCommonLib.FastByte2String(bvalue)
 					if st == "true" || strings.ToUpper(st) == "TRUE"{
@@ -1287,7 +1279,13 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(
 					}else if st == "null" || strings.ToUpper(st) == "NULL"{
 						arr.SetNull(idx)
 					}else{
-						if vf,err := strconv.ParseInt(st,0,64);err != nil{
+						vf := DxCommonLib.StrToIntDef(st,0)
+						if vf <= math.MaxInt32 && vf>=math.MinInt32{
+							arr.SetInt(idx,int(vf))
+						}else{
+							arr.SetInt64(idx,vf)
+						}
+						/*if vf,err := strconv.ParseInt(st,0,64);err != nil{
 							return i,ErrInvalidateJson
 						}else{
 							if vf <= math.MaxInt32 && vf>=math.MinInt32{
@@ -1295,7 +1293,7 @@ func (arr *DxArray)parserValue(idx int, b []byte,ConvertEscape,structRest bool)(
 							}else{
 								arr.SetInt64(idx,vf)
 							}
-						}
+						}*/
 					}
 				}
 				return i,nil

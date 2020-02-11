@@ -89,7 +89,7 @@ func Test_Record(t *testing.T)  {
 	r := NewRecord()
 	r.JsonParserFromByte([]byte(`{
 "sys":{
-  "sd":"c:\"\\t\"est"},"gg":"asdfasdf",
+  "sd":"c:\"\\t\"est"},"gg":"asdfasdf","value":23,"age":232.24,
 "Node1":{
 	\"234234\":"as\td\\\"faf"
 }`),true,false)
