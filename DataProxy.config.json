@@ -16,7 +16,8 @@
       "output":
       [
         { "id":"CHC7.01","type":"ntrip-server","host":"127.0.0.1","port":2101,"password":"0000",
-          "mountpoint":"CHC7"}
+          "mountpoint":"CHC7",
+          "Cmdt": 203.425}
       ]
     },
     {
@@ -25,7 +26,8 @@
       "output":
       [
         { "id":"ZHZ7.01","type":"ntrip-server","host":"127.0.0.1","port":2101,"password":"0000",
-          "mountpoint":"ZHZ7"}
+          "mountpoint":"ZHZ7",
+          "Cmdt": 203.425}
       ]
     },
     {

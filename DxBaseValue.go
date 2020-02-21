@@ -127,6 +127,25 @@ var (
 	extTypes map[byte]IExtTypeCoder
 )
 
+func skipWB(b []byte) []byte {
+	if len(b) == 0 || b[0] > 0x20 {
+		return b
+	}
+	return skipWBSlow(b)
+}
+
+func skipWBSlow(b []byte) []byte {
+	if len(b) == 0 || b[0] != 0x20 && b[0] != 0x0A && b[0] != 0x09 && b[0] != 0x0D {
+		return b
+	}
+	for i := 1; i < len(b); i++ {
+		if b[i] != 0x20 && b[i] != 0x0A && b[i] != 0x09 && b[i] != 0x0D {
+			return b[i:]
+		}
+	}
+	return nil
+}
+
 func (v *DxStringValue)Clone()*DxStringValue  {
 	var result DxStringValue
 	result.fValueType = DVT_String
@@ -1200,7 +1219,7 @@ func (v *DxBinaryValue)ToString()string  {
 	}
 	switch v.EncodeType {
 	case BET_Base64: return base64.StdEncoding.EncodeToString(v.fbinary)
-	case BET_Hex: return DxCommonLib.Binary2Hex(v.fbinary)
+	case BET_Hex: return DxCommonLib.Bin2Hex(v.fbinary)
 	}
 	return ""
 }
