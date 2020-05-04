@@ -67,7 +67,7 @@ func (coder *DxMsgPackDecoder)DecodeStrMapKvRecord(strMap *DxRecord,strcode DxMs
 				nsec := binary.BigEndian.Uint32(bin[1:5])
 				sec := binary.BigEndian.Uint64(bin[5:])
 				ntime := time.Unix(int64(sec), int64(nsec))
-				strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(&ntime))
+				strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(ntime))
 			}else{
 				strMap.SetExtValue(keyName,bin)
 			}
@@ -101,7 +101,7 @@ func (coder *DxMsgPackDecoder)DecodeStrMapKvRecord(strMap *DxRecord,strcode DxMs
 					ntime := time.Now()
 					ns := ntime.Unix()
 					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
-					strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(&ntime))
+					strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(ntime))
 				}
 
 			}else{
@@ -124,7 +124,7 @@ func (coder *DxMsgPackDecoder)DecodeStrMapKvRecord(strMap *DxRecord,strcode DxMs
 					nsec := int64(sec >> 34)
 					sec &= 0x00000003ffffffff
 					ntime := time.Unix(int64(sec), nsec)
-					strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(&ntime))
+					strMap.SetDateTime(keyName, DxCommonLib.Time2DelphiTime(ntime))
 				}
 			}else{
 				var mb [9]byte
@@ -195,7 +195,7 @@ func (coder *DxMsgPackDecoder)DecodeUnkown()(*DxBaseValue,error)  {
 				ntime := time.Unix(int64(sec), int64(nsec))
 				var v DxDoubleValue
 				v.fValueType = DVT_DateTime
-				v.SetDateTime(DxCommonLib.Time2DelphiTime(&ntime))
+				v.SetDateTime(DxCommonLib.Time2DelphiTime(ntime))
 				return  &v.DxBaseValue,nil
 			}else{
 				var v DxExtValue
@@ -250,7 +250,7 @@ func (coder *DxMsgPackDecoder)DecodeUnkown()(*DxBaseValue,error)  {
 					ns := ntime.Unix()
 					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
 					var v DxDoubleValue
-					v.fvalue = float64(DxCommonLib.Time2DelphiTime(&ntime))
+					v.fvalue = float64(DxCommonLib.Time2DelphiTime(ntime))
 					v.fValueType = DVT_DateTime
 					return  &v.DxBaseValue,nil
 				}
@@ -320,7 +320,7 @@ func (coder *DxMsgPackDecoder)DecodeIntKeyMapKvRecord(intKeyMap *DxIntKeyRecord,
 				nsec := binary.BigEndian.Uint32(bin[1:5])
 				sec := binary.BigEndian.Uint64(bin[5:])
 				ntime := time.Unix(int64(sec), int64(nsec))
-				intKeyMap.SetDateTime(intKey, DxCommonLib.Time2DelphiTime(&ntime))
+				intKeyMap.SetDateTime(intKey, DxCommonLib.Time2DelphiTime(ntime))
 			}else{
 				intKeyMap.SetExtValue(intKey,bin)
 			}
@@ -354,7 +354,7 @@ func (coder *DxMsgPackDecoder)DecodeIntKeyMapKvRecord(intKeyMap *DxIntKeyRecord,
 					ntime := time.Now()
 					ns := ntime.Unix()
 					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
-					intKeyMap.SetDateTime(intKey, DxCommonLib.Time2DelphiTime(&ntime))
+					intKeyMap.SetDateTime(intKey, DxCommonLib.Time2DelphiTime(ntime))
 				}
 
 			}else{
@@ -417,7 +417,7 @@ func (coder *DxMsgPackDecoder)DecodeArrayElement(arr *DxArray,eleIndex int)(erro
 				nsec := binary.BigEndian.Uint32(bin[1:5])
 				sec := binary.BigEndian.Uint64(bin[5:])
 				ntime := time.Unix(int64(sec), int64(nsec))
-				arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(&ntime))
+				arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(ntime))
 			}else{
 				arr.SetExtValue(eleIndex,bin)
 			}
@@ -451,7 +451,7 @@ func (coder *DxMsgPackDecoder)DecodeArrayElement(arr *DxArray,eleIndex int)(erro
 					ntime := time.Now()
 					ns := ntime.Unix()
 					ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
-					arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(&ntime))
+					arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(ntime))
 				}
 			}else{
 				var mb [5]byte
@@ -473,7 +473,7 @@ func (coder *DxMsgPackDecoder)DecodeArrayElement(arr *DxArray,eleIndex int)(erro
 					nsec := int64(sec >> 34)
 					sec &= 0x00000003ffffffff
 					ntime := time.Unix(int64(sec), nsec)
-					arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(&ntime))
+					arr.SetDateTime(eleIndex, DxCommonLib.Time2DelphiTime(ntime))
 				}
 			}else{
 				var mb [9]byte

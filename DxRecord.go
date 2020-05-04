@@ -514,7 +514,7 @@ func (r *DxRecord)SetDateTime(KeyName string,v DxCommonLib.TDateTime)  {
 }
 
 func (r *DxRecord)SetGoTime(keyName string,v time.Time)  {
-	r.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(&v))
+	r.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(v))
 }
 
 func (r *DxRecord)AsDateTime(keyName string,defavalue DxCommonLib.TDateTime)DxCommonLib.TDateTime  {
@@ -563,17 +563,17 @@ func (r *DxRecord)SetString(KeyName string,v string)  {
 				}
 				t,err := time.Parse("2006-01-02T15:04:05Z",v)
 				if err == nil{
-					(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+					(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(t))
 					return
 				}
 				t,err = time.Parse("2006-01-02 15:04:05",v)
 				if err == nil{
-					(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+					(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(t))
 					return
 				}
 				t,err = time.Parse("2006/01/02 15:04:05",v)
 				if err == nil{
-					(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+					(*DxDoubleValue)(unsafe.Pointer(value)).fvalue = float64(DxCommonLib.Time2DelphiTime(t))
 					return
 				}
 			case DVT_Bool:
@@ -1139,8 +1139,8 @@ func (r *DxRecord)SetValue(keyName string,v interface{})  {
 	case float64: r.SetDouble(keyName,value)
 	case *float32: r.SetFloat(keyName,*value)
 	case *float64: r.SetDouble(keyName,*value)
-	case time.Time: r.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(&value))
-	case *time.Time: r.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(value))
+	case time.Time: r.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(value))
+	case *time.Time: r.SetDateTime(keyName,DxCommonLib.Time2DelphiTime(*value))
 	case *DxRecord: r.SetRecordValue(keyName,value)
 	case DxRecord: r.SetRecordValue(keyName,&value)
 	case *DxIntKeyRecord: r.SetIntRecordValue(keyName,value)

@@ -141,7 +141,7 @@ func (coder *MsgPackDecoder)DecodeDateTime(code MsgPackCode)(DxCommonLib.TDateTi
 				ntime := time.Now()
 				ns := ntime.Unix()
 				ntime = ntime.Add((time.Duration(int64(ms) - ns)*time.Second))
-				return DxCommonLib.Time2DelphiTime(&ntime),nil
+				return DxCommonLib.Time2DelphiTime(ntime),nil
 			}
 		}
 	}

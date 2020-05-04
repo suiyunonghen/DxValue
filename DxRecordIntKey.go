@@ -338,7 +338,7 @@ func (r *DxIntKeyRecord)SetDateTime(key int64,v DxCommonLib.TDateTime)  {
 }
 
 func (r *DxIntKeyRecord)SetGoTime(key int64,v time.Time)  {
-	r.SetDateTime(key,DxCommonLib.Time2DelphiTime(&v))
+	r.SetDateTime(key,DxCommonLib.Time2DelphiTime(v))
 }
 
 func (r *DxIntKeyRecord)SetString(key int64,v string)  {
@@ -668,8 +668,8 @@ func (r *DxIntKeyRecord)SetValue(key int64,v interface{})  {
 	case float64: r.SetDouble(key,value)
 	case *float32: r.SetFloat(key,*value)
 	case *float64: r.SetDouble(key,*value)
-	case *time.Time: r.SetDateTime(key,DxCommonLib.Time2DelphiTime(value))
-	case time.Time: r.SetDateTime(key,DxCommonLib.Time2DelphiTime(&value))
+	case *time.Time: r.SetDateTime(key,DxCommonLib.Time2DelphiTime(*value))
+	case time.Time: r.SetDateTime(key,DxCommonLib.Time2DelphiTime(value))
 	case *DxRecord: r.SetRecordValue(key,value)
 	case DxRecord: r.SetRecordValue(key,&value)
 	case *DxIntKeyRecord: r.SetIntRecordValue(key,value)

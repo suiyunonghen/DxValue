@@ -829,15 +829,15 @@ func (v *DxBaseValue)AsDateTime()(DxCommonLib.TDateTime,error){
 	case DVT_String:
 		t,err := time.Parse("2006-01-02T15:04:05Z",(*DxStringValue)(unsafe.Pointer(v)).fvalue)
 		if err == nil{
-			return DxCommonLib.Time2DelphiTime(&t),err
+			return DxCommonLib.Time2DelphiTime(t),err
 		}
 		t,err = time.Parse("2006-01-02 15:04:05",(*DxStringValue)(unsafe.Pointer(v)).fvalue)
 		if err == nil{
-			return DxCommonLib.Time2DelphiTime(&t),err
+			return DxCommonLib.Time2DelphiTime(t),err
 		}
 		t,err = time.Parse("2006/01/02 15:04:05",(*DxStringValue)(unsafe.Pointer(v)).fvalue)
 		if err == nil{
-			return DxCommonLib.Time2DelphiTime(&t),err
+			return DxCommonLib.Time2DelphiTime(t),err
 		}
 		return -1,err
 	case DVT_Ext:
@@ -1298,7 +1298,7 @@ func NewDateTimeValue(t DxCommonLib.TDateTime)*DxBaseValue  {
 }
 
 
-func NewGoTimeValue(t *time.Time)*DxBaseValue  {
+func NewGoTimeValue(t time.Time)*DxBaseValue  {
 	var v DxDoubleValue
 	v.fvalue = float64(DxCommonLib.Time2DelphiTime(t))
 	v.fValueType = DVT_DateTime

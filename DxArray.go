@@ -496,17 +496,17 @@ func (arr *DxArray)SetString(idx int,value string)  {
 			}
 			t,err := time.Parse("2006-01-02T15:04:05Z",value)
 			if err == nil{
-				(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+				(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = float64(DxCommonLib.Time2DelphiTime(t))
 				return
 			}
 			t,err = time.Parse("2006-01-02 15:04:05",value)
 			if err == nil{
-				(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+				(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = float64(DxCommonLib.Time2DelphiTime(t))
 				return
 			}
 			t,err = time.Parse("2006/01/02 15:04:05",value)
 			if err == nil{
-				(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = float64(DxCommonLib.Time2DelphiTime(&t))
+				(*DxDoubleValue)(unsafe.Pointer(arr.fValues[idx])).fvalue = float64(DxCommonLib.Time2DelphiTime(t))
 				return
 			}
 		case DVT_Int:
@@ -627,7 +627,7 @@ func (arr *DxArray)SetDouble(idx int,value float64)  {
 }
 
 func (arr *DxArray)SetGoTime(idx int,v time.Time)  {
-	arr.SetDateTime(idx,DxCommonLib.Time2DelphiTime(&v))
+	arr.SetDateTime(idx,DxCommonLib.Time2DelphiTime(v))
 }
 
 func (arr *DxArray)SetDateTime(idx int,t DxCommonLib.TDateTime)  {
@@ -943,8 +943,8 @@ func (arr *DxArray)SetValue(idx int,value interface{})  {
 	case *DxStringValue: arr.SetString(idx,value.fvalue)
 	case DxBinaryValue:  arr.SetBinary(idx,value.Bytes())
 	case *DxBinaryValue:  arr.SetBinary(idx,value.Bytes())
-	case time.Time: arr.SetDateTime(idx,DxCommonLib.Time2DelphiTime(&value))
-	case *time.Time: arr.SetDateTime(idx,DxCommonLib.Time2DelphiTime(value))
+	case time.Time: arr.SetDateTime(idx,DxCommonLib.Time2DelphiTime(value))
+	case *time.Time: arr.SetDateTime(idx,DxCommonLib.Time2DelphiTime(*value))
 	default:
 		reflectv := reflect.ValueOf(value)
 		rv := getRealValue(&reflectv)
