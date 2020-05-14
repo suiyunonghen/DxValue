@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/json-iterator/go v1.1.7
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/suiyunonghen/DxCommonLib v0.1.3
+	github.com/suiyunonghen/DxCommonLib v0.2.0
 	github.com/valyala/fastjson v1.4.5
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
