@@ -1,6 +1,5 @@
 # DxValue
-已经废弃，请使用dxsvalue
-https://github.com/suiyunonghen/dxsvalue
+已经废弃，请使用dxsvalue   https://github.com/suiyunonghen/dxsvalue          
 一个万能值复合变量，其目的是将Json,Msgpack这类数据协议格式综合，提供一个复合变量，在变量内部使用Go的常规简单数据类型进行操作管理（将各类数据类型直接序列化到本
 本变量内部存储，不采用反射加大性能，内部采用KV结构模型。）
 整体数据结构如下：      
